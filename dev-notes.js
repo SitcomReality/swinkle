@@ -22,7 +22,7 @@ export const notes = `
 - \`game-loop.js\` cleans up physics state for disconnected players.
 - Bungee cord is drawn between the anchor and the body.
 - Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point). Other players' pupils remain centered.
-- **NEW:** Bungee cord physics refined: Shorter rest length, maximum stretch length enforced.
+- Bungee cord physics refined: Max length enforced, constants tuned for stretch/bounce.
 
 **Bungee Character Plan:**
 1.  ~~Create \`player.js\` Module:~~ (Done)
@@ -30,8 +30,8 @@ export const notes = `
     *   ~~Implement in \`player.js\`.~~
     *   ~~Simulate spring, gravity, damping.~~
     *   ~~Update character position based on physics.~~
-    *   ~~Tune physics constants for better feel.~~ (Done)
-    *   ~~Refine bungee physics (rest length, max length).~~ (**Done**)
+    *   ~~Tune physics constants for better feel.~~ (Done - Iteration 3)
+    *   ~~Refine bungee physics (rest length, max length).~~ (Done)
 3.  ~~Update \`game-loop.js\`:~~ (Done)
     *   ~~Ensure \`updatePlayerPhysics\` is called each frame with \`deltaTime\`. ~~
     *   ~~Refine rendering based on physics output (drawing cord, body at physics pos).~~
@@ -57,7 +57,7 @@ export const notes = `
 - Rotating the player capsule based on movement/velocity.
 
 **Key Questions:**
-- How does the maximum bungee length feel? Does it snap too harshly, or is the velocity damping working well?
+- How does the *current* bungee feel? Is it bouncier? Does the longer stretch feel better, or too loose?
 - Is the visual style refinement the right next step, or should we add limbs first?
 `;
 
