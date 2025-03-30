@@ -2,7 +2,9 @@ body {
     font-family: sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f0f0f0;
+    background-color: #1a1a2e; /* Dark background */
+    color: #e0e0e0; /* Light text for contrast */
+    overflow: hidden; /* Prevent scrollbars due to canvas */
 }
 
 #dev-notes-container {
@@ -10,12 +12,13 @@ body {
     top: 10px;
     right: 10px;
     width: 300px;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(40, 40, 70, 0.9); /* Darker, slightly transparent */
+    color: #e0e0e0; /* Light text */
     z-index: 1000;
     opacity: 0.3;
     transition: opacity 0.3s;
     padding: 15px;
-    border: 1px solid #ccc;
+    border: 1px solid #4a4a6a; /* Border matching theme */
     max-height: 300px;
     overflow-y: auto;
     white-space: pre-wrap; /* Preserve formatting */
