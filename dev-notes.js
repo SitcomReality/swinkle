@@ -15,28 +15,32 @@ export const notes = `
 - Basic rendering handled in \`game-loop.js\` using Canvas 2D.
 - Configuration managed in \`config.js\`.
 - Player rendering logic isolated in \`player.js\`.
-- **NEW:** Basic bungee physics (spring, gravity, damping) implemented in \`player.js\` for the placeholder body.
-- **NEW:** Physics state (position, velocity) is managed per-client locally in a map within \`player.js\`.
-- **NEW:** \`game-loop.js\` now calls \`updatePlayerPhysics\` for each player every frame and passes \`deltaTime\`.
-- **NEW:** \`game-loop.js\` now cleans up physics state for disconnected players.
-- **NEW:** Bungee cord is drawn between the anchor and the body.
+- Basic bungee physics (spring, gravity, damping) implemented in \`player.js\`.
+- **NEW:** Physics parameters (\`config.js\`) have been significantly tuned to provide a more elastic, less "taffy-like" feel. The bungee should now visibly stretch and retract more appropriately.
+- **NEW:** Placeholder circle body replaced with a simple capsule shape drawn using Canvas primitives in \`player.js\`.
+- **NEW:** Basic static eyes (white circles with black pupils) added to the capsule body.
+- Physics state (position, velocity) is managed per-client locally in a map within \`player.js\`.
+- \`game-loop.js\` calls \`updatePlayerPhysics\` for each player every frame and passes \`deltaTime\`.
+- \`game-loop.js\` cleans up physics state for disconnected players.
+- Bungee cord is drawn between the anchor and the body.
 
 **Bungee Character Plan:**
 1.  ~~Create \`player.js\` Module:~~ (Done)
-2.  **~~Implement Basic Bungee Physics:~~** (Done)
+2.  ~~Implement Basic Bungee Physics:~~ (Done)
     *   ~~Implement in \`player.js\`.~~
     *   ~~Simulate spring, gravity, damping.~~
     *   ~~Update character position based on physics.~~
-3.  **~~Update \`game-loop.js\`:~~** (Done)
+    *   ~~**Tune physics constants for better feel.**~~ (Done)
+3.  ~~Update \`game-loop.js\`:~~ (Done)
     *   ~~Ensure \`updatePlayerPhysics\` is called each frame with \`deltaTime\`. ~~
     *   ~~Refine rendering based on physics output (drawing cord, body at physics pos).~~
     *   ~~Handle disconnected player state cleanup.~~
-4.  **Define Character Structure (SVG/Canvas Primitives):** (**Next Step**)
-    *   Replace the placeholder circle body with a more character-like shape using Canvas drawing commands (e.g., simple head, torso).
-    *   Add basic, static eyes for now (expressive eyes later).
-    *   *Decision:* Stick with Canvas primitives for now for simplicity before potentially moving to SVG.
-5.  **Implement Basic Eye Tracking:**
-    *   Make eyes follow the player's *own* cursor (anchor point).
+4.  ~~Define Character Structure (SVG/Canvas Primitives):~~ (**Done**)
+    *   ~~Replace the placeholder circle body with a character shape (capsule).~~
+    *   ~~Add basic, static eyes.~~
+    *   *Decision:* Sticking with Canvas primitives for now.
+5.  **Implement Basic Eye Tracking:** (**Next Step**)
+    *   Make eyes (pupils) follow the player's *own* cursor (anchor point).
 6.  **Refine Visual Style:**
     *   Apply neon/cyberpunk styling to the player character and bungee cord.
     *   Enhance the squirt visual.
@@ -48,9 +52,11 @@ export const notes = `
 - Player color assignment influencing body/cord color.
 - Squirt interactions (if any).
 - SVG character integration (if Canvas primitives become limiting).
+- More expressive eyes (shape changes, etc.).
 
 **Key Questions:**
-- How does the current bungee feel? Is it too stiff, too bouncy, too slow? (Physics constants in \`config.js\` can be tweaked).
+- How does the *tuned* bungee feel now? Is it better? Still need adjustment? (Physics constants in \`config.js\` can be tweaked further).
+- Is the capsule shape acceptable as a base body?
 `;
 
 export function loadDevNotes() {

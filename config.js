@@ -8,15 +8,19 @@ export default {
     cursorSize: 8, // Radius of the player anchor point
     nameColor: '#DDDDDD', // Color for player names
     nameFont: '12px "Lucida Console", Monaco, monospace', // Font for player names
-    playerBodyRadius: 15, // Size of the player's body circle
+    playerBodyWidth: 20,  // Width of the character body capsule
+    playerBodyHeight: 30, // Height of the character body capsule
+    playerEyeRadius: 4,   // Radius of the character's eyes
+    playerEyeOffsetX: 6,  // Horizontal offset of eyes from center
+    playerEyeOffsetY: -3, // Vertical offset of eyes from body center
     playerBodyColor: '#FFAABB', // Color for the player body
     playerBodyStrokeColor: '#FF88AA', // Color for the player body stroke
 
-    // Bungee Physics settings
-    bungeeRestLength: 30,        // The natural length of the bungee cord
-    bungeeSpringConstant: 0.2,  // How stiff the spring is (k in F=-kx)
-    bungeeDampingFactor: 0.9,   // How much velocity is reduced each frame (0-1)
-    gravityAcceleration: 150,    // Pixels per second squared downwards
+    // Bungee Physics settings - TUNED VALUES
+    bungeeRestLength: 50,        // Increased natural length slightly
+    bungeeSpringConstant: 8,    // Increased stiffness significantly (k in F=-kx)
+    bungeeDampingFactor: 0.92,  // Slightly increased damping to prevent excessive oscillation
+    gravityAcceleration: 1200,   // Increased gravity force (counteracted by stiffer spring)
     playerBodyMass: 1,          // Mass affects how forces influence acceleration (F=ma)
     bungeeCordColor: 'rgba(255, 255, 255, 0.5)', // Color of the bungee line
     bungeeCordWidth: 2,         // Width of the bungee line

@@ -64,21 +64,72 @@ export function renderPlayer(ctx, clientId, presence, peer) {
     ctx.lineWidth = config.bungeeCordWidth || 2;
     ctx.stroke();
 
-    // --- Render Player Body (based on physics) ---
-    ctx.beginPath();
-    ctx.arc(bodyX, bodyY, config.playerBodyRadius || 15, 0, Math.PI * 2);
+    // --- Render Player Body (Capsule Shape) ---
+    const bodyWidth = config.playerBodyWidth || 20;
+    const bodyHeight = config.playerBodyHeight || 30;
+    const radius = bodyWidth / 2;
+    const rectHeight = bodyHeight - bodyWidth; // Height of the rectangular part
+
     ctx.fillStyle = config.playerBodyColor || '#FFAABB';
-    ctx.fill();
     ctx.strokeStyle = config.playerBodyStrokeColor || '#FF88AA';
     ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    // Draw the capsule shape
+    // Start path for combined shape
+    ctx.moveTo(bodyX - radius, bodyY - rectHeight / 2); // Top-left corner of rect part
+    ctx.arc(bodyX, bodyY - rectHeight / 2, radius, Math.PI, 0); // Top semicircle
+    ctx.lineTo(bodyX + radius, bodyY + rectHeight / 2); // Right side of rect part
+    ctx.arc(bodyX, bodyY + rectHeight / 2, radius, 0, Math.PI); // Bottom semicircle
+    ctx.lineTo(bodyX - radius, bodyY - rectHeight / 2); // Left side of rect part
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
+
+
+    // --- Render Static Eyes ---
+    const eyeRadius = config.playerEyeRadius || 4;
+    const eyeOffsetX = config.playerEyeOffsetX || 6;
+    const eyeOffsetY = config.playerEyeOffsetY || -3; // Relative to body center (bodyY)
+
+    ctx.fillStyle = '#FFFFFF'; // White part of the eye
+    ctx.strokeStyle = '#000000'; // Black outline
+    ctx.lineWidth = 1;
+
+    // Left Eye
+    ctx.beginPath();
+    ctx.arc(bodyX - eyeOffsetX, bodyY + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Right Eye
+    ctx.beginPath();
+    ctx.arc(bodyX + eyeOffsetX, bodyY + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+     // Simple black pupils
+    const pupilRadius = eyeRadius * 0.5;
+    ctx.fillStyle = '#000000';
+
+    // Left Pupil (Static for now)
+    ctx.beginPath();
+    ctx.arc(bodyX - eyeOffsetX, bodyY + eyeOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Right Pupil (Static for now)
+    ctx.beginPath();
+    ctx.arc(bodyX + eyeOffsetX, bodyY + eyeOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.fill();
+
 
     // --- Render Player Name ---
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
     // Position name below the physics body
-    ctx.fillText(peer.username, bodyX, bodyY + (config.playerBodyRadius || 15) + 14);
+    const nameYOffset = (bodyHeight / 2) + 14; // Adjust based on body height
+    ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 }
 
 /**
@@ -110,11 +161,12 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const stretch = distance - restLength;
 
-    // Calculate Spring Force (Hooke's Law: F = -kx, applied along the dx/dy direction)
-    // Only apply spring force if stretched beyond rest length
+    // Calculate Spring Force (Hooke's Law: F = k * stretch, applied along the dx/dy direction)
+    // Apply force whether stretching or compressing for a more stable bungee effect
     let springForceX = 0;
     let springForceY = 0;
-    if (stretch > 0 && distance > 0.01) { // Avoid division by zero if distance is tiny
+    if (distance > 0.01) { // Avoid division by zero if distance is tiny
+        // Note: We use stretch (positive for extension, negative for compression) directly
         const forceMagnitude = k * stretch;
         springForceX = (dx / distance) * forceMagnitude;
         springForceY = (dy / distance) * forceMagnitude;
@@ -122,11 +174,6 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
 
     // Calculate Gravity Force
     const gravityForceY = gravity * mass; // Gravity acts downwards
-
-    // Calculate Damping Force (Opposes velocity: F = -c * v)
-    // Note: A simple velocity scaling factor is used here instead of a strict damping constant 'c'.
-    // This provides a more intuitive damping effect (0=no damping, 1=immediate stop).
-    // We apply it *after* calculating new velocity based on forces.
 
     // Calculate Total Force
     const totalForceX = springForceX;
@@ -141,8 +188,10 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.velocity.y += accelerationY * deltaTime;
 
     // Apply Damping Factor to Velocity
-    state.velocity.x *= damping;
-    state.velocity.y *= damping;
+    // This effectively works like air resistance or internal friction in the bungee
+    state.velocity.x *= Math.pow(damping, deltaTime * 60); // Scale damping by frame rate (assuming target 60fps)
+    state.velocity.y *= Math.pow(damping, deltaTime * 60);
+
 
     // Update Position (p = p + v * dt)
     state.position.x += state.velocity.x * deltaTime;
