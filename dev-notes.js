@@ -1,49 +1,51 @@
 export const notes = `
-## Developer Notes - Basic Squirt Implemented
-
-**Current Implementation:**
-- Basic WebsimSocket integration complete
-- Shared cursor positions between players
-- Simple canvas rendering of player positions (circles) and usernames
-- Game loop logic in \`game-loop.js\`
-- Basic styling with a dark theme initiated.
-- Configurable colors and sizes in \`config.js\`
-- Dev notes as hoverable overlay
-- **Clicking now creates a short-lived "squirt" particle at the cursor location.**
-- **Squirts are stored in \`roomState\` and visible to all players.**
-- **Squirts automatically despawn after a configurable duration.**
-
-**Recent Changes:**
-✓ Core multiplayer connection established
-✓ Basic presence tracking implemented
-✓ Canvas rendering system initialized
-✓ Game loop refactored into \`game-loop.js\`
-✓ Player usernames are now displayed below their cursors
-✓ Basic dark theme applied via \`style.css\`
-✓ Added basic configuration options in \`config.js\`
-✓ **Implemented basic click-to-squirt mechanic using \`roomState\`**
-✓ **Added squirt rendering and auto-despawn logic in \`game-loop.js\`**
-✓ **Added squirt configuration (color, size, duration) to \`config.js\`**
-
-**Immediate Next Steps:**
-1. Refine visual style:
-    - Start incorporating neon colors more strongly (maybe player cursors too?).
-    - Consider initial steps for "expressive eyes" on cursors (simple dots that follow mouse direction relative to the center?).
-    - Enhance the squirt visual (e.g., fading out, simple animation?).
-2. Improve Squirt Feel:
-    - Add a small cooldown or rate limit to squirting? (Probably needed).
-    - Should squirts have velocity/direction, or just appear instantly? (Let's keep instant for now).
+## Developer Notes - Planning Bungee Player
 
 **Design Goals & Considerations:**
 - **Theme:** "xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism" (Dark background, neon highlights).
 - **Core Mechanic:** Spraying/squirting.
-- **Character Design:** Big expressive eyes (pupils track cursor/target?).
-- **Modularity:** Keep breaking down logic into smaller files. Consider a \`squirt.js\` if logic expands.
-- **Performance:** Keep rendering efficient. Squirt cleanup is handled in the game loop.
+- **Character Design:** Big expressive eyes (pupils track cursor/target?). Characters dangle from a bungee cord attached to the player's cursor point.
+- **Modularity:** Keep breaking down logic into smaller files.
+- **Performance:** Keep rendering efficient.
+
+**Current State & Overview:**
+- Multiplayer connection via WebsimSocket is functional.
+- Players control a cursor point, positions are shared.
+- Clicking creates temporary "squirt" particles visible to all.
+- Basic rendering handled in \`game-loop.js\` using Canvas 2D.
+- Configuration managed in \`config.js\`.
+
+**Proposed Player Redesign: Bungee Character**
+- The current cursor circle will become the anchor point for a bungee cord.
+- A character graphic (likely SVG) will dangle from the cord.
+- The character should have simple physics (spring motion for bungee, dangling limbs).
+- Expressive eyes on the character are a key feature.
+
+**Immediate Next Steps & Modules:**
+1.  **Create `player.js` Module:**
+    *   Define player character structure (SVG?).
+    *   Include logic for rendering the player character (body, limbs, eyes).
+    *   Handle eye tracking (following cursor or direction of movement).
+2.  **Implement Basic Bungee Physics:**
+    *   Could be in `player.js` initially or a separate `physics.js`.
+    *   Simulate a simple spring connecting the anchor point (cursor) and the character's attachment point.
+    *   Add basic gravity/damping.
+3.  **Update `game-loop.js`:**
+    *   Import player rendering logic from `player.js`.
+    *   Replace the simple cursor circle rendering with the new bungee character rendering.
+    *   Integrate physics updates into the game loop.
+4.  **Refine Visual Style:**
+    *   Apply neon/cyberpunk styling to the player character and bungee cord.
+    *   Enhance the squirt visual (e.g., fading out, simple animation?).
+
+**Future Considerations:**
+- Squirt cooldown/rate limiting.
+- Player color assignment.
+- Squirt interactions (if any).
 
 **Key Questions:**
-- How should player colors be assigned? Randomly on join? User selectable? (Sticking with default white from config for now).
-- Should squirts interact with anything yet (players, other squirts)? (No interaction/collision planned yet).
+- How complex should the initial bungee physics be? (Start simple: spring + damping?).
+- How should the character's SVG be structured for easy animation/manipulation (limbs, eyes)?
 `;
 
 export function loadDevNotes() {
@@ -55,4 +57,3 @@ export function loadDevNotes() {
         console.error("Dev notes container not found!");
     }
 }
-
