@@ -13,17 +13,18 @@ async function initGame() {
         room.updateRoomState({ squirts: {} });
     }
 
-    // Track mouse movement for player presence
+    // Track mouse movement for player presence (anchor point)
     const canvas = document.getElementById('game-canvas');
     if (!canvas) {
         console.error("Canvas element not found!");
         return;
     }
     canvas.addEventListener('mousemove', (e) => {
-        // Send position and let the rendering decide the color
+        // Send anchor position and let the rendering decide the color/character state
         room.updatePresence({
             x: e.clientX,
             y: e.clientY,
+            // Color is set initially and might be updated based on game events later
         });
     });
 
@@ -33,28 +34,27 @@ async function initGame() {
         const uniqueSquirtId = `squirt-${clientId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
         const newSquirt = {
-            [uniqueSquirtId]: { // Use computed property name for the unique ID
+            [uniqueSquirtId]: { 
                 id: uniqueSquirtId,
                 x: e.clientX,
                 y: e.clientY,
                 createdAt: Date.now(),
                 ownerId: clientId,
-                color: config.squirtColor || '#00FFFF' // Use configured color
+                color: config.squirtColor || '#00FFFF' 
             }
         };
 
         // Update room state with the new squirt
-        // Note: This merges the new squirt into the existing squirts object
         room.updateRoomState({ squirts: { ...room.roomState.squirts, ...newSquirt } });
     });
-
 
     // Initial presence update with a default color (or potentially assigned color later)
     // This ensures the player appears immediately
     room.updatePresence({
-       x: window.innerWidth / 2, // Start position
+       x: window.innerWidth / 2, 
        y: window.innerHeight / 2,
-       color: config.defaultPlayerColor || '#FFFFFF' // Use default from config
+       color: config.defaultPlayerColor || '#FFFFFF' 
+       // Character-specific state (like physics) will be managed client-side initially
     });
 
     // Setup presence subscription for other players
@@ -64,11 +64,10 @@ async function initGame() {
         // For example, we could play a sound when a player joins/leaves.
     });
 
-     // Subscribe to room state changes (optional, for debugging or complex logic)
-     room.subscribeRoomState((currentRoomState) => {
+    // Subscribe to room state changes (optional, for debugging or complex logic)
+    room.subscribeRoomState((currentRoomState) => {
         // console.log("Room state updated:", currentRoomState);
-     });
-
+    });
 
     // Start rendering loop, passing the room instance
     startGameLoop(room);
@@ -76,4 +75,4 @@ async function initGame() {
 
 // Initialize the app
 loadDevNotes();
-initGame().catch(console.error); // Start the game initialization and catch potential errors
+initGame().catch(console.error); 
