@@ -3,10 +3,12 @@
  * Manages the main rendering cycle of the game.
  */
 import config from 'config';
-import { renderPlayer, updatePlayerPhysics } from './player.js'; // Import player functions
+// Import player functions, including the new updatePlayerPhysics
+import { renderPlayer, updatePlayerPhysics, removePlayerPhysicsState } from './player.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
+let previousPeers = new Set(); // To track disconnected peers
 
 // Basic rendering using canvas
 function gameLoop(timestamp) {
@@ -25,7 +27,8 @@ function gameLoop(timestamp) {
 
     // Calculate delta time for physics updates
     if (!lastTimestamp) lastTimestamp = timestamp;
-    const deltaTime = (timestamp - lastTimestamp) / 1000; // Delta time in seconds
+    // Clamp deltaTime to avoid large jumps if the tab was inactive
+    const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Delta time in seconds, max 100ms
     lastTimestamp = timestamp;
 
     // Ensure canvas size matches display size for crisp rendering
@@ -37,9 +40,25 @@ function gameLoop(timestamp) {
     // Clear the canvas for the new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // --- Update Physics (Placeholder) ---
-    // Eventually, this might loop through physics objects, including players
-    // updatePlayerPhysics(deltaTime); // Call physics update (currently empty)
+    // --- Identify Disconnected Peers ---
+    const currentPeerIds = new Set(Object.keys(roomInstance.peers));
+    previousPeers.forEach(clientId => {
+        if (!currentPeerIds.has(clientId)) {
+            // Peer disconnected, remove their physics state
+            removePlayerPhysicsState(clientId);
+        }
+    });
+    previousPeers = currentPeerIds; // Update for next frame check
+
+
+    // --- Update Player Physics ---
+    // Iterate through all connected peers and update their physics simulation
+    Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
+        const presence = roomInstance.presence[clientId];
+        if (presence) { // Only update if presence data exists
+            updatePlayerPhysics(clientId, presence, deltaTime);
+        }
+    });
 
     // --- Render Squirts ---
     const squirts = roomInstance.roomState.squirts || {};
@@ -70,8 +89,8 @@ function gameLoop(timestamp) {
     // --- Render Players ---
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
-        // Call the dedicated player rendering function
-        renderPlayer(ctx, presence, peer);
+        // Call the dedicated player rendering function, passing clientId
+        renderPlayer(ctx, clientId, presence, peer);
     });
 
     // Request the next frame to continue the loop
@@ -89,5 +108,6 @@ export function startGameLoop(room) {
     roomInstance = room; // Store the room instance for use in the loop
     console.log("Starting game loop...");
     lastTimestamp = 0; // Reset timestamp when starting
+    previousPeers = new Set(Object.keys(room.peers)); // Initialize peer tracking
     requestAnimationFrame(gameLoop); // Kick off the first frame
 }
