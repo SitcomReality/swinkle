@@ -22,7 +22,7 @@ export const notes = `
 - \`game-loop.js\` cleans up physics state for disconnected players.
 - Bungee cord is drawn between the anchor and the body.
 - Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point).
-- Bungee cord physics refined: Max length enforced, constants tuned for stretch/bounce.
+- Bungee cord physics refined: Max length enforced, constants tuned for stretch/bounce. Damping reduced for more natural swinging motion.
 - Simple physics-based limbs added, dangling from attachment points on the body. Limb physics (\`updateLimbPhysics\`) and rendering integrated into \`player.js\`. Limb appearance and physics constants configurable in \`config.js\`.
 
 **Bungee Character Plan:**
@@ -32,11 +32,9 @@ export const notes = `
 4.  ~~Define Character Structure (SVG/Canvas Primitives):~~ (Done)
 5.  ~~Implement Basic Eye Tracking:~~ (Done)
 6.  ~~Add Simple Limb Physics:~~ (Done)
-    *   ~~Create data structure for limb state (position, velocity).~~
-    *   ~~Implement limb physics simulation (spring, gravity, damping relative to body attachment points).~~
-    *   ~~Render limbs (simple lines for now).~~
-    *   ~~Add limb config options.~~
-7.  **Refine Visual Style:** (**Next Step**)
+7.  **Refine Physics (Swinging Motion):** (Done - Reduced damping)
+    *   ~~Adjust physics parameters (\`bungeeDampingFactor\`) to allow for more pendulum-like horizontal swinging.~~
+8.  **Refine Visual Style:** (**Next Step**)
     *   Apply neon/cyberpunk styling to the player character and bungee cord.
     *   Enhance the squirt visual.
     *   Consider limb shapes other than lines?
@@ -48,11 +46,12 @@ export const notes = `
 - SVG character integration (if Canvas primitives become limiting).
 - More expressive eyes (shape changes, etc.).
 - Rotating the player capsule based on movement/velocity.
+- Collision detection/response (player-player, player-environment).
 
 **Key Questions:**
-- How do the limbs feel? Are they too floppy, too stiff, or just right?
-- Is the number/length/attachment of limbs appropriate?
-- Should limbs be simple lines, or have more shape (e.g., small capsules)?
+- Does the swinging motion feel more natural now? Is it too bouncy or still too damped?
+- How should the "neon/cyberpunk" style be applied? Glow effects? Brighter outlines? Different color palettes?
+- Should the squirts have a visual "impact" effect or animation?
 `;
 
 export function loadDevNotes() {
