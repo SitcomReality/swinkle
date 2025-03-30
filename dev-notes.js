@@ -15,14 +15,13 @@ export const notes = `
 - Basic rendering handled in \`game-loop.js\` using Canvas 2D.
 - Configuration managed in \`config.js\`.
 - Player rendering logic isolated in \`player.js\`.
-- Basic bungee physics (spring, gravity, damping) implemented in \`player.js\`.
-- **NEW:** Physics parameters (\`config.js\`) have been significantly tuned to provide a more elastic, less "taffy-like" feel. The bungee should now visibly stretch and retract more appropriately.
-- **NEW:** Placeholder circle body replaced with a simple capsule shape drawn using Canvas primitives in \`player.js\`.
-- **NEW:** Basic static eyes (white circles with black pupils) added to the capsule body.
+- Basic bungee physics (spring, gravity, damping) implemented in \`player.js\`, constants tuned for better feel.
+- Character body is a simple capsule shape drawn using Canvas primitives in \`player.js\`.
 - Physics state (position, velocity) is managed per-client locally in a map within \`player.js\`.
 - \`game-loop.js\` calls \`updatePlayerPhysics\` for each player every frame and passes \`deltaTime\`.
 - \`game-loop.js\` cleans up physics state for disconnected players.
 - Bungee cord is drawn between the anchor and the body.
+- **NEW:** Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point). Other players' pupils remain centered.
 
 **Bungee Character Plan:**
 1.  ~~Create \`player.js\` Module:~~ (Done)
@@ -30,18 +29,18 @@ export const notes = `
     *   ~~Implement in \`player.js\`.~~
     *   ~~Simulate spring, gravity, damping.~~
     *   ~~Update character position based on physics.~~
-    *   ~~**Tune physics constants for better feel.**~~ (Done)
+    *   ~~Tune physics constants for better feel.~~ (Done)
 3.  ~~Update \`game-loop.js\`:~~ (Done)
     *   ~~Ensure \`updatePlayerPhysics\` is called each frame with \`deltaTime\`. ~~
     *   ~~Refine rendering based on physics output (drawing cord, body at physics pos).~~
     *   ~~Handle disconnected player state cleanup.~~
-4.  ~~Define Character Structure (SVG/Canvas Primitives):~~ (**Done**)
+4.  ~~Define Character Structure (SVG/Canvas Primitives):~~ (Done)
     *   ~~Replace the placeholder circle body with a character shape (capsule).~~
     *   ~~Add basic, static eyes.~~
     *   *Decision:* Sticking with Canvas primitives for now.
-5.  **Implement Basic Eye Tracking:** (**Next Step**)
-    *   Make eyes (pupils) follow the player's *own* cursor (anchor point).
-6.  **Refine Visual Style:**
+5.  ~~Implement Basic Eye Tracking:~~ (**Done**)
+    *   ~~Make eyes (pupils) follow the player's *own* cursor (anchor point).~~
+6.  **Refine Visual Style:** (**Next Step**)
     *   Apply neon/cyberpunk styling to the player character and bungee cord.
     *   Enhance the squirt visual.
 7.  **Add Simple Limb Physics:**
@@ -55,8 +54,8 @@ export const notes = `
 - More expressive eyes (shape changes, etc.).
 
 **Key Questions:**
-- How does the *tuned* bungee feel now? Is it better? Still need adjustment? (Physics constants in \`config.js\` can be tweaked further).
-- Is the capsule shape acceptable as a base body?
+- How does the eye tracking look/feel? Is it responsive enough?
+- Is the capsule shape still acceptable, or should we explore SVG/more complex Canvas drawing soon?
 `;
 
 export function loadDevNotes() {

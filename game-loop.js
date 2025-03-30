@@ -24,6 +24,7 @@ function gameLoop(timestamp) {
     }
     const ctx = canvas.getContext('2d');
     const now = Date.now(); // Keep using Date.now() for squirt age calculation
+    const localClientId = roomInstance.clientId; // Get the local client's ID
 
     // Calculate delta time for physics updates
     if (!lastTimestamp) lastTimestamp = timestamp;
@@ -89,8 +90,8 @@ function gameLoop(timestamp) {
     // --- Render Players ---
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
-        // Call the dedicated player rendering function, passing clientId
-        renderPlayer(ctx, clientId, presence, peer);
+        // Call the dedicated player rendering function, passing clientId AND localClientId
+        renderPlayer(ctx, clientId, localClientId, presence, peer);
     });
 
     // Request the next frame to continue the loop

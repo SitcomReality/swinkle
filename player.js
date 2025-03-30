@@ -29,10 +29,11 @@ function ensurePhysicsState(clientId, initialAnchorPos) {
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
+ * @param {string} localClientId - The ID of the current user's client.
  * @param {object} presence - The player's presence data (x, y anchor, color, etc.).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  */
-export function renderPlayer(ctx, clientId, presence, peer) {
+export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     if (!presence || typeof presence.x !== 'number' || typeof presence.y !== 'number') {
         return; // Don't render if position data is missing
     }
@@ -87,39 +88,66 @@ export function renderPlayer(ctx, clientId, presence, peer) {
     ctx.stroke();
 
 
-    // --- Render Static Eyes ---
+    // --- Render Eyes ---
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
     const eyeOffsetY = config.playerEyeOffsetY || -3; // Relative to body center (bodyY)
+    const leftEyeX = bodyX - eyeOffsetX;
+    const rightEyeX = bodyX + eyeOffsetX;
+    const eyeY = bodyY + eyeOffsetY; // Both eyes at the same Y level
 
     ctx.fillStyle = '#FFFFFF'; // White part of the eye
     ctx.strokeStyle = '#000000'; // Black outline
     ctx.lineWidth = 1;
 
-    // Left Eye
+    // Left Eye (Sclera)
     ctx.beginPath();
-    ctx.arc(bodyX - eyeOffsetX, bodyY + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+    ctx.arc(leftEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Right Eye
+    // Right Eye (Sclera)
     ctx.beginPath();
-    ctx.arc(bodyX + eyeOffsetX, bodyY + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-     // Simple black pupils
+    // --- Render Pupils (with tracking for local player) ---
     const pupilRadius = eyeRadius * 0.5;
+    const maxPupilOffset = eyeRadius - pupilRadius - 1; // Ensure pupil stays within the white
+    let pupilOffsetX = 0;
+    let pupilOffsetY = 0;
+
+    // Only track cursor for the local player
+    if (clientId === localClientId) {
+        // Calculate direction from eye center towards anchor (cursor)
+        // Using an average eye position for simplicity
+        const avgEyeX = bodyX;
+        const dirX = anchorX - avgEyeX;
+        const dirY = anchorY - eyeY;
+        const dist = Math.sqrt(dirX * dirX + dirY * dirY);
+
+        if (dist > 1) { // Avoid division by zero and jitter when close
+            // Normalize the direction vector
+            const normX = dirX / dist;
+            const normY = dirY / dist;
+            // Calculate offset, capped by maxPupilOffset
+            pupilOffsetX = normX * maxPupilOffset;
+            pupilOffsetY = normY * maxPupilOffset;
+        }
+    }
+    // If not local player, offset is 0, pupils stay centered.
+
     ctx.fillStyle = '#000000';
 
-    // Left Pupil (Static for now)
+    // Left Pupil
     ctx.beginPath();
-    ctx.arc(bodyX - eyeOffsetX, bodyY + eyeOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Right Pupil (Static for now)
+    // Right Pupil
     ctx.beginPath();
-    ctx.arc(bodyX + eyeOffsetX, bodyY + eyeOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
     ctx.fill();
 
 
