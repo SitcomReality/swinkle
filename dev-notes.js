@@ -3,7 +3,7 @@ export const notes = `
 
 **Design Goals & Considerations:**
 - **Theme:** "xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism" (Dark background, neon highlights).
-- **Character Design:** Big expressive eyes. Characters dangle from a bungee cord attached to the player's cursor point (anchor).
+- **Character Design:** Big expressive eyes. Characters dangle from a bungee cord attached to the player's cursor point (anchor). Little arms/legs dangle.
 - **Modularity:** Keep breaking down logic into smaller files.
 - **Performance:** Keep rendering efficient. Clamped deltaTime.
 - **Developer Notes:** Update this file including future steps and key questions after every update. Use your intuition or imagination when making updates that involve unanswered questions. Remember to escape all backticks in these notes.
@@ -15,50 +15,44 @@ export const notes = `
 - Basic rendering handled in \`game-loop.js\` using Canvas 2D.
 - Configuration managed in \`config.js\`.
 - Player rendering logic isolated in \`player.js\`.
-- Basic bungee physics (spring, gravity, damping) implemented in \`player.js\`, constants tuned for better feel.
-- Character body is a simple capsule shape drawn using Canvas primitives in \`player.js\`.
+- Bungee physics (spring, gravity, damping) implemented in \`player.js\`.
+- Character body is a capsule shape drawn using Canvas primitives.
 - Physics state (position, velocity) is managed per-client locally in a map within \`player.js\`.
 - \`game-loop.js\` calls \`updatePlayerPhysics\` for each player every frame and passes \`deltaTime\`.
 - \`game-loop.js\` cleans up physics state for disconnected players.
 - Bungee cord is drawn between the anchor and the body.
-- Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point). Other players' pupils remain centered.
+- Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point).
 - Bungee cord physics refined: Max length enforced, constants tuned for stretch/bounce.
+- Simple physics-based limbs added, dangling from attachment points on the body. Limb physics (\`updateLimbPhysics\`) and rendering integrated into \`player.js\`. Limb appearance and physics constants configurable in \`config.js\`.
 
 **Bungee Character Plan:**
 1.  ~~Create \`player.js\` Module:~~ (Done)
 2.  ~~Implement Basic Bungee Physics:~~ (Done)
-    *   ~~Implement in \`player.js\`.~~
-    *   ~~Simulate spring, gravity, damping.~~
-    *   ~~Update character position based on physics.~~
-    *   ~~Tune physics constants for better feel.~~ (Done - Iteration 3)
-    *   ~~Refine bungee physics (rest length, max length).~~ (Done)
 3.  ~~Update \`game-loop.js\`:~~ (Done)
-    *   ~~Ensure \`updatePlayerPhysics\` is called each frame with \`deltaTime\`. ~~
-    *   ~~Refine rendering based on physics output (drawing cord, body at physics pos).~~
-    *   ~~Handle disconnected player state cleanup.~~
 4.  ~~Define Character Structure (SVG/Canvas Primitives):~~ (Done)
-    *   ~~Replace the placeholder circle body with a character shape (capsule).~~
-    *   ~~Add basic, static eyes.~~
-    *   *Decision:* Sticking with Canvas primitives for now.
 5.  ~~Implement Basic Eye Tracking:~~ (Done)
-    *   ~~Make eyes (pupils) follow the player's *own* cursor (anchor point).~~
-6.  **Refine Visual Style:** (**Next Step**)
+6.  ~~Add Simple Limb Physics:~~ (Done)
+    *   ~~Create data structure for limb state (position, velocity).~~
+    *   ~~Implement limb physics simulation (spring, gravity, damping relative to body attachment points).~~
+    *   ~~Render limbs (simple lines for now).~~
+    *   ~~Add limb config options.~~
+7.  **Refine Visual Style:** (**Next Step**)
     *   Apply neon/cyberpunk styling to the player character and bungee cord.
     *   Enhance the squirt visual.
-7.  **Add Simple Limb Physics:**
-    *   Make small limb shapes dangle/react loosely to body movement.
+    *   Consider limb shapes other than lines?
 
 **Future Considerations:**
 - Squirt cooldown/rate limiting.
-- Player color assignment influencing body/cord color.
+- Player color assignment influencing body/cord/limb color.
 - Squirt interactions (if any).
 - SVG character integration (if Canvas primitives become limiting).
 - More expressive eyes (shape changes, etc.).
 - Rotating the player capsule based on movement/velocity.
 
 **Key Questions:**
-- How does the *current* bungee feel? Is it bouncier? Does the longer stretch feel better, or too loose?
-- Is the visual style refinement the right next step, or should we add limbs first?
+- How do the limbs feel? Are they too floppy, too stiff, or just right?
+- Is the number/length/attachment of limbs appropriate?
+- Should limbs be simple lines, or have more shape (e.g., small capsules)?
 `;
 
 export function loadDevNotes() {

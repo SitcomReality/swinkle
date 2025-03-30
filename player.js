@@ -1,31 +1,140 @@
 /**
  * player.js
- * Handles player character rendering and physics simulation.
+ * Handles player character rendering and physics simulation, including limbs.
  */
 import config from 'config';
 
 // Stores the physics state for each player, keyed by clientId
-// Each entry will have { position: {x, y}, velocity: {x, y} }
+// Each entry will have { position: {x, y}, velocity: {x, y}, limbs: [...] }
 const playerPhysicsStates = new Map();
 
 /**
- * Initializes the physics state for a player if it doesn't exist.
+ * Initializes the physics state for a player if it doesn't exist, including limbs.
  * @param {string} clientId - The ID of the player.
  * @param {object} initialAnchorPos - The initial anchor position {x, y}.
  */
 function ensurePhysicsState(clientId, initialAnchorPos) {
     if (!playerPhysicsStates.has(clientId)) {
-        playerPhysicsStates.set(clientId, {
-            // Start the body slightly below the anchor
-            position: { x: initialAnchorPos.x, y: initialAnchorPos.y + config.bungeeRestLength },
+        const bodyInitialPos = { x: initialAnchorPos.x, y: initialAnchorPos.y + config.bungeeRestLength };
+        const initialState = {
+            position: { x: bodyInitialPos.x, y: bodyInitialPos.y },
             velocity: { x: 0, y: 0 },
-        });
+            limbs: [],
+        };
+
+        // Initialize limbs based on config
+        for (let i = 0; i < config.numberOfLimbs; i++) {
+            // Distribute attachment points - simple example: alternate sides
+            const side = i % 2 === 0 ? -1 : 1;
+            const attachmentOffsetX = (config.playerBodyWidth / 3) * side;
+            // Attach slightly below the vertical center
+            const attachmentOffsetY = config.playerBodyHeight * 0.2;
+            
+            // Initial limb position: slightly below attachment point
+            const initialLimbPos = {
+                x: bodyInitialPos.x + attachmentOffsetX,
+                y: bodyInitialPos.y + attachmentOffsetY + config.limbLength * 0.5 // Start somewhat extended
+            };
+
+            initialState.limbs.push({
+                // Relative offset from the body's center (state.position)
+                attachmentOffset: { x: attachmentOffsetX, y: attachmentOffsetY },
+                // Current end position of the limb
+                position: { x: initialLimbPos.x, y: initialLimbPos.y },
+                // Current velocity of the limb end
+                velocity: { x: 0, y: 0 },
+            });
+        }
+        playerPhysicsStates.set(clientId, initialState);
     }
     return playerPhysicsStates.get(clientId);
 }
 
 /**
- * Renders a single player character, including anchor, body, and bungee cord.
+ * Updates the physics simulation for a single limb.
+ * @param {object} limbState - The state object for the limb { attachmentOffset, position, velocity }.
+ * @param {object} bodyPos - The current position of the player's body {x, y}.
+ * @param {number} deltaTime - Time elapsed since the last frame in seconds.
+ */
+function updateLimbPhysics(limbState, bodyPos, deltaTime) {
+    // Physics Constants from Config (specific to limbs)
+    const k = config.limbSpringConstant;
+    const restLength = config.limbLength; // Limbs try to maintain this length
+    const damping = config.limbDampingFactor;
+    const gravity = config.gravityAcceleration * config.limbGravityFactor; // Limbs might be affected less by gravity
+    const mass = config.limbMass;
+    const maxLength = restLength * config.limbMaxLengthMultiplier;
+
+    // Calculate the absolute world position of the attachment point
+    const attachmentPoint = {
+        x: bodyPos.x + limbState.attachmentOffset.x,
+        y: bodyPos.y + limbState.attachmentOffset.y,
+    };
+
+    // Calculate vector from limb end to its attachment point
+    const dx = attachmentPoint.x - limbState.position.x;
+    const dy = attachmentPoint.y - limbState.position.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    const stretch = distance - restLength;
+
+    // Normalize direction vector
+    let normDx = 0, normDy = 0;
+    if (distance > 0.01) {
+        normDx = dx / distance;
+        normDy = dy / distance;
+    }
+
+    // --- Forces ---
+    // Spring Force (pulls limb end towards attachment point)
+    const springForceMagnitude = k * stretch;
+    const springForceX = normDx * springForceMagnitude;
+    const springForceY = normDy * springForceMagnitude;
+
+    // Gravity Force
+    const gravityForceY = gravity * mass;
+
+    // Total Force
+    const totalForceX = springForceX;
+    const totalForceY = springForceY + gravityForceY;
+
+    // --- Acceleration & Velocity ---
+    const accelerationX = totalForceX / mass;
+    const accelerationY = totalForceY / mass;
+
+    limbState.velocity.x += accelerationX * deltaTime;
+    limbState.velocity.y += accelerationY * deltaTime;
+
+    // Apply Damping
+    limbState.velocity.x *= Math.pow(damping, deltaTime * 60);
+    limbState.velocity.y *= Math.pow(damping, deltaTime * 60);
+
+    // --- Update Position ---
+    limbState.position.x += limbState.velocity.x * deltaTime;
+    limbState.position.y += limbState.velocity.y * deltaTime;
+
+    // --- Max Length Constraint (relative to attachment point) ---
+    const newDx = attachmentPoint.x - limbState.position.x;
+    const newDy = attachmentPoint.y - limbState.position.y;
+    const newDistance = Math.sqrt(newDx * newDx + newDy * newDy);
+
+    if (newDistance > maxLength) {
+        const clampRatio = maxLength / newDistance;
+        limbState.position.x = attachmentPoint.x - newDx * clampRatio;
+        limbState.position.y = attachmentPoint.y - newDy * clampRatio;
+
+        // Dampen velocity component moving away from attachment point
+        const limbDirX = newDx / newDistance;
+        const limbDirY = newDy / newDistance;
+        const dotProduct = limbState.velocity.x * limbDirX + limbState.velocity.y * limbDirY;
+        if (dotProduct > 0) {
+            limbState.velocity.x -= dotProduct * limbDirX;
+            limbState.velocity.y -= dotProduct * limbDirY;
+        }
+    }
+}
+
+/**
+ * Renders a single player character, including anchor, body, bungee cord, and limbs.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
@@ -51,8 +160,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.fill();
     ctx.stroke();
 
-    // --- Get Physics State for Body ---
-    // Initialize if necessary, using anchor position as reference
+    // --- Get Physics State (Body and Limbs) ---
     const physicsState = ensurePhysicsState(clientId, { x: anchorX, y: anchorY });
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
@@ -64,6 +172,21 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.strokeStyle = config.bungeeCordColor || 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = config.bungeeCordWidth || 2;
     ctx.stroke();
+
+    // --- Render Limbs (Behind Body) ---
+    ctx.strokeStyle = config.limbColor;
+    ctx.lineWidth = config.limbWidth;
+    ctx.lineCap = 'round'; // Make limb ends rounded
+
+    physicsState.limbs.forEach(limb => {
+        const attachmentPointX = bodyX + limb.attachmentOffset.x;
+        const attachmentPointY = bodyY + limb.attachmentOffset.y;
+        ctx.beginPath();
+        ctx.moveTo(attachmentPointX, attachmentPointY);
+        ctx.lineTo(limb.position.x, limb.position.y);
+        ctx.stroke();
+    });
+    ctx.lineCap = 'butt'; // Reset line cap
 
     // --- Render Player Body (Capsule Shape) ---
     const bodyWidth = config.playerBodyWidth || 20;
@@ -77,7 +200,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
 
     ctx.beginPath();
     // Draw the capsule shape
-    // Start path for combined shape
     ctx.moveTo(bodyX - radius, bodyY - rectHeight / 2); // Top-left corner of rect part
     ctx.arc(bodyX, bodyY - rectHeight / 2, radius, Math.PI, 0); // Top semicircle
     ctx.lineTo(bodyX + radius, bodyY + rectHeight / 2); // Right side of rect part
@@ -86,7 +208,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
 
     // --- Render Eyes ---
     const eyeRadius = config.playerEyeRadius || 4;
@@ -150,7 +271,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
     ctx.fill();
 
-
     // --- Render Player Name ---
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
@@ -161,7 +281,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
 }
 
 /**
- * Updates the player's physics state based on bungee forces, gravity, and damping.
+ * Updates the player's physics state based on bungee forces, gravity, damping, and updates limbs.
  *
  * @param {string} clientId - The ID of the player to update.
  * @param {object} presence - The player's presence data (containing anchor x, y).
@@ -176,83 +296,72 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     // Ensure state exists, using anchor position if initializing
     const state = ensurePhysicsState(clientId, anchorPos);
 
-    // Physics Constants from Config
+    // --- Body Physics ---
     const k = config.bungeeSpringConstant;
     const restLength = config.bungeeRestLength;
     const damping = config.bungeeDampingFactor;
     const gravity = config.gravityAcceleration;
-    const mass = config.playerBodyMass || 1; // Avoid division by zero
-    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 5); // Max length
+    const mass = config.playerBodyMass || 1;
+    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 5);
 
-    // Calculate vector from body to anchor
     const dx = anchorPos.x - state.position.x;
     const dy = anchorPos.y - state.position.y;
-    let distance = Math.sqrt(dx * dx + dy * dy); // Use let as it might be clamped
+    let distance = Math.sqrt(dx * dx + dy * dy);
     const stretch = distance - restLength;
 
-    // Normalize direction vector (handle zero distance case)
-    let normDx = 0;
-    let normDy = 0;
+    let normDx = 0, normDy = 0;
     if (distance > 0.01) {
         normDx = dx / distance;
         normDy = dy / distance;
     }
 
-    // Calculate Spring Force (Hooke's Law: F = k * stretch)
-    let springForceX = 0;
-    let springForceY = 0;
-    if (distance > 0.01) { // Apply spring force only if there's separation
+    let springForceX = 0, springForceY = 0;
+    if (distance > 0.01) {
         const forceMagnitude = k * stretch;
         springForceX = normDx * forceMagnitude;
         springForceY = normDy * forceMagnitude;
     }
 
-    // Calculate Gravity Force
-    const gravityForceY = gravity * mass; // Gravity acts downwards
-
-    // Calculate Total Force
+    const gravityForceY = gravity * mass;
     const totalForceX = springForceX;
     const totalForceY = springForceY + gravityForceY;
 
-    // Calculate Acceleration (F = ma => a = F / m)
     const accelerationX = totalForceX / mass;
     const accelerationY = totalForceY / mass;
 
-    // Update Velocity (v = v + a * dt)
     state.velocity.x += accelerationX * deltaTime;
     state.velocity.y += accelerationY * deltaTime;
 
-    // Apply Damping Factor to Velocity
-    state.velocity.x *= Math.pow(damping, deltaTime * 60); // Scale damping by frame rate
+    state.velocity.x *= Math.pow(damping, deltaTime * 60);
     state.velocity.y *= Math.pow(damping, deltaTime * 60);
 
-    // Update Position (p = p + v * dt)
     state.position.x += state.velocity.x * deltaTime;
     state.position.y += state.velocity.y * deltaTime;
 
-    // --- Maximum Length Constraint ---
-    // Recalculate distance after position update
+    // Max Length Constraint for Bungee
     const newDx = anchorPos.x - state.position.x;
     const newDy = anchorPos.y - state.position.y;
     const newDistance = Math.sqrt(newDx * newDx + newDy * newDy);
 
     if (newDistance > maxLength) {
-        // Clamp position to maxLength
         const clampRatio = maxLength / newDistance;
         state.position.x = anchorPos.x - newDx * clampRatio;
         state.position.y = anchorPos.y - newDy * clampRatio;
 
-        // Project velocity onto the vector perpendicular to the cord direction
-        // to stop outward movement but allow swinging motion
-        const cordDirX = newDx / newDistance; // Normalized direction from body to anchor
+        const cordDirX = newDx / newDistance;
         const cordDirY = newDy / newDistance;
-        const dotProduct = state.velocity.x * cordDirX + state.velocity.y * cordDirY; // Velocity component along the cord
-
-        if (dotProduct > 0) { // Only remove velocity component if moving away from anchor
+        const dotProduct = state.velocity.x * cordDirX + state.velocity.y * cordDirY;
+        if (dotProduct > 0) {
             state.velocity.x -= dotProduct * cordDirX;
             state.velocity.y -= dotProduct * cordDirY;
         }
     }
+
+    // --- Update Limb Physics ---
+    // Pass the updated body position to limb physics calculations
+    state.limbs.forEach(limb => {
+        updateLimbPhysics(limb, state.position, deltaTime);
+    });
 
     // Update the state in the map (though it's modified by reference)
     playerPhysicsStates.set(clientId, state);

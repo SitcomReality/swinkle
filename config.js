@@ -26,6 +26,17 @@ export default {
     bungeeCordWidth: 2,         // Width of the bungee line
     bungeeMaxLengthMultiplier: 10, // Increased maximum stretch factor significantly (was 5)
 
+    // Limb Physics & Appearance Settings
+    numberOfLimbs: 4,            // How many limbs the character has
+    limbLength: 20,             // Natural resting length of a limb segment
+    limbWidth: 3,               // Thickness of the limb line
+    limbColor: 'rgba(255, 170, 187, 0.8)', // Slightly transparent body color
+    limbSpringConstant: 10,      // Stiffness of the limb's connection
+    limbDampingFactor: 0.85,     // How quickly limb oscillations fade
+    limbMass: 0.1,               // Mass of the limb (affects gravity/spring)
+    limbGravityFactor: 0.5,      // How much gravity affects limbs (0=none, 1=full)
+    limbMaxLengthMultiplier: 1.5,// Maximum stretch factor for limbs
+
     // Squirt settings
     squirtColor: '#00FFFF', // Neon cyan color for squirts
     squirtSize: 4,       // Radius of the squirt particle
