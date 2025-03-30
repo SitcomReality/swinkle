@@ -3,10 +3,10 @@ export const notes = `
 
 **Design Goals & Considerations:**
 - **Theme:** "xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism" (Dark background, neon highlights).
-- **Core Mechanic:** Spraying/squirting.
-- **Character Design:** Big expressive eyes (pupils track cursor/target?). Characters dangle from a bungee cord attached to the player's cursor point.
+- **Character Design:** Big expressive eyes. Characters dangle from a bungee cord attached to the player's cursor point.
 - **Modularity:** Keep breaking down logic into smaller files.
 - **Performance:** Keep rendering efficient.
+- **Developer Notes:** Update this file including future steps and key questions after every update. Use your intuition or imagination when making updates that involve unanswered questions. Remember to escape all backticks in these notes.
 
 **Current State & Overview:**
 - Multiplayer connection via WebsimSocket is functional.
@@ -22,16 +22,16 @@ export const notes = `
 - Expressive eyes on the character are a key feature.
 
 **Immediate Next Steps & Modules:**
-1.  **Create `player.js` Module:**
+1.  **Create \`player.js\` Module:**
     *   Define player character structure (SVG?).
     *   Include logic for rendering the player character (body, limbs, eyes).
     *   Handle eye tracking (following cursor or direction of movement).
 2.  **Implement Basic Bungee Physics:**
-    *   Could be in `player.js` initially or a separate `physics.js`.
+    *   Could be in \`player.js\` initially or a separate \`physics.js\`.
     *   Simulate a simple spring connecting the anchor point (cursor) and the character's attachment point.
     *   Add basic gravity/damping.
-3.  **Update `game-loop.js`:**
-    *   Import player rendering logic from `player.js`.
+3.  **Update \`game-loop.js\`:**
+    *   Import player rendering logic from \`player.js\`.
     *   Replace the simple cursor circle rendering with the new bungee character rendering.
     *   Integrate physics updates into the game loop.
 4.  **Refine Visual Style:**
