@@ -17,13 +17,14 @@ export default {
     playerBodyStrokeColor: '#FF88AA', // Color for the player body stroke
 
     // Bungee Physics settings - TUNED VALUES
-    bungeeRestLength: 50,        // Increased natural length slightly
+    bungeeRestLength: 40,        // Reduced natural length slightly
     bungeeSpringConstant: 8,    // Increased stiffness significantly (k in F=-kx)
     bungeeDampingFactor: 0.92,  // Slightly increased damping to prevent excessive oscillation
     gravityAcceleration: 1200,   // Increased gravity force (counteracted by stiffer spring)
     playerBodyMass: 1,          // Mass affects how forces influence acceleration (F=ma)
     bungeeCordColor: 'rgba(255, 255, 255, 0.5)', // Color of the bungee line
     bungeeCordWidth: 2,         // Width of the bungee line
+    bungeeMaxLengthMultiplier: 5, // Maximum stretch factor relative to rest length
 
     // Squirt settings
     squirtColor: '#00FFFF', // Neon cyan color for squirts

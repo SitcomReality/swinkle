@@ -182,22 +182,29 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     const damping = config.bungeeDampingFactor;
     const gravity = config.gravityAcceleration;
     const mass = config.playerBodyMass || 1; // Avoid division by zero
+    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 5); // Max length
 
     // Calculate vector from body to anchor
     const dx = anchorPos.x - state.position.x;
     const dy = anchorPos.y - state.position.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    let distance = Math.sqrt(dx * dx + dy * dy); // Use let as it might be clamped
     const stretch = distance - restLength;
 
-    // Calculate Spring Force (Hooke's Law: F = k * stretch, applied along the dx/dy direction)
-    // Apply force whether stretching or compressing for a more stable bungee effect
+    // Normalize direction vector (handle zero distance case)
+    let normDx = 0;
+    let normDy = 0;
+    if (distance > 0.01) {
+        normDx = dx / distance;
+        normDy = dy / distance;
+    }
+
+    // Calculate Spring Force (Hooke's Law: F = k * stretch)
     let springForceX = 0;
     let springForceY = 0;
-    if (distance > 0.01) { // Avoid division by zero if distance is tiny
-        // Note: We use stretch (positive for extension, negative for compression) directly
+    if (distance > 0.01) { // Apply spring force only if there's separation
         const forceMagnitude = k * stretch;
-        springForceX = (dx / distance) * forceMagnitude;
-        springForceY = (dy / distance) * forceMagnitude;
+        springForceX = normDx * forceMagnitude;
+        springForceY = normDy * forceMagnitude;
     }
 
     // Calculate Gravity Force
@@ -216,17 +223,36 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.velocity.y += accelerationY * deltaTime;
 
     // Apply Damping Factor to Velocity
-    // This effectively works like air resistance or internal friction in the bungee
-    state.velocity.x *= Math.pow(damping, deltaTime * 60); // Scale damping by frame rate (assuming target 60fps)
+    state.velocity.x *= Math.pow(damping, deltaTime * 60); // Scale damping by frame rate
     state.velocity.y *= Math.pow(damping, deltaTime * 60);
-
 
     // Update Position (p = p + v * dt)
     state.position.x += state.velocity.x * deltaTime;
     state.position.y += state.velocity.y * deltaTime;
 
-    // (Optional) Add collision with floor/bounds later if needed
-    // e.g., if (state.position.y > canvas.height - config.playerBodyRadius) { ... }
+    // --- Maximum Length Constraint ---
+    // Recalculate distance after position update
+    const newDx = anchorPos.x - state.position.x;
+    const newDy = anchorPos.y - state.position.y;
+    const newDistance = Math.sqrt(newDx * newDx + newDy * newDy);
+
+    if (newDistance > maxLength) {
+        // Clamp position to maxLength
+        const clampRatio = maxLength / newDistance;
+        state.position.x = anchorPos.x - newDx * clampRatio;
+        state.position.y = anchorPos.y - newDy * clampRatio;
+
+        // Project velocity onto the vector perpendicular to the cord direction
+        // to stop outward movement but allow swinging motion
+        const cordDirX = newDx / newDistance; // Normalized direction from body to anchor
+        const cordDirY = newDy / newDistance;
+        const dotProduct = state.velocity.x * cordDirX + state.velocity.y * cordDirY; // Velocity component along the cord
+
+        if (dotProduct > 0) { // Only remove velocity component if moving away from anchor
+            state.velocity.x -= dotProduct * cordDirX;
+            state.velocity.y -= dotProduct * cordDirY;
+        }
+    }
 
     // Update the state in the map (though it's modified by reference)
     playerPhysicsStates.set(clientId, state);

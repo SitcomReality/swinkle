@@ -21,7 +21,8 @@ export const notes = `
 - \`game-loop.js\` calls \`updatePlayerPhysics\` for each player every frame and passes \`deltaTime\`.
 - \`game-loop.js\` cleans up physics state for disconnected players.
 - Bungee cord is drawn between the anchor and the body.
-- **NEW:** Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point). Other players' pupils remain centered.
+- Basic eye tracking implemented: Pupils follow the *local player's own* cursor (anchor point). Other players' pupils remain centered.
+- **NEW:** Bungee cord physics refined: Shorter rest length, maximum stretch length enforced.
 
 **Bungee Character Plan:**
 1.  ~~Create \`player.js\` Module:~~ (Done)
@@ -30,6 +31,7 @@ export const notes = `
     *   ~~Simulate spring, gravity, damping.~~
     *   ~~Update character position based on physics.~~
     *   ~~Tune physics constants for better feel.~~ (Done)
+    *   ~~Refine bungee physics (rest length, max length).~~ (**Done**)
 3.  ~~Update \`game-loop.js\`:~~ (Done)
     *   ~~Ensure \`updatePlayerPhysics\` is called each frame with \`deltaTime\`. ~~
     *   ~~Refine rendering based on physics output (drawing cord, body at physics pos).~~
@@ -38,7 +40,7 @@ export const notes = `
     *   ~~Replace the placeholder circle body with a character shape (capsule).~~
     *   ~~Add basic, static eyes.~~
     *   *Decision:* Sticking with Canvas primitives for now.
-5.  ~~Implement Basic Eye Tracking:~~ (**Done**)
+5.  ~~Implement Basic Eye Tracking:~~ (Done)
     *   ~~Make eyes (pupils) follow the player's *own* cursor (anchor point).~~
 6.  **Refine Visual Style:** (**Next Step**)
     *   Apply neon/cyberpunk styling to the player character and bungee cord.
@@ -52,10 +54,11 @@ export const notes = `
 - Squirt interactions (if any).
 - SVG character integration (if Canvas primitives become limiting).
 - More expressive eyes (shape changes, etc.).
+- Rotating the player capsule based on movement/velocity.
 
 **Key Questions:**
-- How does the eye tracking look/feel? Is it responsive enough?
-- Is the capsule shape still acceptable, or should we explore SVG/more complex Canvas drawing soon?
+- How does the maximum bungee length feel? Does it snap too harshly, or is the velocity damping working well?
+- Is the visual style refinement the right next step, or should we add limbs first?
 `;
 
 export function loadDevNotes() {
