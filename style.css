@@ -1,0 +1,17 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+#dev-notes-container {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap; /* Preserve formatting */
+}
+
