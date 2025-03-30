@@ -1,12 +1,17 @@
 import { loadDevNotes } from './dev-notes.js';
 import { startGameLoop } from './game-loop.js';
-import config from 'config'; 
+import config from 'config';
 
 const room = new WebsimSocket();
 
 // Initialize multiplayer connection and game state
 async function initGame() {
     await room.initialize();
+
+    // Ensure initial room state for squirts exists if not already present
+    if (!room.roomState.squirts) {
+        room.updateRoomState({ squirts: {} });
+    }
 
     // Track mouse movement for player presence
     const canvas = document.getElementById('game-canvas');
@@ -22,6 +27,28 @@ async function initGame() {
         });
     });
 
+    // Handle clicks for squirting
+    canvas.addEventListener('click', (e) => {
+        const clientId = room.clientId;
+        const uniqueSquirtId = `squirt-${clientId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+        const newSquirt = {
+            [uniqueSquirtId]: { // Use computed property name for the unique ID
+                id: uniqueSquirtId,
+                x: e.clientX,
+                y: e.clientY,
+                createdAt: Date.now(),
+                ownerId: clientId,
+                color: config.squirtColor || '#00FFFF' // Use configured color
+            }
+        };
+
+        // Update room state with the new squirt
+        // Note: This merges the new squirt into the existing squirts object
+        room.updateRoomState({ squirts: { ...room.roomState.squirts, ...newSquirt } });
+    });
+
+
     // Initial presence update with a default color (or potentially assigned color later)
     // This ensures the player appears immediately
     room.updatePresence({
@@ -36,6 +63,12 @@ async function initGame() {
         // This subscription remains useful for triggering specific events on presence change if needed later.
         // For example, we could play a sound when a player joins/leaves.
     });
+
+     // Subscribe to room state changes (optional, for debugging or complex logic)
+     room.subscribeRoomState((currentRoomState) => {
+        // console.log("Room state updated:", currentRoomState);
+     });
+
 
     // Start rendering loop, passing the room instance
     startGameLoop(room);

@@ -19,6 +19,7 @@ function gameLoop() {
         return; // Stop if canvas isn't there
     }
     const ctx = canvas.getContext('2d');
+    const now = Date.now();
 
     // Ensure canvas size matches display size for crisp rendering
     if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
@@ -29,7 +30,33 @@ function gameLoop() {
     // Clear the canvas for the new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw all players (cursors and names)
+    // --- Render Squirts ---
+    const squirts = roomInstance.roomState.squirts || {};
+    const squirtsToRemove = {}; // Track squirts to remove
+
+    Object.entries(squirts).forEach(([id, squirt]) => {
+        if (!squirt) return; // Skip if squirt data is null (already removed or invalid)
+
+        const age = now - squirt.createdAt;
+
+        if (age > (config.squirtDuration || 500)) {
+            // Mark for removal if expired
+            squirtsToRemove[id] = null;
+        } else {
+            // Draw the squirt particle (simple circle for now)
+            ctx.beginPath();
+            ctx.arc(squirt.x, squirt.y, config.squirtSize || 4, 0, Math.PI * 2);
+            ctx.fillStyle = squirt.color || config.squirtColor || '#0FF';
+            ctx.fill();
+        }
+    });
+
+    // Request removal of expired squirts from roomState
+    if (Object.keys(squirtsToRemove).length > 0) {
+        roomInstance.updateRoomState({ squirts: squirtsToRemove });
+    }
+
+    // --- Render Players ---
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
 
