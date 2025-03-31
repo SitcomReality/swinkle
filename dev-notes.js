@@ -94,17 +94,24 @@ export const notes = `
         *   Available paint can additions/removals
         *   Local player presence updates
 
-**6. Droplet Collision & Painting:** (NEXT)
-    *   In 'game-loop.js' (after physics updates, or new collision module): Client-side collision detection.
-        *   Iterate through local player's *capsule* physics state ('playerPhysicsState.position' and body dimensions) and all droplets in 'roomState.droplets'.
-        *   Check for collision between capsule hitbox and droplets where 'droplet.ownerId !== localClientId'.
+**6. Droplet Collision & Painting:** (DONE)
+    *   Created 'collisionHandler.js':
+        *   Implemented 'checkCollisionsWithPlayer' function for client-side collision detection.
+        *   Uses a simple rectangular hitbox for the player capsule and circular hitbox for droplets.
+        *   Checks for collisions only with droplets not owned by the local player.
         *   On collision:
-            *   Stop rendering the droplet locally immediately (or mark as hit).
-            *   Update local 'paintedData': Fetch current presence, increment percentage for the hit 'color' (e.g., +2% per droplet), clamp total at 100.
-            *   Call 'room.updatePresence' with the new 'paintedData'.
-            *   Send a 'roomState' update to remove the droplet: 'room.updateRoomState({ droplets: { [droplet.id]: null } })'. (Trust client reporting).
+            *   Increments the percentage for the hit color in the player's 'paintedData'.
+            *   Updates the player's presence with the new 'paintedData'.
+            *   Marks the droplet for removal from roomState.
+            *   Includes a basic check for the 100% painted loss condition.
+    *   Modified 'game-loop.js':
+        *   Added collision detection in the update cycle after physics and interaction updates.
+        *   Gets the local player's body position and passes it to the collision handler.
+        *   Sends roomState updates to remove collided droplets.
+    *   Modified 'main.js':
+        *   Exported the room instance for use by the collision handler.
 
-**7. Droplet Cleanup:**
+**7. Droplet Cleanup:** (NEXT)
     *   Client-side: Visually remove expired droplets based on 'createdAt' and 'config.dropletDuration' during rendering loop (fade out implemented in 'dropletRenderer.js').
     *   Authoritative Removal: The *client that detected the hit* (Step 6) removes the droplet from 'roomState'. Timeout removal is currently not performed authoritatively (clients just stop rendering). Needs review if state bloats.
 

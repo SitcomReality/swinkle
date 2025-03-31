@@ -7,6 +7,7 @@ import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerP
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
 import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js'; 
 import { renderDroplets } from './dropletRenderer.js'; 
+import { checkCollisionsWithPlayer } from './collisionHandler.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -201,8 +202,23 @@ function gameLoop(timestamp) {
         roomInstance.updatePresence(localPresenceUpdates);
     }
 
-    // --- Render Scene ---
+    // --- Check for Droplet Collisions with Local Player ---
+    const localPlayerBodyPos = getPlayerPhysicsState(localClientId)?.position;
+    if (localPlayerBodyPos) {
+        const dropletsToRemove = checkCollisionsWithPlayer(
+            localPlayerBodyPos, 
+            roomInstance.roomState.droplets || {}, 
+            localClientId,
+            roomInstance.presence[localClientId]?.paintedData || {}
+        );
+        
+        // Send updates for droplet collisions and painted data
+        if (Object.keys(dropletsToRemove).length > 0) {
+            roomInstance.updateRoomState({ droplets: dropletsToRemove });
+        }
+    }
 
+    // --- Render Scene ---
     // Render Droplets (using dedicated renderer)
     const droplets = roomInstance.roomState.droplets || {};
     renderDroplets(ctx, droplets, now); // Call the dedicated droplet renderer

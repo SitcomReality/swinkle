@@ -4,7 +4,7 @@ import config from 'config';
 // Import player functions from the facade module
 import { removePlayerPhysicsState } from './player.js';
 
-const room = new WebsimSocket();
+export const room = new WebsimSocket();
 
 // Initialize multiplayer connection and game state
 async function initGame() {
