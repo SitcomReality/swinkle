@@ -33,10 +33,10 @@ export default {
     limbMaxLengthMultiplier: 1.5,// Maximum stretch factor for limbs
 
     // Player Body Rotation Physics
-    playerRotationalInertia: 1.0, // Resistance to angular acceleration (Increased from 0.5 to slow down rotation)
-    playerUprightingStrength: 8, // Torque strength pulling player upright (Decreased from 10)
-    playerRotationalDamping: 8.0, // Damping torque coefficient (Increased from 5.0 to dampen faster)
-    playerBungeeTorqueFactor: 1.0, // Multiplier for torque applied by the main bungee (1.0 = normal)
+    playerRotationalInertia: 1.2, // Resistance to angular acceleration (Increased from 0.5 to slow down rotation)
+    playerUprightingStrength: 10, // Torque strength pulling player upright (Decreased from 10)
+    playerRotationalDamping: 20.0, // Damping torque coefficient (Increased from 5.0 to dampen faster)
+    playerBungeeTorqueFactor: 0.5, // Multiplier for torque applied by the main bungee (1.0 = normal)
 
     // Droplet settings (Formerly Squirt)
     dropletColor: '#00FFFF', // Default color for droplets if not from a can
