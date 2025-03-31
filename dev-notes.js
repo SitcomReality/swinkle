@@ -17,7 +17,7 @@ export const notes = `
 *   'game-loop.js' now focuses on the core loop timing, canvas setup, peer disconnect checks, calling physics updates, calling interaction handling, batching state updates, and calling render functions for different scene elements.
 *   Further refactoring split player.js into playerState.js, playerPhysics.js, and playerRenderer.js with player.js now acting as a facade.
 
-**Painting Gameplay Plan (Incremental Steps - COMPLETED):**
+**Painting Gameplay Plan (Incremental Steps):**
 
 **1. State Management Setup:** (DONE)
     *   **Player Presence (updatePresence):** 'x', 'y', 'color', 'paintedData', 'currentCanId', 'lost'.
@@ -57,8 +57,8 @@ export const notes = `
 
 **8. Visual Polish:**
     *   Add visual charge indicator to paint can while charging. (DONE)
-    *   Paint can appearance variations.
-    *   Droplet splat effects on collision.
+    *   Paint can appearance variations. (DONE - Basic color band/pattern added)
+    *   Droplet splat effects on collision. (DONE - Added 'effectsRenderer.js' and basic splat)
     *   Zone visuals (if implementing zones).
 
 **9. Sound Effects:**

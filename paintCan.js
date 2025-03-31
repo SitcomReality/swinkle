@@ -3,6 +3,7 @@
  * Handles paint can rendering and physics simulation.
  */
 import config from 'config';
+import { hexToRgb } from './colorUtils.js'; // Import hexToRgb for color manipulation
 
 /**
  * Updates the physics simulation for a paint can attached to a player.
@@ -133,18 +134,39 @@ export function renderPaintCan(ctx, canState) {
     }
 
     // Draw label area (simple band for now)
-    ctx.fillStyle = '#EEEEEE';
+    ctx.fillStyle = '#EEEEEE'; // Label background
     ctx.beginPath();
     const labelHeight = height * 0.3;
     const labelY = y - labelHeight * 0.5; // Center vertically
     ctx.rect(x - width / 2, labelY, width, labelHeight);
     ctx.fill();
-    // Maybe add a small color swatch on the label later
-    ctx.fillStyle = color;
+
+    // Paint can appearance variation: Add a colored band matching the paint
+    const bandHeight = labelHeight * 0.5; // Height of the colored band
+    const bandY = labelY + (labelHeight - bandHeight) / 2; // Center the band within the label area
+    ctx.fillStyle = color; // Use the paint color for the band
     ctx.beginPath();
-    const swatchSize = width * 0.4;
-    ctx.rect(x - swatchSize / 2, labelY + labelHeight*0.1, swatchSize, labelHeight*0.8);
+    ctx.rect(x - width / 2, bandY, width, bandHeight);
     ctx.fill();
+
+    // --- Add a simple pattern based on color (optional example) ---
+    const colorIndex = config.paintCanColors.indexOf(color);
+    if (colorIndex !== -1) { // Only apply pattern if color is known
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Subtle dark pattern
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x - width / 2, bandY, width, bandHeight); // Clip pattern to the band area
+        ctx.clip();
+        const patternSize = 4;
+        for (let py = bandY; py < bandY + bandHeight; py += patternSize * 2) {
+            for (let px = x - width / 2 + ( (py / patternSize) % 2 === 0 ? 0 : patternSize) ; px < x + width / 2; px += patternSize * 2) {
+                 // Draw small squares or circles as pattern
+                 ctx.fillRect(px, py, patternSize, patternSize);
+            }
+        }
+        ctx.restore();
+    }
+    // --- End pattern example ---
 
 
     // Simple top lip

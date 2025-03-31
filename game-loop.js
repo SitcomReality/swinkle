@@ -5,9 +5,10 @@
 import config from 'config';
 import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './player.js';
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
-import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js'; 
-import { renderDroplets } from './dropletRenderer.js'; 
+import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js';
+import { renderDroplets } from './dropletRenderer.js';
 import { checkCollisionsWithPlayer } from './collisionHandler.js';
+import { updateAndRenderEffects, addEffect, clearEffects } from './effectsRenderer.js'; // Import effects system
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -39,6 +40,8 @@ function gameLoop(timestamp) {
     if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
+        // Optionally clear effects if canvas resizes drastically
+        // clearEffects();
     }
 
     // Clear the canvas for the new frame
@@ -80,11 +83,11 @@ function gameLoop(timestamp) {
                 const canState = roomInstance.roomState.paintCans?.[presence.currentCanId];
                 if (canState) {
                     const { paintCanUpdates, presenceUpdates } = handleEmptyPaintCan(
-                        localClientId, 
-                        canState, 
+                        localClientId,
+                        canState,
                         presence
                     );
-                    
+
                     // Merge updates
                     if (Object.keys(paintCanUpdates).length > 0) {
                         allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
@@ -135,7 +138,7 @@ function gameLoop(timestamp) {
                     }
                 }
             }
-            
+
             // NEW: Check for paint can pickup (only for local player without a can)
             if (clientId === localClientId && !presence.currentCanId) {
                 const availableCans = roomInstance.roomState.availablePaintCans || {};
@@ -145,7 +148,7 @@ function gameLoop(timestamp) {
                     presence,
                     availableCans
                 );
-                
+
                 // Merge updates
                 if (Object.keys(paintCanUpdates).length > 0) {
                     allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
@@ -164,15 +167,15 @@ function gameLoop(timestamp) {
     if (localClientId && Math.random() < 0.005) { // ~0.5% chance per frame to spawn a can
         const availableCans = roomInstance.roomState.availablePaintCans || {};
         // Only spawn if there are fewer than 3 available cans
-        if (Object.keys(availableCans).length < 3) {
+        if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < 3) { // Check non-null cans
             const canId = `can-${Math.random().toString(36).substring(2, 9)}`;
             const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
-            
+
             // Position the can somewhere in the visible canvas area
             const margin = 100;
             const x = margin + Math.random() * (canvas.width - margin * 2);
             const y = margin + Math.random() * (canvas.height - margin * 2);
-            
+
             allAvailablePaintCanUpdates[canId] = {
                 id: canId,
                 ownerId: null,
@@ -186,17 +189,22 @@ function gameLoop(timestamp) {
 
     // --- Check for Droplet Collisions with Local Player ---
     const localPlayerBodyPos = getPlayerPhysicsState(localClientId)?.position;
-    if (localPlayerBodyPos) {
-        const collidedDroplets = checkCollisionsWithPlayer(
+    const localPresence = roomInstance.presence[localClientId];
+    if (localPlayerBodyPos && localPresence) {
+        const { dropletsToRemove: collidedDroplets, collisionPoints } = checkCollisionsWithPlayer(
             localPlayerBodyPos,
             roomInstance.roomState.droplets || {},
             localClientId,
-            roomInstance.presence[localClientId]?.paintedData || {}
+            localPresence // Pass current presence
         );
         // Merge collision removals into the main removal batch
         if (Object.keys(collidedDroplets).length > 0) {
              allDropletRemovals = { ...allDropletRemovals, ...collidedDroplets };
         }
+        // Add splat effects for each collision point
+        collisionPoints.forEach(point => {
+            addEffect('splat', { x: point.x, y: point.y, color: point.color });
+        });
     }
 
     // --- Check for Expired Droplets (Authoritative Removal) ---
@@ -237,6 +245,10 @@ function gameLoop(timestamp) {
     }
 
     // --- Render Scene ---
+
+    // Render Visual Effects (e.g., Splats)
+    updateAndRenderEffects(ctx, deltaTime, now);
+
     // Render Droplets (using dedicated renderer)
     // Note: The renderer already visually fades/hides expired droplets client-side
     const dropletsToRender = roomInstance.roomState.droplets || {};
@@ -274,6 +286,6 @@ export function startGameLoop(room) {
     console.log("Starting game loop...");
     lastTimestamp = 0; // Reset timestamp when starting
     previousPeers = new Set(Object.keys(room.peers)); // Initialize peer tracking
-    // timeSinceLastAutoDrop is now managed within playerInteractions.js
+    clearEffects(); // Clear any lingering effects from previous sessions
     requestAnimationFrame(gameLoop); // Kick off the first frame
 }

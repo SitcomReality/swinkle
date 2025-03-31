@@ -15,10 +15,11 @@ import { room } from './main.js';
  * @param {object} droplets - The current droplets in the room state.
  * @param {string} localClientId - The ID of the local client.
  * @param {object} currentPresence - The player's current presence data (including paintedData, lost).
- * @returns {object} Droplets to remove (for roomState update).
+ * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
  */
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence) {
     const dropletsToRemove = {};
+    const collisionPoints = []; // Store { x, y, color } for splat effects
     const bodyWidth = config.playerBodyWidth;
     const bodyHeight = config.playerBodyHeight;
     let paintedUpdates = {};
@@ -27,7 +28,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     const alreadyLost = currentPresence?.lost || false;
 
     // If already lost, don't process further collisions or record losses again
-    if (alreadyLost) return {};
+    if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [] };
 
     // Simple rectangular hitbox for the player capsule
     const playerHitbox = {
@@ -60,6 +61,9 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
 
             // Mark this droplet for removal
             dropletsToRemove[dropletId] = null;
+
+            // Record collision point for splat effect
+            collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
 
             // Update painted data: increment the percentage for this color
             const currentPercentage = currentPaintedData[droplet.color] || 0;
@@ -141,5 +145,5 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         room.updatePresence(updateData);
     }
 
-    return dropletsToRemove;
+    return { dropletsToRemove, collisionPoints };
 }

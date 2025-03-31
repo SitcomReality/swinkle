@@ -78,4 +78,8 @@ export default {
     lossThreshold: 100, // Percentage of paint at which a player loses
     lossMessageColor: '#FFFFFF', // Color of the "painted out" message
     lossMessageFont: '24px "Lucida Console", Monaco, monospace', // Font for loss message
+
+    // Visual Effects settings
+    splatEffectDuration: 500,   // Duration of splat effect in ms
+    splatEffectMaxRadius: 15,   // Max radius of splat effect
 };
