@@ -24,7 +24,8 @@ export const notes = `
     - *DONE* - 1.4: Add triggers in power-up-manager.js (checkPowerUpCollisions) to call the notification manager when a power-up is collected.
     - *DONE* - 1.5: Add triggers in collisionHandler.js (checkCollisionsWithPlayer) when a player is painted out, and in respawn-manager.js (checkPlayerRespawn) when a player respawns.
     - *DONE* - 1.6: Add triggers for player join/leave events. This likely involves modifying the presence subscription in main.js or potentially adding logic to peer-manager.js and calling the notification manager from there.
-    - *NEXT* - 1.7: Add styling for different notification types in style.css. This involves modifying the rendering logic in \`renderNotifications\` and adding corresponding CSS rules in \`style.css\` to change appearance based on the notification \`type\`.
+    - *DONE* - 1.7.1: Add styling for different notification types in notification-styles.css. (Extracted notification styling from style.css into its own file and added distinct styles for each notification type.)
+    - *NEXT* - 1.7.2: Update the rendering logic in \`renderNotifications\` to apply different styles based on notification type. This will involve modifying the notification-manager.js file to use the new CSS classes and notification structure defined in notification-styles.css.
     - 1.8: Add logic for occasional whimsical/tip messages (maybe triggered randomly in the game loop or based on simple conditions like low paint).
 
 - **2. Better Score Tracking:** Reward players for painting other players. (Requires tracking who painted whom).
