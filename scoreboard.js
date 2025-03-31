@@ -55,6 +55,7 @@ function updateScoreboard() {
         const paintPercentage = calculatePaintPercentage(playerPresence.paintedData);
         const losses = lossCounts[peer.username] || 0;
         const isLost = playerPresence.lost || false;
+        const score = playerPresence.score || 0; // Get player score from presence
 
         return {
             username: peer.username,
@@ -62,21 +63,26 @@ function updateScoreboard() {
             paintPercentage: paintPercentage,
             losses: losses,
             isLost: isLost,
+            score: score, // Include score in player data
             clientId: clientId // Keep client ID if needed for sorting tie-breakers etc.
         };
     });
 
-    // Sort players: maybe by losses descending, then paint% ascending?
+    // Update sort order: primary sort by score descending, then losses, then paint%
     playersData.sort((a, b) => {
-        // Primary sort: Losses descending
+        // Primary sort: Score descending
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        // Secondary sort: Losses descending
         if (b.losses !== a.losses) {
             return b.losses - a.losses;
         }
-        // Secondary sort: Paint Percentage ascending (lower is better)
+        // Tertiary sort: Paint Percentage ascending (lower is better)
         if (a.paintPercentage !== b.paintPercentage) {
             return a.paintPercentage - b.paintPercentage;
         }
-        // Tertiary sort: Username ascending for stability
+        // Final sort: Username ascending for stability
         return a.username.localeCompare(b.username);
     });
 
@@ -97,6 +103,10 @@ function updateScoreboard() {
             `<img src="${player.avatarUrl}" alt="${player.username}" class="player-avatar">` : '';
         nameCell.innerHTML = `${avatarHtml}<span>${player.username}</span>`;
         nameCell.classList.add('player-name');
+
+        const scoreCell = row.insertCell();
+        scoreCell.textContent = player.score;
+        scoreCell.classList.add('player-score');
 
         const paintCell = row.insertCell();
         paintCell.textContent = `${player.paintPercentage.toFixed(0)}%`;

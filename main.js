@@ -179,7 +179,8 @@ async function initGame() {
         color: config.defaultPlayerColor || '#FFFFFF', // Base player color
         paintedData: {}, // Initialize empty painted data
         currentCanId: null, // Initialize with no paint can
-        lost: false // Initialize with not lost state
+        lost: false, // Initialize with not lost state
+        score: 0 // Initialize with zero score
     });
 
     // Setup presence subscription for handling disconnections

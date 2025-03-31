@@ -106,6 +106,12 @@ body {
     color: #ff6666; 
 }
 
+#scoreboard-table .player-score {
+    text-align: right;
+    color: #88FFAA; 
+    font-weight: bold;
+}
+
 #scoreboard-table .local-player td {
     background-color: rgba(255, 255, 100, 0.1); 
 }

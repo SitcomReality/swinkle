@@ -8,7 +8,7 @@ export const notes = `
 ## Developer Notes - Multiplayer Painter
 
 **Design Goals & Considerations:**
-- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
+- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
@@ -19,11 +19,10 @@ export const notes = `
 
 ~~✅ 1. Add player avatars to scoreboard.~~
 2. Better Score Tracking: Reward players for painting other players.
-   - 2.1: Add score tracking to player presence data structure and update scoreboard to show scores.
-   - 2.2: Modify paintedData in collisionHandler.js to track who painted whom by storing ownerId with each paint color.
-   - 2.3: Update paintedData rendering in playerRenderer.js to handle the modified data structure.
-   - 2.4: Add score increment logic in collisionHandler.js when droplet hits a player.
-   - 2.5: Add visual feedback (notification and effects) when a player scores points.
+   - ✅ 2.1: Add score tracking to player presence data structure and update scoreboard to show scores.
+   - 2.2: Modify collisionHandler.js to track who painted whom by storing ownerId with droplet hits.
+   - 2.3: Update score increment logic in collisionHandler.js when droplet hits a player.
+   - 2.4: Add visual feedback (notification and effects) when a player scores points.
 
 3. Sound effects.
 4. More visual effects (e.g., player respawn animation).
