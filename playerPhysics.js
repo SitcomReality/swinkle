@@ -89,7 +89,6 @@ function updateLimbPhysics(limbState, bodyPos, deltaTime) {
     // Note: limbState is modified directly by reference
 }
 
-
 /**
  * Updates the player's body physics state based on bungee forces, gravity, and damping.
  *
@@ -172,6 +171,8 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     // Pass the updated body position to limb physics calculations
     state.limbs.forEach(limb => {
         updateLimbPhysics(limb, state.position, deltaTime);
+    });
+
     // Update the state in the map (state object was modified by reference throughout)
     setPlayerPhysicsState(clientId, state);
 }
