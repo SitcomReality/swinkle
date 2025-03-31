@@ -85,97 +85,84 @@ export function updateNotifications(now) {
 export function renderNotifications(ctx, now) {
     if (activeNotifications.size === 0) return; // Skip if no notifications
     
-    ctx.save(); // Save context state
-    
     // Sort notifications from newest to oldest
     const sortedNotifications = Array.from(activeNotifications.values())
         .sort((a, b) => b.startTime - a.startTime)
         .slice(0, NOTIFICATION_CONFIG.maxVisible); // Limit max visible
     
-    // Position and render each notification
-    let currentY = NOTIFICATION_CONFIG.startY;
+    // Create and append HTML notifications instead of canvas drawing
+    let notificationsContainer = document.getElementById('notifications-container');
     
-    sortedNotifications.forEach(notification => {
+    // Create container if it doesn't exist
+    if (!notificationsContainer) {
+        notificationsContainer = document.createElement('div');
+        notificationsContainer.id = 'notifications-container';
+        notificationsContainer.style.position = 'fixed';
+        notificationsContainer.style.right = '20px';
+        notificationsContainer.style.top = NOTIFICATION_CONFIG.startY + 'px';
+        notificationsContainer.style.zIndex = '1000';
+        document.body.appendChild(notificationsContainer);
+    }
+    
+    // Clear existing notifications that aren't in our active set
+    Array.from(notificationsContainer.children).forEach(child => {
+        const notificationId = child.dataset.id;
+        if (!activeNotifications.has(notificationId)) {
+            // Start fade out animation
+            child.style.animation = 'notificationFadeOut 0.5s forwards';
+            // Remove after animation completes
+            setTimeout(() => {
+                if (child.parentElement === notificationsContainer) {
+                    notificationsContainer.removeChild(child);
+                }
+            }, 500);
+        }
+    });
+    
+    // Add/update notifications
+    sortedNotifications.forEach((notification, index) => {
+        let element = document.getElementById(`notification-${notification.id}`);
         const age = now - notification.startTime;
         const timeLeft = notification.duration - age;
         
-        // Calculate alpha based on fade in/out
-        let alpha = 1.0;
-        if (age < NOTIFICATION_CONFIG.fadeInTime) {
-            alpha = age / NOTIFICATION_CONFIG.fadeInTime; // Fade in
-        } else if (timeLeft < NOTIFICATION_CONFIG.fadeOutTime) {
-            alpha = timeLeft / NOTIFICATION_CONFIG.fadeOutTime; // Fade out
+        // If notification is about to expire, skip creating/updating it
+        if (timeLeft < 100) return;
+        
+        if (!element) {
+            // Create new notification element
+            element = document.createElement('div');
+            element.id = `notification-${notification.id}`;
+            element.dataset.id = notification.id;
+            element.className = `notification notification-${notification.type || 'info'}`;
+            element.style.animation = 'notificationFadeIn 0.3s forwards';
+            element.style.marginBottom = '10px';
+            
+            // Create content
+            const content = document.createElement('div');
+            content.className = 'notification-content';
+            
+            // Add icon indicator
+            const icon = document.createElement('div');
+            icon.className = 'notification-icon';
+            content.appendChild(icon);
+            
+            // Add message
+            const message = document.createElement('span');
+            message.textContent = notification.message;
+            content.appendChild(message);
+            
+            element.appendChild(content);
+            notificationsContainer.appendChild(element);
         }
         
-        // Skip rendering if completely transparent
-        if (alpha <= 0.01) return;
+        // Position based on index
+        element.style.transform = `translateY(${index * (NOTIFICATION_CONFIG.height + NOTIFICATION_CONFIG.spacing)}px)`;
         
-        // Determine color based on type
-        const color = NOTIFICATION_CONFIG.typeColors[notification.type] || NOTIFICATION_CONFIG.typeColors.info;
-        
-        // Calculate width - can adjust based on content length if desired
-        const width = NOTIFICATION_CONFIG.width;
-        const height = NOTIFICATION_CONFIG.height;
-        const x = ctx.canvas.width - width - 20; // Position on right side with margin
-        
-        // Draw notification background with rounded corners
-        ctx.globalAlpha = alpha * 0.9; // Slightly transparent bg
-        ctx.fillStyle = 'rgba(20, 20, 40, 0.85)'; // Dark background
-        
-        // Draw rounded rectangle
-        const radius = 8;
-        ctx.beginPath();
-        ctx.moveTo(x + radius, currentY);
-        ctx.lineTo(x + width - radius, currentY);
-        ctx.quadraticCurveTo(x + width, currentY, x + width, currentY + radius);
-        ctx.lineTo(x + width, currentY + height - radius);
-        ctx.quadraticCurveTo(x + width, currentY + height, x + width - radius, currentY + height);
-        ctx.lineTo(x + radius, currentY + height);
-        ctx.quadraticCurveTo(x, currentY + height, x, currentY + height - radius);
-        ctx.lineTo(x, currentY + radius);
-        ctx.quadraticCurveTo(x, currentY, x + radius, currentY);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Draw colored left border
-        ctx.fillStyle = color;
-        ctx.fillRect(x, currentY, 4, height);
-        
-        // Draw text
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '14px "Lucida Console", Monaco, monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        
-        // Draw text with shadow for better readability
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 2;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        
-        // Truncate long messages with ellipsis
-        const maxLength = 30;
-        let displayText = notification.message;
-        if (displayText.length > maxLength) {
-            displayText = displayText.substring(0, maxLength - 3) + '...';
+        // Start fade-out animation if approaching end of duration
+        if (timeLeft < NOTIFICATION_CONFIG.fadeOutTime) {
+            element.style.opacity = (timeLeft / NOTIFICATION_CONFIG.fadeOutTime).toFixed(2);
         }
-        
-        ctx.fillText(displayText, x + 15, currentY + height/2);
-        
-        // Optional: Draw icon based on type (would need icon definitions)
-        // For now just draw a colored circle as a simple icon
-        ctx.shadowBlur = 0; // Disable shadow for icon
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x + 10, currentY + height/2, 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Update Y position for next notification
-        currentY += height + NOTIFICATION_CONFIG.spacing;
     });
-    
-    ctx.restore(); // Restore context state
 }
 
 /**
