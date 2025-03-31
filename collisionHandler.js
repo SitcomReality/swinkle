@@ -74,13 +74,16 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         
         console.log(`Player ${localClientId} painted: ${totalPercentage}% total`);
         
-        // Update player presence with new painted data
-        room.updatePresence({ paintedData: updatedPaintedData });
+        // Update player presence with new painted data and loss state if applicable
+        const updateData = { paintedData: updatedPaintedData };
         
-        // Basic loss condition check (just a console message for now)
-        if (totalPercentage >= 100) {
-            console.log(`Player ${localClientId} has been fully painted! (${totalPercentage}%)`);
+        // Check if player has reached loss threshold
+        if (totalPercentage >= config.lossThreshold) {
+            console.log(`Player ${localClientId} has been fully painted out! (${totalPercentage}%)`);
+            updateData.lost = true;
         }
+        
+        room.updatePresence(updateData);
     }
     
     return dropletsToRemove;

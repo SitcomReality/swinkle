@@ -25,6 +25,7 @@ export const notes = `
         *   Kept 'color' (player base color).
         *   *Added:* 'paintedData': object (e.g., '{'#FF0000': 10, '#00FF00': 5}'). Starts empty: '{}'.
         *   *Added:* 'currentCanId': string | null. ID of the paint can object the player currently possesses. Starts 'null'.
+        *   *Added:* 'lost': boolean. Whether the player has lost the game. Starts 'false'.
     *   **Room State (updateRoomState):**
         *   *Renamed:* 'squirts' to 'droplets'. Ensured initial state '{}'. Droplets have 'id', 'ownerId', 'color', 'x', 'y', 'createdAt'.
         *   *Added:* 'paintCans': object. Stores state for all active paint cans. Initial state '{}'. Structure:
@@ -84,6 +85,7 @@ export const notes = `
             1. Remove can from 'availablePaintCans'
             2. Add can to 'paintCans' with the player as the owner
             3. Update player presence with 'currentCanId'
+        *   Only allows players who have not lost the game to pick up paint cans.
     *   **Empty Can Handling:** Added to 'playerInteractions.js' and called from 'game-loop.js':
         *   Implemented 'handleEmptyPaintCan' function that checks if a player's current can is empty.
         *   When empty, generates updates to:
@@ -103,7 +105,8 @@ export const notes = `
             *   Increments the percentage for the hit color in the player's 'paintedData'.
             *   Updates the player's presence with the new 'paintedData'.
             *   Marks the droplet for removal from roomState.
-            *   Includes a basic check for the 100% painted loss condition.
+            *   Includes a basic check for the 100% painted loss condition and updates the player's 'lost' state to 'true'.
+            *   Renders "PAINTED OUT!" message above lost players.
     *   Modified 'game-loop.js':
         *   Added collision detection in the update cycle after physics and interaction updates.
         *   Gets the local player's body position and passes it to the collision handler.
@@ -117,7 +120,6 @@ export const notes = `
     *   Authoritative Removal (Timeout): The local client checks all droplets each frame. If a droplet's age exceeds 'config.dropletDuration', the local client sends an update to remove it from 'roomState'. This prevents indefinite growth of the droplet state but may cause redundant updates if multiple clients detect the same timeout simultaneously. Potential optimization: assign responsibility based on ownerId or clientId hash.
 
 **Future Considerations:**
-- **Loss Condition:** Implement check for total 'paintedData' percentage >= 100.
 - **Visual Polish:** Can appearance variations, droplet splats, charge indicators, zone visuals.
 - **Sound Effects:** Dripping, bursting, hitting, pickup, empty can drop.
 - **UI:** Scoreboard, paint level indicator, zone notifications.

@@ -92,8 +92,8 @@ export function handleCanInteractions(localClientId, canState, deltaTime, now) {
  * @returns {object} Update objects for roomState and presence.
  */
 export function handlePaintCanPickup(playerBodyPos, localClientId, presence, availablePaintCans) {
-    // Skip if player already has a can
-    if (presence.currentCanId) return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+    // Skip if player already has a can or has lost
+    if (presence.currentCanId || presence.lost) return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
 
     const pickupDistance = config.paintCanPickupDistance;
     const nearestCan = findNearestAvailableCan(playerBodyPos, availablePaintCans, pickupDistance);

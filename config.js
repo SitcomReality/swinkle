@@ -73,4 +73,9 @@ export default {
     paintCanMaxAccumulatedDroplets: 20, // Max droplets in a single burst charge
     paintCanAutoDropRate: 4, // Droplets per second when not charging (1000ms / 250ms)
     paintCanPickupDistance: 30, // Radius for player capsule to collide with available can center
+
+    // Loss condition settings
+    lossThreshold: 100, // Percentage of paint at which a player loses
+    lossMessageColor: '#FFFFFF', // Color of the "painted out" message
+    lossMessageFont: '24px "Lucida Console", Monaco, monospace', // Font for loss message
 };

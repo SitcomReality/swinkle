@@ -157,6 +157,13 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const nameYOffset = (bodyHeight / 2) + 14; // Position below the capsule
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
+    // --- Display Loss Message if Player has Lost ---
+    if (presence.lost) {
+        ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
+        ctx.font = config.lossMessageFont || '24px sans-serif';
+        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight);
+    }
+
     // --- Render Held Paint Can and Bungee (if applicable) ---
     const currentCanId = presence?.currentCanId;
     if (currentCanId && allPaintCansState && allPaintCansState[currentCanId]) {

@@ -137,7 +137,8 @@ async function initGame() {
         y: window.innerHeight / 2,
         color: config.defaultPlayerColor || '#FFFFFF', // Base player color
         paintedData: {}, // Initialize empty painted data
-        currentCanId: null // Initialize with no paint can
+        currentCanId: null, // Initialize with no paint can
+        lost: false // Initialize with not lost state
         // Character-specific state (like physics) will be managed client-side initially
     });
 
