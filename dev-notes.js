@@ -17,17 +17,17 @@ export const notes = `
         - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
         - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
         - 1.9.3: Implement collision detection to collect power-ups
-            - Modify `game-loop.js` to call a collision check function from `power-up-manager.js`.
-            - Implement `checkPowerUpCollisions` in `power-up-manager.js` to detect player-powerup proximity.
+            - Modify \`game-loop.js\` to call a collision check function from \`power-up-manager.js\`.
+            - Implement \`checkPowerUpCollisions\` in \`power-up-manager.js\` to detect player-powerup proximity.
             - When collision occurs, generate room state updates to remove the power-up and presence updates to apply the effect (or activate it).
         - 1.9.4: Create active power-up processing system for timed effects
-            - Modify `game-loop.js` to call `processActivePowerUps` from `power-up-manager.js` for each player.
-            - Implement `processActivePowerUps` to check `presence.activePowerUps` for expired timers and generate presence updates to deactivate effects.
+            - Modify \`game-loop.js\` to call \`processActivePowerUps\` from \`power-up-manager.js\` for each player.
+            - Implement \`processActivePowerUps\` to check \`presence.activePowerUps\` for expired timers and generate presence updates to deactivate effects.
         - 1.9.5: Implement each power-up effect (shield, acetone, spring, mega can)
             - Modify player physics, collision handling, and interactions based on active power-up flags in presence data.
             - Handle immediate effects (like Acetone) directly during collection.
         - 1.9.6: Add visual effects to indicate active power-ups on players
-            - Modify `playerRenderer.js` to draw indicators (e.g., shield outline, springy bungee visual) based on active power-up flags.
+            - Modify \`playerRenderer.js\` to draw indicators (e.g., shield outline, springy bungee visual) based on active power-up flags.
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
