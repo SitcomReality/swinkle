@@ -21,21 +21,38 @@ export const defaultLevel = {
     name: 'Simple Arena',
     backgroundColor: '#0a0a1e', // Or maybe derived from theme config?
     obstacles: [
-        // Structure defined, actual obstacles will be added in the next step (1.3)
-        // Example:
-        // {
-        //    id: 'platform-1',
-        //    type: 'rectangle',
-        //    x: window.innerWidth / 2, // Center horizontally
-        //    y: window.innerHeight - 50, // Near the bottom
-        //    width: window.innerWidth * 0.8, // 80% of screen width
-        //    height: 20,
-        //    color: '#333366', // Dark purple/blue
-        //    properties: { // Optional: friction, bounciness etc.
-        //        friction: 0.8,
-        //        restitution: 0.1
-        //    }
-        // },
+        // --- Added initial obstacles for step 1.3 ---
+        {
+            id: 'platform-center',
+            type: 'rectangle',
+            x: 500, // Using fixed coordinates for now, assuming ~1000 width
+            y: 400, // Assuming ~800 height
+            width: 200,
+            height: 30,
+            color: '#2a2a4a', // Darker purple/blue
+            properties: { friction: 0.8, restitution: 0.1 }
+        },
+        {
+            id: 'block-left',
+            type: 'rectangle',
+            x: 200,
+            y: 550,
+            width: 50,
+            height: 100,
+            color: '#333366',
+            properties: { friction: 0.7, restitution: 0.2 }
+        },
+         {
+            id: 'block-right',
+            type: 'rectangle',
+            x: 800,
+            y: 250,
+            width: 80,
+            height: 40,
+            color: '#333366',
+            properties: { friction: 0.9, restitution: 0.1 }
+        },
+        // --- End initial obstacles ---
     ]
 };
 
