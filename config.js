@@ -32,10 +32,11 @@ export default {
     limbGravityFactor: 0.5,      // How much gravity affects limbs (0=none, 1=full)
     limbMaxLengthMultiplier: 1.5,// Maximum stretch factor for limbs
 
-    // NEW: Player Body Rotation Physics
+    // Player Body Rotation Physics
     playerRotationalInertia: 0.5, // Resistance to angular acceleration (higher = slower rotation)
     playerUprightingStrength: 10, // Torque strength pulling player upright (higher = faster correction)
-    playerRotationalDamping: 0.90,// Damping factor for angular velocity (closer to 0 = faster stop)
+    playerRotationalDamping: 5.0, // Damping torque coefficient (higher = more damping) 
+    playerBungeeTorqueFactor: 1.0, // Multiplier for torque applied by the main bungee (1.0 = normal)
 
     // Droplet settings (Formerly Squirt)
     dropletColor: '#00FFFF', // Default color for droplets if not from a can
@@ -94,7 +95,7 @@ export default {
     stealSparkColor: '#FFFF00', // Color of the steal spark
     stealSparkRadius: 20,      // Max radius of the steal spark
 
-    // --- NEW: Theme & Glow Settings ---
+    // Theme & Glow Settings
     neonGlowBlur: 10,           // Intensity of the glow effect for neon elements
     anchorPointGlowColor: 'rgba(255, 255, 255, 0.7)', // Glow color for the anchor point
     paintCanBandGlow: true,     // Whether the paint can color band should glow
