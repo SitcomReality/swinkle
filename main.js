@@ -1,8 +1,8 @@
 import { loadDevNotes } from './dev-notes.js';
 import { startGameLoop } from './game-loop.js';
 import config from 'config';
-// Import player functions from the facade module
-import { removePlayerPhysicsState } from './player.js';
+// Import player state function directly if needed
+import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
 
 export const room = new WebsimSocket();
@@ -21,7 +21,23 @@ async function initGame() {
         initialRoomStateUpdates.paintCans = {};
     }
     if (room.roomState.availablePaintCans === undefined) {
-        initialRoomStateUpdates.availablePaintCans = {};
+        // Initialize with a couple of cans perhaps?
+         const initialCans = {};
+         for (let i = 0; i < (config.initialAvailableCans || 2); i++) {
+             const canId = `can-initial-${i}-${Date.now()}`;
+             const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
+             const margin = 150; // Avoid edges
+             const x = margin + Math.random() * (window.innerWidth - margin * 2);
+             const y = margin + Math.random() * (window.innerHeight - margin * 2);
+             initialCans[canId] = {
+                id: canId, ownerId: null,
+                paintColor: config.paintCanColors[colorIndex],
+                paintAmount: config.paintCanInitialAmount,
+                x: x, y: y
+             };
+         }
+         initialRoomStateUpdates.availablePaintCans = initialCans;
+        // initialRoomStateUpdates.availablePaintCans = {}; // Original empty init
     }
     if (Object.keys(initialRoomStateUpdates).length > 0) {
         console.log("Initializing room state:", initialRoomStateUpdates);
@@ -35,12 +51,15 @@ async function initGame() {
         return;
     }
     canvas.addEventListener('mousemove', (e) => {
-        // Send anchor position and let the rendering decide the color/character state
-        // Painted data and can ID are updated separately based on game events
-        room.updatePresence({
-            x: e.clientX,
-            y: e.clientY,
-        });
+        // Send only anchor position. Other presence updates are event-driven.
+        // Don't update position if player is lost - prevents moving while waiting to respawn
+        const currentPresence = room.presence[room.clientId];
+        if (!currentPresence || !currentPresence.lost) {
+             room.updatePresence({
+                 x: e.clientX,
+                 y: e.clientY,
+             });
+        }
     });
 
     // Handle clicks for squirting (now droplets) - Disabled
@@ -56,7 +75,7 @@ async function initGame() {
             // Check if can still exists and is owned by us (prevent race condition errors)
             const canState = room.roomState.paintCans?.[canId];
              if (canState && canState.ownerId === room.clientId) {
-                console.log(`Starting charge for can ${canId}`);
+                // console.log(`Starting charge for can ${canId}`);
                 room.updateRoomState({
                     paintCans: {
                         [canId]: { isCharging: true }
@@ -74,7 +93,7 @@ async function initGame() {
 
             // Only proceed if the can exists, is owned by us, and was potentially charging
             if (canState && canState.ownerId === room.clientId) {
-                console.log(`Stopping charge / Releasing burst for can ${canId}`);
+                // console.log(`Stopping charge / Releasing burst for can ${canId}`);
                 const dropletsToBurst = canState.accumulatedDroplets || 0;
                 const updates = {
                     paintCans: {
@@ -89,14 +108,14 @@ async function initGame() {
                     const burstDroplets = {};
                     const canX = canState.x;
                     const canY = canState.y;
-                    console.log(`Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
+                    // console.log(`Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
 
                     for (let i = 0; i < dropletsToBurst; i++) {
                         // Simple unique ID
                         const dropletId = `${room.clientId}-${Date.now()}-${i}`;
                         // Add slight random offset for burst effect
                         const angle = Math.random() * Math.PI * 2;
-                        const radius = Math.random() * 15; // Spread within 15 pixels
+                        const radius = Math.random() * config.burstSpreadRadius; // Use config for spread
                         burstDroplets[dropletId] = {
                             id: dropletId,
                             ownerId: room.clientId, // Owner of the droplet is the player who fired it
@@ -109,7 +128,7 @@ async function initGame() {
                     // Add droplets to the same update object sent to the server
                     updates.droplets = burstDroplets;
                 } else {
-                     console.log(`No accumulated droplets for ${canId}, just stopping charge.`);
+                     // console.log(`No accumulated droplets for ${canId}, just stopping charge.`);
                 }
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
@@ -119,7 +138,6 @@ async function initGame() {
     });
 
     // Initial presence update with a default color and new state fields
-    // This ensures the player appears immediately with all required presence data
     room.updatePresence({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -127,61 +145,66 @@ async function initGame() {
         paintedData: {}, // Initialize empty painted data
         currentCanId: null, // Initialize with no paint can
         lost: false // Initialize with not lost state
-        // Character-specific state (like physics) will be managed client-side initially
     });
 
-    // Setup presence subscription for other players
+    // Setup presence subscription for handling disconnections
     room.subscribePresence((presence) => {
-        // Presence updates are now primarily handled within the game loop's rendering logic
-        // and the scoreboard subscription.
-        // This subscription remains useful for triggering specific events on presence change if needed later.
-        // Example: Detect when a peer disconnects to handle can ownership transfer
+        // This subscription mainly handles making cans available when players leave.
+        // Other presence changes are handled reactively in the game loop or scoreboard.
         const currentPeers = new Set(Object.keys(room.peers));
         const localClientId = room.clientId;
+        const paintCans = room.roomState.paintCans || {};
+        let ownedCansToRemove = {};
+        let availableCansToAdd = {};
 
-        // Check for players who left
-        Object.keys(room.presence).forEach(clientId => {
-            if (!currentPeers.has(clientId)) {
-                // Peer disconnected
-                removePlayerPhysicsState(clientId); // Calls the facade function
+        // Check for players who were present before but are not now
+        // Iterate over previous presence keys if needed, or rely on game loop check for simplicity.
+        // The game loop approach using previousPeers is sufficient for physics cleanup.
+        // For can cleanup, we check all currently owned cans against the current peer list.
 
-                // Check if the disconnected player owned any cans
-                const paintCans = room.roomState.paintCans || {};
-                const cansToUpdate = {};
-                let availableCansToAdd = {};
-                let ownedCansToRemove = {};
+        for (const [canId, canState] of Object.entries(paintCans)) {
+             // If a can has an owner who is no longer in peers, make it available
+             if (canState && canState.ownerId && !currentPeers.has(canState.ownerId)) {
+                 console.log(`Player ${canState.ownerId} disconnected or left, making can ${canId} available`);
+                 // Create an entry to add to availablePaintCans
+                  availableCansToAdd[canId] = {
+                     ...canState,
+                     ownerId: null, // Mark as unowned
+                     // Reset dynamic state
+                     vx: 0, vy: 0, isCharging: false, accumulatedDroplets: 0
+                  };
+                  // Mark the owned can for removal
+                  ownedCansToRemove[canId] = null;
+             }
+        }
 
-                for (const [canId, canState] of Object.entries(paintCans)) {
-                    if (canState && canState.ownerId === clientId) {
-                        console.log(`Player ${clientId} disconnected, making can ${canId} available`);
-                        // Create an entry to add to availablePaintCans
-                         availableCansToAdd[canId] = {
-                            ...canState,
-                            ownerId: null, // Mark as unowned
-                            // Reset dynamic state
-                            vx: 0,
-                            vy: 0,
-                            isCharging: false,
-                            accumulatedDroplets: 0
-                         };
-                         // Mark the owned can for removal
-                         ownedCansToRemove[canId] = null;
-                    }
-                }
-
-                 // Send updates IF this client is the one detecting the disconnect
-                 // TODO: This could still cause race conditions if multiple clients detect simultaneously.
-                 // A more robust solution might involve a leader election or distributed lock,
-                 // but for now, any client can attempt the update.
-                 if (Object.keys(availableCansToAdd).length > 0) {
-                     room.updateRoomState({
-                        paintCans: ownedCansToRemove,
-                        availablePaintCans: availableCansToAdd
-                    });
-                 }
-            }
-        });
+        // Send updates IF this client detects the need (can race condition exist? Yes, but low impact)
+        if (Object.keys(availableCansToAdd).length > 0) {
+              room.updateRoomState({
+                 paintCans: ownedCansToRemove,
+                 availablePaintCans: availableCansToAdd
+             });
+          }
     });
+
+    // Subscribe to presence update requests (e.g., for being forced to drop a can)
+    room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
+        console.log(`Received presence update request from ${fromClientId}:`, updateRequest);
+        const localPresence = room.presence[room.clientId];
+        if (!localPresence) return; // Shouldn't happen if initialized
+
+        if (updateRequest.type === 'dropCan') {
+            // Check if we actually have a can to drop (prevents errors if request is late)
+            if (localPresence.currentCanId) {
+                console.log(`Processing request: Dropping can ${localPresence.currentCanId}`);
+                room.updatePresence({ currentCanId: null });
+            } else {
+                 console.log(`Processing request: Already have no can.`);
+            }
+        }
+        // Handle other request types here if needed
+    });
+
 
     // Subscribe to room state changes (optional, for debugging or complex logic)
     room.subscribeRoomState((currentRoomState) => {

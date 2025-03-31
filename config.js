@@ -37,6 +37,7 @@ export default {
     dropletColor: '#00FFFF', // Default color for droplets if not from a can
     dropletSize: 3,       // Radius of the droplet particle
     dropletDuration: 2000, // How long droplets last in milliseconds before fading
+    burstSpreadRadius: 15, // How far droplets spread when bursting from charge
 
     // Paint Can settings
     paintCanColors: [ // Predefined list of possible paint colors
@@ -56,6 +57,8 @@ export default {
     paintCanChargeIndicatorHeight: 4, // Height of the charge bar
     paintCanChargeIndicatorWidth: 20, // Width of the charge bar background
     paintCanChargeIndicatorColor: '#FFFFFF', // Color of the charge bar fill
+    initialAvailableCans: 2, // Number of cans to spawn initially
+    maxAvailableCans: 3,    // Max number of available cans allowed on map
 
     // Paint Can Bungee Physics (Player Capsule -> Paint Can)
     paintCanBungeeRestLength: 30, // Let it dangle a bit further
@@ -83,4 +86,7 @@ export default {
     // Visual Effects settings
     splatEffectDuration: 500,   // Duration of splat effect in ms
     splatEffectMaxRadius: 15,   // Max radius of splat effect
+    stealSparkEffectDuration: 300, // Duration of the steal spark effect
+    stealSparkColor: '#FFFF00', // Color of the steal spark
+    stealSparkRadius: 20,      // Max radius of the steal spark
 };

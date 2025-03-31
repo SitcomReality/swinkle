@@ -9,7 +9,7 @@ let effectCounter = 0; // Simple unique ID generation
 
 /**
  * Adds a new visual effect to be rendered.
- * @param {string} type - The type of effect (e.g., 'splat').
+ * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark').
  * @param {object} properties - Properties specific to the effect (x, y, color, etc.).
  */
 export function addEffect(type, properties) {
@@ -19,17 +19,20 @@ export function addEffect(type, properties) {
 
     switch (type) {
         case 'splat':
-            duration = config.splatEffectDuration || 500; // Default duration
+            duration = config.splatEffectDuration || 500;
+            break;
+        case 'stealSpark':
+            duration = config.stealSparkEffectDuration || 300;
             break;
         default:
             console.warn(`Unknown effect type: ${type}`);
             return; // Don't add unknown effects
         }
-    
+
     activeEffects.set(id, {
         id,
         type,
-        ...properties,
+        ...properties, // Includes x, y, potentially color
         startTime: now,
         duration: duration,
     });
@@ -43,6 +46,7 @@ export function addEffect(type, properties) {
  */
 export function updateAndRenderEffects(ctx, deltaTime, now) {
     const effectsToRemove = [];
+    ctx.save(); // Save context state before drawing effects
 
     activeEffects.forEach(effect => {
         const age = now - effect.startTime;
@@ -51,10 +55,15 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
             return; // Skip rendering expired effects
         }
 
+        const progress = age / effect.duration; // 0 to 1
+
         // Render based on type
         switch (effect.type) {
             case 'splat':
-                renderSplat(ctx, effect, age);
+                renderSplat(ctx, effect, progress);
+                break;
+            case 'stealSpark':
+                renderStealSpark(ctx, effect, progress);
                 break;
             // Add other types here
         }
@@ -64,7 +73,7 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
     effectsToRemove.forEach(id => activeEffects.delete(id));
 
     // Reset any global context changes if necessary (e.g., globalAlpha)
-    ctx.globalAlpha = 1.0;
+    ctx.restore(); // Restore context state
 }
 
 /**
@@ -72,11 +81,9 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
  * @private
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {object} effect - The splat effect object.
- * @param {number} age - The current age of the effect in milliseconds.
+ * @param {number} progress - The normalized age of the effect (0 to 1).
  */
-function renderSplat(ctx, effect, age) {
-    const progress = age / effect.duration; // 0 to 1
-
+function renderSplat(ctx, effect, progress) {
     // Calculate current radius (expands quickly then stops/shrinks?)
     // Simple linear expansion for now
     const maxRadius = config.splatEffectMaxRadius || 15;
@@ -90,6 +97,28 @@ function renderSplat(ctx, effect, age) {
     ctx.fillStyle = effect.color;
     ctx.globalAlpha = Math.max(0, opacity); // Apply fade out
     ctx.fill();
+    ctx.globalAlpha = 1.0; // Reset alpha for next effect
+}
+
+/**
+ * Renders a steal spark effect (e.g., expanding yellow circle).
+ * @private
+ * @param {CanvasRenderingContext2D} ctx - The drawing context.
+ * @param {object} effect - The steal spark effect object.
+ * @param {number} progress - The normalized age of the effect (0 to 1).
+ */
+function renderStealSpark(ctx, effect, progress) {
+    const maxRadius = config.stealSparkRadius || 20;
+    const currentRadius = maxRadius * progress; // Linear expansion
+    const opacity = 1 - progress; // Linear fade out
+
+    ctx.beginPath();
+    ctx.arc(effect.x, effect.y, currentRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = config.stealSparkColor || '#FFFF00';
+    ctx.lineWidth = 3 * (1 - progress); // Line gets thinner as it expands/fades
+    ctx.globalAlpha = Math.max(0, opacity);
+    ctx.stroke();
+    ctx.globalAlpha = 1.0; // Reset alpha
 }
 
 /**

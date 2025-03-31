@@ -3,7 +3,9 @@
  * Manages the main rendering cycle of the game. Coordinates updates and rendering.
  */
 import config from 'config';
-import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './player.js';
+// Import player functions directly for clarity (facade pattern might obscure origins)
+import { renderPlayer } from './playerRenderer.js';
+import { updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './playerState.js'; // Get state/physics functions directly
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
 import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js';
 import { renderDroplets } from './dropletRenderer.js';
@@ -45,7 +47,42 @@ function updatePaintLevelIndicator() {
     }
 }
 
-// Basic rendering using canvas
+/**
+ * Simple Axis-Aligned Bounding Box collision check.
+ * @param {object} rectA - { left, right, top, bottom }
+ * @param {object} rectB - { left, right, top, bottom }
+ * @returns {boolean} True if colliding, false otherwise.
+ */
+function checkRectCollision(rectA, rectB) {
+    if (!rectA || !rectB) return false;
+    return (
+        rectA.left < rectB.right &&
+        rectA.right > rectB.left &&
+        rectA.top < rectB.bottom &&
+        rectA.bottom > rectB.top
+    );
+}
+
+/**
+ * Creates a bounding box for a player based on their physics state.
+ * @param {object} physicsState - The player's physics state.
+ * @returns {object|null} Bounding box { left, right, top, bottom } or null.
+ */
+function getPlayerBoundingBox(physicsState) {
+    if (!physicsState) return null;
+    const bodyWidth = config.playerBodyWidth;
+    const bodyHeight = config.playerBodyHeight;
+    return {
+        left: physicsState.position.x - bodyWidth / 2,
+        right: physicsState.position.x + bodyWidth / 2,
+        top: physicsState.position.y - bodyHeight / 2,
+        bottom: physicsState.position.y + bodyHeight / 2
+    };
+}
+
+/**
+ * Basic rendering using canvas
+ */
 function gameLoop(timestamp) {
     if (!roomInstance) {
         console.error("Room instance not available in game loop.");
@@ -84,7 +121,7 @@ function gameLoop(timestamp) {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
             removePlayerPhysicsState(clientId); // Calls the facade function
-            // Can ownership handled via presence subscription in main.js for simplicity now
+            // Can ownership handled via presence subscription in main.js
             console.log(`Peer ${clientId} disconnected, player physics removed.`);
         }
     });
@@ -106,6 +143,11 @@ function gameLoop(timestamp) {
             y: spawnY
         };
         // Note: Physics state will naturally adjust due to anchor change
+        // Apply respawn updates immediately to avoid checking collisions etc. while still 'lost' this frame
+        if (roomInstance.presence[localClientId]) {
+             // Merge updates into the actual presence object for checks later in the frame
+             Object.assign(roomInstance.presence[localClientId], localPresenceUpdates);
+        }
     }
 
     // --- Update Physics & Interactions ---
@@ -113,14 +155,15 @@ function gameLoop(timestamp) {
     let allDropletsToAdd = {};   // Collect ALL new droplets this frame
     let allAvailablePaintCanUpdates = {}; // For can pickups
     let allDropletRemovals = {}; // Collect ALL droplets to remove (collisions + timeouts)
+    let presenceRequests = []; // Store requests { targetId, update }
 
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Only update if presence data exists
-            // Update player physics
+            // Update player physics BEFORE checking for interactions/collisions
             updatePlayerPhysics(clientId, presence, deltaTime);
 
-            // Don't process interactions/pickups/etc. if player is lost
+            // Don't process interactions/pickups/stealing etc. if player is lost
             if (presence.lost) return;
 
             // Get updated player position for can physics/interactions
@@ -128,34 +171,65 @@ function gameLoop(timestamp) {
             if (!playerPhysicsState) return; // Skip if player physics state isn't ready
             const playerBodyPos = playerPhysicsState.position;
 
-            // IMPORTANT: Check for empty cans (only owner checks)
-            if (clientId === localClientId && presence.currentCanId) {
-                const canState = roomInstance.roomState.paintCans?.[presence.currentCanId];
-                if (canState) {
-                    const { paintCanUpdates, presenceUpdates } = handleEmptyPaintCan(
-                        localClientId,
-                        canState,
-                        presence
-                    );
+            // --- Handle Local Client Interactions ---
+            if (clientId === localClientId) {
+                // 1. Check for empty cans
+                if (presence.currentCanId) {
+                    const canState = roomInstance.roomState.paintCans?.[presence.currentCanId];
+                    if (canState) {
+                        const { paintCanUpdates, presenceUpdates } = handleEmptyPaintCan(
+                            localClientId,
+                            canState,
+                            presence
+                        );
+                        // Merge updates
+                        if (Object.keys(paintCanUpdates).length > 0) {
+                            allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
+                        }
+                        if (Object.keys(presenceUpdates).length > 0) {
+                            localPresenceUpdates = { ...localPresenceUpdates, ...presenceUpdates };
+                        }
+                         // If can was dropped due to being empty, update local presence cache for this frame
+                        if (presenceUpdates.currentCanId === null) {
+                             if (roomInstance.presence[localClientId]) roomInstance.presence[localClientId].currentCanId = null;
+                         }
+                    }
+                }
 
+                // 2. Check for paint can pickup (if not holding one)
+                if (!presence.currentCanId) {
+                    const availableCans = roomInstance.roomState.availablePaintCans || {};
+                    const { paintCanUpdates, availablePaintCanUpdates, presenceUpdates } = handlePaintCanPickup(
+                        playerBodyPos,
+                        localClientId,
+                        presence,
+                        availableCans
+                    );
                     // Merge updates
                     if (Object.keys(paintCanUpdates).length > 0) {
                         allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
                     }
+                    if (Object.keys(availablePaintCanUpdates).length > 0) {
+                        allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...availablePaintCanUpdates };
+                    }
                     if (Object.keys(presenceUpdates).length > 0) {
                         localPresenceUpdates = { ...localPresenceUpdates, ...presenceUpdates };
+                    }
+                    // If can was picked up, update local presence cache for this frame
+                    if (presenceUpdates.currentCanId) {
+                        if (roomInstance.presence[localClientId]) roomInstance.presence[localClientId].currentCanId = presenceUpdates.currentCanId;
                     }
                 }
             }
 
-            // Check if this player owns a paint can
+            // --- Update Held Paint Can Physics & Interactions (Owned Cans) ---
             const currentCanId = presence.currentCanId;
             if (currentCanId && roomInstance.roomState.paintCans && roomInstance.roomState.paintCans[currentCanId]) {
                 const canState = roomInstance.roomState.paintCans[currentCanId];
 
                 // Only the owner client calculates and sends updates for their can's physics and interactions
                 if (clientId === localClientId) {
-                    // 1. Update Paint Can Physics
+                    // Update Paint Can Physics
                     updatePaintCanPhysics(canState, playerBodyPos, deltaTime);
 
                     // Add physics updates to the batch
@@ -167,7 +241,7 @@ function gameLoop(timestamp) {
                         vy: canState.vy
                     };
 
-                    // 2. Handle Can Interactions (Charging, Auto-Drop)
+                    // Handle Can Interactions (Charging, Auto-Drop)
                     const { paintCanUpdates, newDroplets } = handleCanInteractions(
                         localClientId,
                         canState, // Pass the potentially physics-updated state
@@ -177,7 +251,6 @@ function gameLoop(timestamp) {
 
                     // Merge interaction updates and new droplets into the frame's batches
                     if (paintCanUpdates && Object.keys(paintCanUpdates).length > 0) {
-                        // Merge updates for this specific can
                         allPaintCanUpdates[currentCanId] = {
                             ...allPaintCanUpdates[currentCanId], // Keep physics updates
                             ...paintCanUpdates // Add interaction updates (paintAmount, accumulated, etc.)
@@ -188,40 +261,73 @@ function gameLoop(timestamp) {
                     }
                 }
             }
-
-            // NEW: Check for paint can pickup (only for local player without a can)
-            if (clientId === localClientId && !presence.currentCanId) {
-                const availableCans = roomInstance.roomState.availablePaintCans || {};
-                const { paintCanUpdates, availablePaintCanUpdates, presenceUpdates } = handlePaintCanPickup(
-                    playerBodyPos,
-                    localClientId,
-                    presence,
-                    availableCans
-                );
-
-                // Merge updates
-                if (Object.keys(paintCanUpdates).length > 0) {
-                    allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
-                }
-                if (Object.keys(availablePaintCanUpdates).length > 0) {
-                    allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...availablePaintCanUpdates };
-                }
-                if (Object.keys(presenceUpdates).length > 0) {
-                    localPresenceUpdates = { ...localPresenceUpdates, ...presenceUpdates };
-                }
-            }
         }
     });
 
-    // --- Spawn new paint cans randomly (simple approach) ---
-    if (Math.random() < (0.005 * deltaTime * 60)) { // ~0.5% chance per second (adjust rate based on frame time)
-        const availableCans = roomInstance.roomState.availablePaintCans || {};
-        // Only spawn if there are fewer than 3 available cans
-        if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < 3) { // Check non-null cans
-            const canId = `can-${Math.random().toString(36).substring(2, 9)}-${now}`; // Add timestamp for uniqueness
-            const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
+    // --- Handle Player-Player Collisions (for Stealing) - Local Client Only ---
+    const localPlayerPhysics = getPlayerPhysicsState(localClientId);
+    const localPlayerBox = getPlayerBoundingBox(localPlayerPhysics);
+    const localPresenceForCollision = roomInstance.presence[localClientId]; // Use potentially updated presence
 
-            // Position the can somewhere in the visible canvas area
+    // Only check if local player exists, has a hitbox, is not lost, and doesn't currently have a can
+    if (localPlayerBox && localPresenceForCollision && !localPresenceForCollision.lost && !localPresenceForCollision.currentCanId) {
+        Object.entries(roomInstance.peers).forEach(([otherClientId, otherPeer]) => {
+            // Skip self, skip if other player doesn't exist or is lost
+            if (otherClientId === localClientId) return;
+            const otherPresence = roomInstance.presence[otherClientId];
+            if (!otherPresence || otherPresence.lost) return;
+
+            // Check if the other player HAS a can
+            const canIdToSteal = otherPresence.currentCanId;
+            if (canIdToSteal && roomInstance.roomState.paintCans?.[canIdToSteal]) {
+                const otherPlayerPhysics = getPlayerPhysicsState(otherClientId);
+                const otherPlayerBox = getPlayerBoundingBox(otherPlayerPhysics);
+
+                // Check collision between local player body and other player body
+                if (checkRectCollision(localPlayerBox, otherPlayerBox)) {
+                    console.log(`Player ${localClientId} collided with ${otherClientId} who has can ${canIdToSteal}. Attempting steal!`);
+
+                    // Prevent stealing the same can multiple times in quick succession if updates lag
+                    // Check if we already updated presence this frame to take this can
+                    if (localPresenceUpdates.currentCanId === canIdToSteal) return;
+
+                    // 1. Update local presence to hold the can
+                    localPresenceUpdates.currentCanId = canIdToSteal;
+                    // Update local presence cache immediately for subsequent checks this frame
+                     if (roomInstance.presence[localClientId]) roomInstance.presence[localClientId].currentCanId = canIdToSteal;
+
+
+                    // 2. Request the other player drops the can
+                    presenceRequests.push({ targetId: otherClientId, update: { type: 'dropCan' } });
+
+                    // 3. Update the can's ownership in roomState
+                    allPaintCanUpdates[canIdToSteal] = {
+                         ...(allPaintCanUpdates[canIdToSteal] || {}), // Keep potential physics updates if any
+                         ownerId: localClientId,
+                         // Reset physics/charge state upon steal? Optional, but might prevent weirdness.
+                         vx: 0,
+                         vy: 0,
+                         isCharging: false,
+                         accumulatedDroplets: 0
+                    };
+
+                    // Optional: Add a visual/audio cue for the steal
+                    addEffect('stealSpark', { x: localPlayerPhysics.position.x, y: localPlayerPhysics.position.y });
+
+                    // Stop checking other players once a steal is successful this frame
+                    // (though the logic prevents stealing multiple anyway)
+                    return; // Exit inner loop early might be slightly cleaner
+                }
+            }
+        });
+    }
+
+    // --- Spawn new paint cans randomly ---
+    if (Math.random() < (0.005 * deltaTime * 60)) { // ~0.5% chance per second
+        const availableCans = roomInstance.roomState.availablePaintCans || {};
+        if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < config.maxAvailableCans) { // Use config
+            const canId = `can-${Math.random().toString(36).substring(2, 9)}-${now}`;
+            const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
             const margin = 100;
             const x = margin + Math.random() * (canvas.width - margin * 2);
             const y = margin + Math.random() * (canvas.height - margin * 2);
@@ -234,19 +340,19 @@ function gameLoop(timestamp) {
                 x: x,
                 y: y
             };
-            console.log(`Attempting to spawn can ${canId}`);
+            // console.log(`Attempting to spawn can ${canId}`);
         }
     }
 
     // --- Check for Droplet Collisions with Local Player ---
-    const localPlayerBodyPos = getPlayerPhysicsState(localClientId)?.position;
-    if (localPlayerBodyPos && localPresence && !localPresence.lost) { // Don't check collisions if lost
+    // Use the physics state directly, presence already checked for 'lost' status earlier
+    if (localPlayerPhysics && localPresenceForCollision && !localPresenceForCollision.lost) {
         const { dropletsToRemove: collidedDroplets, collisionPoints } = checkCollisionsWithPlayer(
-            localPlayerBodyPos,
+            localPlayerPhysics.position, // Use position from physics state
             roomInstance.roomState.droplets || {},
             localClientId,
-            localPresence, // Pass current presence
-            now // Pass current time for loss/respawn calculation
+            localPresenceForCollision, // Pass current presence state for this frame
+            now
         );
         // Merge collision removals into the main removal batch
         if (Object.keys(collidedDroplets).length > 0) {
@@ -258,39 +364,46 @@ function gameLoop(timestamp) {
         });
     }
 
-    // --- Check for Expired Droplets (Authoritative Removal) ---
+    // --- Check for Expired Droplets (Authoritative Removal by any client) ---
+    // TODO: Refine this - potentially only one client (e.g., host/leader) should do this.
+    // For now, any client can trigger removal, which might cause redundant updates but is okay.
     const currentDroplets = roomInstance.roomState.droplets || {};
     const dropletDuration = config.dropletDuration || 2000;
     Object.entries(currentDroplets).forEach(([id, droplet]) => {
-        // Skip if droplet is null or already marked for removal by collision
+        // Skip if droplet is null or already marked for removal
         if (!droplet || allDropletRemovals[id] === null) return;
 
         const age = now - droplet.createdAt;
         if (age > dropletDuration) {
-            // Mark this droplet for removal due to timeout
             allDropletRemovals[id] = null;
         }
     });
 
     // --- Send Batched Updates ---
-    if (Object.keys(allPaintCanUpdates).length > 0) {
-        roomInstance.updateRoomState({ paintCans: allPaintCanUpdates });
-    }
-    if (Object.keys(allAvailablePaintCanUpdates).length > 0) {
-        roomInstance.updateRoomState({ availablePaintCans: allAvailablePaintCanUpdates });
-    }
-    if (Object.keys(allDropletsToAdd).length > 0) {
-        roomInstance.updateRoomState({ droplets: allDropletsToAdd });
-    }
+    // Room State Updates
+    const roomStateUpdates = {};
+    if (Object.keys(allPaintCanUpdates).length > 0) roomStateUpdates.paintCans = allPaintCanUpdates;
+    if (Object.keys(allAvailablePaintCanUpdates).length > 0) roomStateUpdates.availablePaintCans = allAvailablePaintCanUpdates;
+    if (Object.keys(allDropletsToAdd).length > 0) roomStateUpdates.droplets = allDropletsToAdd;
     if (Object.keys(allDropletRemovals).length > 0) {
-        roomInstance.updateRoomState({ droplets: allDropletRemovals });
+        // Merge droplet removals with additions if both exist
+        roomStateUpdates.droplets = { ...(roomStateUpdates.droplets || {}), ...allDropletRemovals };
     }
+    if (Object.keys(roomStateUpdates).length > 0) {
+        roomInstance.updateRoomState(roomStateUpdates);
+    }
+
+    // Local Presence Updates (includes respawn, pickup, empty can drop, steal success)
     if (Object.keys(localPresenceUpdates).length > 0) {
         roomInstance.updatePresence(localPresenceUpdates);
     }
 
-    // --- Render Scene ---
+    // Presence Update Requests (steal requests)
+    presenceRequests.forEach(req => {
+        roomInstance.requestPresenceUpdate(req.targetId, req.update);
+    });
 
+    // --- Render Scene ---
     updateAndRenderEffects(ctx, deltaTime, now);
 
     const dropletsToRender = roomInstance.roomState.droplets || {};
@@ -306,6 +419,7 @@ function gameLoop(timestamp) {
     const paintCans = roomInstance.roomState.paintCans || {};
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
+        // Pass the paintCans state directly, renderPlayer will find the specific can if needed
         renderPlayer(ctx, clientId, localClientId, presence, peer, paintCans);
     });
 
@@ -339,9 +453,9 @@ export function startGameLoop(room) {
          console.error("Paint level indicator container not found!");
     }
 
-
     lastTimestamp = 0;
-    previousPeers = new Set(Object.keys(room.peers));
+    // Initialize previousPeers with current peers when loop starts
+    previousPeers = new Set(Object.keys(room.peers || {}));
     clearEffects();
     requestAnimationFrame(gameLoop);
 }
