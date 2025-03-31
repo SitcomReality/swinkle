@@ -23,7 +23,7 @@ function gameLoop(timestamp) {
         return; // Stop if canvas isn't there
     }
     const ctx = canvas.getContext('2d');
-    const now = Date.now(); // Keep using Date.now() for squirt age calculation
+    const now = Date.now(); // Keep using Date.now() for droplet age calculation
     const localClientId = roomInstance.clientId; // Get the local client's ID
 
     // Calculate delta time for physics updates
@@ -47,6 +47,7 @@ function gameLoop(timestamp) {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
             removePlayerPhysicsState(clientId);
+            // TODO: Handle can ownership transfer/cleanup if a player disconnects while holding one
         }
     });
     previousPeers = currentPeerIds; // Update for next frame check
@@ -58,34 +59,42 @@ function gameLoop(timestamp) {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Only update if presence data exists
             updatePlayerPhysics(clientId, presence, deltaTime);
+            // TODO: If this client owns the can (presence.currentCanId && room.roomState.paintCans[presence.currentCanId].ownerId === clientId),
+            // call updatePaintCanPhysics here and send roomState update.
         }
     });
 
-    // --- Render Squirts ---
-    const squirts = roomInstance.roomState.squirts || {};
-    const squirtsToRemove = {}; // Track squirts to remove
+    // --- Render Droplets ---
+    const droplets = roomInstance.roomState.droplets || {};
+    const dropletsToRemove = {}; // Track droplets to remove
 
-    Object.entries(squirts).forEach(([id, squirt]) => {
-        if (!squirt) return; // Skip if squirt data is null (already removed or invalid)
+    Object.entries(droplets).forEach(([id, droplet]) => {
+        if (!droplet) return; // Skip if droplet data is null (already removed or invalid)
 
-        const age = now - squirt.createdAt;
+        const age = now - droplet.createdAt;
 
-        if (age > (config.squirtDuration || 500)) {
+        // Use droplet config values
+        if (age > (config.dropletDuration || 1000)) { // Use dropletDuration, default 1s
             // Mark for removal if expired
-            squirtsToRemove[id] = null;
+            dropletsToRemove[id] = null;
         } else {
-            // Draw the squirt particle (simple circle for now)
+            // Draw the droplet particle (simple circle for now)
             ctx.beginPath();
-            ctx.arc(squirt.x, squirt.y, config.squirtSize || 4, 0, Math.PI * 2);
-            ctx.fillStyle = squirt.color || config.squirtColor || '#0FF';
+            ctx.arc(droplet.x, droplet.y, config.dropletSize || 3, 0, Math.PI * 2); // Use dropletSize, default 3
+            ctx.fillStyle = droplet.color || config.dropletColor || '#0FF'; // Use dropletColor from state or config default
             ctx.fill();
         }
     });
 
-    // Request removal of expired squirts from roomState
-    if (Object.keys(squirtsToRemove).length > 0) {
-        roomInstance.updateRoomState({ squirts: squirtsToRemove });
+    // Request removal of expired droplets from roomState
+    // TODO: This removal logic might need refinement based on dev-notes (who removes: owner on timeout or hitter on collision?)
+    if (Object.keys(dropletsToRemove).length > 0) {
+        roomInstance.updateRoomState({ droplets: dropletsToRemove });
     }
+
+    // --- Render Paint Cans (Held and Available) ---
+    // TODO: Loop through room.roomState.paintCans and call renderPaintCan for held cans.
+    // TODO: Loop through room.roomState.availablePaintCans and call renderPaintCan for available cans.
 
     // --- Render Players ---
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
