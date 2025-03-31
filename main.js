@@ -1,7 +1,7 @@
 import { loadDevNotes } from './dev-notes.js';
 import { startGameLoop } from './game-loop.js';
 import config from 'config';
-// Import player functions to ensure physics state is managed
+// Import player functions from the facade module
 import { removePlayerPhysicsState } from './player.js';
 
 const room = new WebsimSocket();
@@ -153,7 +153,7 @@ async function initGame() {
         Object.keys(room.presence).forEach(clientId => {
             if (!currentPeers.has(clientId)) {
                 // Peer disconnected
-                removePlayerPhysicsState(clientId); // Clean up player physics
+                removePlayerPhysicsState(clientId); // Calls the facade function
 
                 // Check if the disconnected player owned any cans
                 const paintCans = room.roomState.paintCans || {};

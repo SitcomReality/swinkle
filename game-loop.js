@@ -3,7 +3,7 @@
  * Manages the main rendering cycle of the game.
  */
 import config from 'config';
-// Import player functions, including physics update and state retrieval
+// Import player functions from the facade module
 import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './player.js';
 // Import paint can functions
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
@@ -52,7 +52,7 @@ function gameLoop(timestamp) {
     previousPeers.forEach(clientId => {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
-            removePlayerPhysicsState(clientId);
+            removePlayerPhysicsState(clientId); // Calls the facade function
             // Can ownership handled via presence subscription in main.js for simplicity now
             console.log(`Peer ${clientId} disconnected, player physics removed.`);
         }
@@ -67,10 +67,11 @@ function gameLoop(timestamp) {
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Only update if presence data exists
-            // Update player physics first
+            // Update player physics first (calls the facade function)
             updatePlayerPhysics(clientId, presence, deltaTime);
 
             // Get the updated player body position (needed for can physics)
+            // Calls the facade function
             const playerPhysicsState = getPlayerPhysicsState(clientId);
             if (!playerPhysicsState) return; // Skip if player physics state isn't ready
             const playerBodyPos = playerPhysicsState.position;
@@ -214,14 +215,14 @@ function gameLoop(timestamp) {
     // Render players (limbs, body, name)
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
-        renderPlayer(ctx, clientId, localClientId, presence, peer); // Renders player capsule & bungee
+        renderPlayer(ctx, clientId, localClientId, presence, peer); // Calls the facade function
 
         // Render the HELD paint can AFTER the player, but potentially before other players
         // Also render the bungee connecting player to can
         const currentCanId = presence?.currentCanId;
         if (currentCanId && paintCans[currentCanId]) {
             const canState = paintCans[currentCanId];
-            const playerState = getPlayerPhysicsState(clientId); // Get player body pos again
+            const playerState = getPlayerPhysicsState(clientId); // Calls the facade function
 
             if (playerState) {
                 // Render can bungee cord
