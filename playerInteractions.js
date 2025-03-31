@@ -129,6 +129,7 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
 /**
  * Handles paint can charging and auto-dropping logic for the local client's owned can.
  * Includes logic for bursting accumulated droplets if the can runs out while charging.
+ * Includes logic to auto-drop paint if charging while accumulation is already maxed out.
  * This function is INTERNAL and called by handleLocalPlayerInteractions.
  *
  * @param {string} localClientId - The ID of the local client.
@@ -142,49 +143,87 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
     const newDroplets = {};     // Updates for the droplets state object
 
     if (!canState || canState.ownerId !== localClientId) {
-        timeSinceLastAutoDrop = 0;
+        timeSinceLastAutoDrop = 0; // Reset timer if can isn't owned
         return { paintCanUpdates, newDroplets };
     }
 
     const currentPaintAmount = canState.paintAmount || 0;
     const currentAccumulated = canState.accumulatedDroplets || 0;
+    const maxAccumulation = config.paintCanMaxAccumulatedDroplets;
     let triggeredBurstOnEmpty = false; // Flag to prevent auto-drop after burst-on-empty
 
     if (canState.isCharging && currentPaintAmount > 0) {
-        const chargeRate = config.paintCanChargingSpeed;
-        const maxAccumulation = config.paintCanMaxAccumulatedDroplets;
-        const paintToConsume = chargeRate * deltaTime;
-        const dropletsToAccumulate = chargeRate * deltaTime;
+        if (currentAccumulated >= maxAccumulation) {
+            // --- State: Charging + Max Accumulated ---
+            // Behave like auto-dropping, but keep accumulated charge
+            timeSinceLastAutoDrop += deltaTime * 1000;
+            const autoDropInterval = 1000 / config.paintCanAutoDropRate;
+            let dropsThisFrame = 0;
+            let paintAvailableForAutoDrop = currentPaintAmount;
 
-        const actualPaintConsumed = Math.min(paintToConsume, currentPaintAmount);
-        // Accumulate droplets only if paint is consumed, up to the max
-        const potentialNewAccumulated = Math.min(maxAccumulation, currentAccumulated + Math.min(dropletsToAccumulate, actualPaintConsumed));
-        const actualDropletsAccumulated = potentialNewAccumulated - currentAccumulated;
+            while (timeSinceLastAutoDrop >= autoDropInterval && paintAvailableForAutoDrop > 0) {
+                timeSinceLastAutoDrop -= autoDropInterval;
+                dropsThisFrame++;
+                paintAvailableForAutoDrop--; // Consume 1 paint per auto drop
 
-        // Apply updates
-        const newPaintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
-        paintCanUpdates.paintAmount = newPaintAmount;
-        if (actualDropletsAccumulated > 0) {
-            paintCanUpdates.accumulatedDroplets = potentialNewAccumulated;
+                // Create auto-droplet
+                const dropletId = `${localClientId}-${now}-autoCharge-${dropsThisFrame}`;
+                newDroplets[dropletId] = {
+                    id: dropletId,
+                    ownerId: localClientId,
+                    color: canState.paintColor,
+                    x: canState.x,
+                    y: canState.y,
+                    createdAt: now
+                };
+            }
+
+            if (dropsThisFrame > 0) {
+                // Update paint amount, but don't touch accumulatedDroplets
+                paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - dropsThisFrame);
+            }
+            // Ensure accumulatedDroplets is explicitly kept at max if it was already maxed
+            // This prevents potential drift if update logic merges strangely elsewhere
+            paintCanUpdates.accumulatedDroplets = maxAccumulation;
+
+        } else {
+            // --- State: Charging + Accumulating ---
+            // Original charging logic
+            const chargeRate = config.paintCanChargingSpeed;
+            // How much paint charging *wants* to consume per second
+            const paintToConsume = chargeRate * deltaTime;
+             // How many droplets charging *wants* to add per second (linked to paint consumption)
+            const dropletsToAccumulate = chargeRate * deltaTime;
+
+            // Consume paint first
+            const actualPaintConsumed = Math.min(paintToConsume, currentPaintAmount);
+            const newPaintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
+            paintCanUpdates.paintAmount = newPaintAmount;
+
+            // Accumulate droplets based on paint consumed, up to the max
+            const remainingCapacity = maxAccumulation - currentAccumulated;
+            // Limit accumulation by paint consumed AND remaining capacity
+            const potentialDropletsToAdd = Math.min(dropletsToAccumulate, actualPaintConsumed, remainingCapacity);
+
+            if (potentialDropletsToAdd > 0) {
+                 paintCanUpdates.accumulatedDroplets = currentAccumulated + potentialDropletsToAdd;
+            }
+
+            timeSinceLastAutoDrop = 0; // Reset auto-drop timer while actively accumulating charge
+
+            // Burst on Empty Check (only when actively accumulating charge)
+            const accumulatedAfterUpdate = paintCanUpdates.accumulatedDroplets !== undefined ? paintCanUpdates.accumulatedDroplets : currentAccumulated;
+            if (newPaintAmount <= 0 && accumulatedAfterUpdate > 0) {
+                 console.log(`Can ${canState.id} ran out while charging/accumulating, bursting ${accumulatedAfterUpdate} droplets.`);
+                 const burstData = createBurstDroplets(localClientId, canState, accumulatedAfterUpdate, now);
+                 Object.assign(newDroplets, burstData);
+                 paintCanUpdates.accumulatedDroplets = 0; // Reset accumulation since it burst
+                 triggeredBurstOnEmpty = true;
+            }
         }
-
-        timeSinceLastAutoDrop = 0; // Reset auto-drop timer while charging
-
-        // --- Burst on Empty Check ---
-        // Use the *newly calculated* amounts for the check
-        const accumulatedAfterUpdate = paintCanUpdates.accumulatedDroplets !== undefined ? paintCanUpdates.accumulatedDroplets : currentAccumulated;
-        if (newPaintAmount <= 0 && accumulatedAfterUpdate > 0) {
-            console.log(`Can ${canState.id} ran out while charging, bursting ${accumulatedAfterUpdate} droplets.`);
-            const burstData = createBurstDroplets(localClientId, canState, accumulatedAfterUpdate, now);
-            Object.assign(newDroplets, burstData); // Add burst droplets to the output
-            paintCanUpdates.accumulatedDroplets = 0; // Reset accumulation since it burst
-            triggeredBurstOnEmpty = true; // Mark that burst happened
-            // Note: We don't drop the can here, handleEmptyPaintCan will do that based on the final amount
-        }
-
     } else if (!canState.isCharging && currentPaintAmount > 0 && !triggeredBurstOnEmpty) {
-        // --- Auto-Dropping Logic ---
-        // Only auto-drop if not charging AND burst-on-empty didn't just happen
+        // --- State: Not Charging ---
+        // Regular auto-dropping logic
         timeSinceLastAutoDrop += deltaTime * 1000; // Accumulate time in ms
         const autoDropInterval = 1000 / config.paintCanAutoDropRate; // ms per drop
 
@@ -211,7 +250,8 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
             paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - dropsThisFrame);
         }
     } else {
-         timeSinceLastAutoDrop = 0; // Reset timer if not charging, no paint, or burst just happened
+         // Reset timer if not charging, no paint, or burst just happened
+         timeSinceLastAutoDrop = 0;
     }
 
     return { paintCanUpdates, newDroplets };
