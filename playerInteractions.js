@@ -266,6 +266,3 @@ function findNearestAvailableCan(playerPos, availableCans, maxDistance) {
 
     return nearestCan;
 }
-
-// Export only the main facade function
-export { handleLocalPlayerInteractions };
