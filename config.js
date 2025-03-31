@@ -1,4 +1,3 @@
-// Player settings
 export default {
     defaultPlayerColor: '#FFFFFF', // Default color if presence doesn't specify
     cursorSize: 8, // Radius of the player anchor point
@@ -32,6 +31,11 @@ export default {
     limbMass: 0.1,               // Mass of the limb (affects gravity/spring)
     limbGravityFactor: 0.5,      // How much gravity affects limbs (0=none, 1=full)
     limbMaxLengthMultiplier: 1.5,// Maximum stretch factor for limbs
+
+    // NEW: Player Body Rotation Physics
+    playerRotationalInertia: 0.5, // Resistance to angular acceleration (higher = slower rotation)
+    playerUprightingStrength: 10, // Torque strength pulling player upright (higher = faster correction)
+    playerRotationalDamping: 0.90,// Damping factor for angular velocity (closer to 0 = faster stop)
 
     // Droplet settings (Formerly Squirt)
     dropletColor: '#00FFFF', // Default color for droplets if not from a can

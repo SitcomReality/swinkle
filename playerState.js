@@ -5,7 +5,7 @@
 import config from 'config';
 
 // Stores the physics state for each player, keyed by clientId
-// Each entry will have { position: {x, y}, velocity: {x, y}, limbs: [...] }
+// Each entry will have { position: {x, y}, velocity: {x, y}, angle, angularVelocity, limbs: [...] }
 const playerPhysicsStates = new Map();
 
 /**
@@ -30,6 +30,8 @@ export function ensurePhysicsState(clientId, initialAnchorPos) {
         const initialState = {
             position: { x: bodyInitialPos.x, y: bodyInitialPos.y },
             velocity: { x: 0, y: 0 },
+            angle: 0, // Initial angle (radians)
+            angularVelocity: 0, // Initial angular velocity (radians/sec)
             limbs: [],
         };
 

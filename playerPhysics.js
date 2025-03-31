@@ -10,9 +10,10 @@ import { handlePlayerLevelCollision } from './level-collision.js'; // Import lev
  * Updates the physics simulation for a single limb.
  * @param {object} limbState - The state object for the limb { attachmentOffset, position, velocity }.
  * @param {object} bodyPos - The current position of the player's body {x, y}.
+ * @param {number} bodyAngle - The current angle of the player's body (radians).
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  */
-function updateLimbPhysics(limbState, bodyPos, deltaTime) {
+function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
     // Physics Constants from Config (specific to limbs)
     const k = config.limbSpringConstant;
     const restLength = config.limbLength; // Limbs try to maintain this length
@@ -21,10 +22,15 @@ function updateLimbPhysics(limbState, bodyPos, deltaTime) {
     const mass = config.limbMass;
     const maxLength = restLength * config.limbMaxLengthMultiplier;
 
-    // Calculate the absolute world position of the attachment point
+    // Calculate the absolute world position of the attachment point, considering body rotation
+    const cosAngle = Math.cos(bodyAngle);
+    const sinAngle = Math.sin(bodyAngle);
+    const rotatedOffsetX = limbState.attachmentOffset.x * cosAngle - limbState.attachmentOffset.y * sinAngle;
+    const rotatedOffsetY = limbState.attachmentOffset.x * sinAngle + limbState.attachmentOffset.y * cosAngle;
+
     const attachmentPoint = {
-        x: bodyPos.x + limbState.attachmentOffset.x,
-        y: bodyPos.y + limbState.attachmentOffset.y,
+        x: bodyPos.x + rotatedOffsetX,
+        y: bodyPos.y + rotatedOffsetY,
     };
 
     // Calculate vector from limb end to its attachment point
@@ -91,7 +97,7 @@ function updateLimbPhysics(limbState, bodyPos, deltaTime) {
 }
 
 /**
- * Updates the player's body physics state based on bungee forces, gravity, and damping.
+ * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
  * Also handles collision with level geometry.
  *
  * @param {string} clientId - The ID of the player to update.
@@ -107,7 +113,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     // Ensure state exists, using anchor position if initializing
     const state = ensurePhysicsState(clientId, anchorPos);
 
-    // --- Body Physics ---
+    // --- Body Linear Physics (Position/Velocity) ---
     const k = config.bungeeSpringConstant;
     const restLength = config.bungeeRestLength;
     const damping = config.bungeeDampingFactor;
@@ -149,8 +155,38 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.position.x += state.velocity.x * deltaTime;
     state.position.y += state.velocity.y * deltaTime;
 
+    // --- Body Angular Physics (Rotation) ---
+    const inertia = config.playerRotationalInertia;
+    const uprightStrength = config.playerUprightingStrength;
+    const rotationalDamping = config.playerRotationalDamping;
+
+    // Torque calculation (simplified)
+    // 1. Uprighting torque (tries to return angle to 0)
+    const uprightingTorque = -state.angle * uprightStrength;
+    // 2. Damping torque (resists angular velocity)
+    const dampingTorque = -state.angularVelocity * rotationalDamping;
+    // (Ignoring bungee/collision torque for now)
+    const totalTorque = uprightingTorque + dampingTorque;
+
+    // Angular acceleration = Torque / Inertia
+    const angularAcceleration = totalTorque / inertia;
+
+    // Update angular velocity
+    state.angularVelocity += angularAcceleration * deltaTime;
+
+    // Apply angular damping (alternative method, using pow like linear damping)
+    // state.angularVelocity *= Math.pow(config.playerRotationalDampingFactor, deltaTime * 60); // Requires different config value
+
+    // Update angle
+    state.angle += state.angularVelocity * deltaTime;
+
+    // Normalize angle to stay within -PI to PI (optional, but can prevent large numbers)
+    // state.angle = (state.angle + Math.PI) % (2 * Math.PI) - Math.PI;
+
+
     // --- Level Collision Check and Response (Body) ---
     // Modifies state.position and state.velocity directly if collision occurs
+    // TODO: Collision response *should* ideally affect angular velocity too, but that's complex.
     handlePlayerLevelCollision(state);
 
     // --- Constraints (Post-Collision) ---
@@ -175,9 +211,9 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     }
 
     // --- Update Limb Physics ---
-    // Pass the final, collision-adjusted body position to limb physics calculations
+    // Pass the final, collision-adjusted body position AND angle to limb physics calculations
     state.limbs.forEach(limb => {
-        updateLimbPhysics(limb, state.position, deltaTime);
+        updateLimbPhysics(limb, state.position, state.angle, deltaTime);
         // TODO: Add limb-level collision later if desired
     });
 

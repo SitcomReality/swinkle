@@ -4,7 +4,7 @@ export const notes = `
 **Design Goals & Considerations:**
 - **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players must manage the paint in their can and find ways to replenish it by acquiring new cans. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
-- **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord.
+- **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
@@ -12,8 +12,7 @@ export const notes = `
 **Next Steps:**
 
 - **1. Environment/Level Generation:**
-    *1.1-1.6: Done.*
-    - 1.7: Give the capsule the ability to rotate in response to directional forces while always attempting to keep itself upright like an inflatable punching bag.
+    *1.1-1.7: Done.*
     - 1.8: Refine collision response (e.g., add slight bounce/restitution based on obstacle properties, apply friction).
     - 1.9: Power-ups. Eg. Shorter, stiffer or springier bungee between cursor and capsule; temporary shield; acetone (a 'health pickup' that reduces how painted the player is); paint buckets with buffed attributes, like double sized (visually and in terms of paint volume), less viscous (drops faster), and a rare buff that makes every droplet a full burst.
 

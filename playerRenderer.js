@@ -56,6 +56,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
+    const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
 
     // --- Render Player Bungee Cord (Anchor -> Body) ---
     ctx.beginPath();
@@ -70,15 +71,27 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.lineWidth = config.limbWidth;
     ctx.lineCap = 'round';
 
+    const cosAngle = Math.cos(bodyAngle);
+    const sinAngle = Math.sin(bodyAngle);
+
     physicsState.limbs.forEach(limb => {
-        const attachmentPointX = bodyX + limb.attachmentOffset.x;
-        const attachmentPointY = bodyY + limb.attachmentOffset.y;
+        // Calculate world attachment point based on body rotation
+        const rotatedOffsetX = limb.attachmentOffset.x * cosAngle - limb.attachmentOffset.y * sinAngle;
+        const rotatedOffsetY = limb.attachmentOffset.x * sinAngle + limb.attachmentOffset.y * cosAngle;
+        const attachmentPointX = bodyX + rotatedOffsetX;
+        const attachmentPointY = bodyY + rotatedOffsetY;
+
         ctx.beginPath();
         ctx.moveTo(attachmentPointX, attachmentPointY);
         ctx.lineTo(limb.position.x, limb.position.y);
         ctx.stroke();
     });
     ctx.lineCap = 'butt'; // Reset line cap
+
+    // --- Apply Rotation for Body, Eyes ---
+    ctx.save(); // Save context before rotating for body/eyes
+    ctx.translate(bodyX, bodyY); // Move origin to body center
+    ctx.rotate(bodyAngle); // Rotate the context
 
     // --- Render Player Body (Capsule) ---
     const bodyWidth = config.playerBodyWidth || 20;
@@ -89,34 +102,32 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
     const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData);
 
-    // Draw Fill First
+    // Draw Fill First (centered at the rotated origin 0,0)
     ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
     ctx.beginPath();
-    ctx.moveTo(bodyX - radius, bodyY - rectHeight / 2); // Top-left start of capsule arc
-    ctx.arc(bodyX, bodyY - rectHeight / 2, radius, Math.PI, 0); // Top semi-circle
-    ctx.lineTo(bodyX + radius, bodyY + rectHeight / 2); // Right side vertical line
-    ctx.arc(bodyX, bodyY + rectHeight / 2, radius, 0, Math.PI); // Bottom semi-circle
-    ctx.lineTo(bodyX - radius, bodyY - rectHeight / 2); // Left side vertical line
+    ctx.moveTo(-radius, -rectHeight / 2); // Top-left start of capsule arc
+    ctx.arc(0, -rectHeight / 2, radius, Math.PI, 0); // Top semi-circle
+    ctx.lineTo(radius, rectHeight / 2); // Right side vertical line
+    ctx.arc(0, rectHeight / 2, radius, 0, Math.PI); // Bottom semi-circle
+    ctx.lineTo(-radius, -rectHeight / 2); // Left side vertical line
     ctx.closePath();
     ctx.fill();
 
     // Draw Blended Stroke (potentially with glow)
-    ctx.save();
     // Optional: Add glow to stroke based on blended color? Might be visually noisy.
     // ctx.shadowBlur = glowBlur / 2; // Subtle glow for stroke
     // ctx.shadowColor = blendedStrokeColor;
     ctx.strokeStyle = blendedStrokeColor; // Use blended stroke color
     ctx.lineWidth = 2;
     ctx.stroke(); // Draw blended stroke using the same path
-    ctx.restore();
 
-    // --- Render Eyes ---
+    // --- Render Eyes (Relative to Rotated Body Center) ---
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
     const eyeOffsetY = config.playerEyeOffsetY || -3;
-    const leftEyeX = bodyX - eyeOffsetX;
-    const rightEyeX = bodyX + eyeOffsetX;
-    const eyeY = bodyY + eyeOffsetY;
+    const leftEyeX = -eyeOffsetX; // Relative to rotated (0,0)
+    const rightEyeX = +eyeOffsetX;
+    const eyeY = eyeOffsetY;
 
     ctx.fillStyle = '#FFFFFF'; // White part of the eye
     ctx.strokeStyle = '#000000'; // Black outline
@@ -134,7 +145,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.fill();
     ctx.stroke();
 
-    // --- Render Pupils (Look towards anchor point for local player) ---
+    // --- Render Pupils (Look towards anchor point for local player - needs world coordinates) ---
     const pupilRadius = eyeRadius * 0.5;
     const maxPupilOffset = eyeRadius - pupilRadius - 1; // Max distance pupil can move
     let pupilOffsetX = 0;
@@ -142,44 +153,53 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
 
     // Only make local player's eyes look
     if (clientId === localClientId) {
-        const avgEyeX = bodyX; // Look from center between eyes
-        const dirX = anchorX - avgEyeX;
-        const dirY = anchorY - eyeY; // Look towards anchor Y relative to eye Y
-        const dist = Math.sqrt(dirX * dirX + dirY * dirY);
+        // Calculate direction from world body center to world anchor
+        const worldDirX = anchorX - bodyX;
+        const worldDirY = anchorY - bodyY;
 
-        if (dist > 1) { // Avoid division by zero or tiny values
-            const normX = dirX / dist;
-            const normY = dirY / dist;
-            pupilOffsetX = normX * maxPupilOffset;
-            pupilOffsetY = normY * maxPupilOffset;
+        // Rotate this world direction vector into the player's local coordinate system
+        // Rotation by -bodyAngle
+        const localDirX = worldDirX * cosAngle + worldDirY * sinAngle;
+        const localDirY = -worldDirX * sinAngle + worldDirY * cosAngle;
+
+        const localDist = Math.sqrt(localDirX * localDirX + localDirY * localDirY);
+
+        if (localDist > 1) { // Avoid division by zero or tiny values
+            const localNormX = localDirX / localDist;
+            const localNormY = localDirY / localDist;
+            pupilOffsetX = localNormX * maxPupilOffset; // Apply offset in local space
+            pupilOffsetY = localNormY * maxPupilOffset;
         }
     } // Other players' pupils stay centered
 
     ctx.fillStyle = '#000000'; // Black pupils
 
-    // Left Pupil
+    // Left Pupil (Offset relative to local eye position)
     ctx.beginPath();
-    ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2); // Already in local rotated space
     ctx.fill();
 
-    // Right Pupil
+    // Right Pupil (Offset relative to local eye position)
     ctx.beginPath();
-    ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2); // Already in local rotated space
     ctx.fill();
 
-    // --- Render Player Name ---
+    // --- Restore Context After Body/Eyes ---
+    ctx.restore(); // Restore translation and rotation
+
+    // --- Render Player Name (Not Rotated) ---
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
-    const nameYOffset = (bodyHeight / 2) + 14; // Position below the capsule
+    const nameYOffset = (bodyHeight / 2) + 14; // Position below the capsule (world Y)
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
-    // --- Display Loss Message if Player has Lost ---
+    // --- Display Loss Message if Player has Lost (Not Rotated) ---
     if (presence.lost) {
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
         ctx.textAlign = 'center'; // Ensure it's centered
-        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight); // Position above body
+        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight); // Position above body (world Y)
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
@@ -187,15 +207,15 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     if (currentCanId && allPaintCansState && allPaintCansState[currentCanId]) {
         const canState = allPaintCansState[currentCanId];
 
-        // Render can bungee cord (Player Body -> Can)
+        // Render can bungee cord (Player Body Center -> Can World Pos)
         ctx.beginPath();
-        ctx.moveTo(bodyX, bodyY); // Start from player body center
-        ctx.lineTo(canState.x, canState.y); // Go to can center
+        ctx.moveTo(bodyX, bodyY); // Start from player body center (world coords)
+        ctx.lineTo(canState.x, canState.y); // Go to can center (world coords)
         ctx.strokeStyle = config.paintCanBungeeColor || 'rgba(180, 180, 180, 0.6)';
         ctx.lineWidth = config.paintCanBungeeWidth || 1.5;
         ctx.stroke();
 
-        // Render the can itself
+        // Render the can itself (at its world position)
         renderPaintCan(ctx, canState);
     }
 }
