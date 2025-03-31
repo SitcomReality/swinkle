@@ -18,15 +18,15 @@ export const notes = `
         - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
         - 1.9.3: *DONE* - Implemented collision detection to collect power-ups
         - 1.9.4: *DONE* - Create active power-up processing system for timed effects
-            - Modified `game-loop.js` to call `processActivePowerUps` from `power-up-manager.js` for the local player each frame.
-            - Implemented `processActivePowerUps` in `power-up-manager.js` to check `presence.activePowerUps`, handle expiration, and generate presence updates to remove effects.
+            - Modified \`game-loop.js\` to call \`processActivePowerUps\` from \`power-up-manager.js\` for the local player each frame.
+            - Implemented \`processActivePowerUps\` in \`power-up-manager.js\` to check \`presence.activePowerUps\`, handle expiration, and generate presence updates to remove effects.
         - 1.9.5: Implement each power-up effect (shield, acetone, spring, mega can)
-            - **Acetone:** Modify `power-ups/power-up-manager.js` (`checkPowerUpCollisions`) to directly update `presence.paintedData = {}` when acetone is collected (as it's instant).
-            - **Shield:** Modify `collisionHandler.js` (`checkCollisionsWithPlayer`) to check for `presence.shielded === true`. If true, skip applying paint (`paintedUpdates`) and droplet removal (`dropletsToRemove`) for incoming droplets. Consider adding a visual effect when a droplet hits the shield.
-            - **Spring:** Modify `playerPhysics.js` (`updatePlayerPhysics`) to check for `presence.springyBungee === true`. If true, temporarily modify `k` (spring constant) or `restLength` for the main bungee calculation using multipliers from `config.js`. Reset to normal values if false.
-            - **Mega Can:** Modify `playerInteractions.js` (`handlePaintCanPickup`). When a can is picked up, check if `presence.megaCanPowerup === true`. If true, set the picked-up can's `paintAmount` to `config.paintCanInitialAmount * config.megaCanCapacityMultiplier` and potentially flag the can visually (e.g., a `isMega` property?). Also, set `presence.megaCanPowerup = false` after the buff is applied. Handle the visual representation in `paintCan.js` (`renderPaintCan`) if a flag is added. Ensure the paint level UI (`ui-manager.js`) accounts for the potentially larger max capacity.
+            - **Acetone:** Modify \`power-ups/power-up-manager.js\` (\`checkPowerUpCollisions\`) to directly update \`presence.paintedData = {}\` when acetone is collected (as it's instant).
+            - **Shield:** Modify \`collisionHandler.js\` (\`checkCollisionsWithPlayer\`) to check for \`presence.shielded === true\`. If true, skip applying paint (\`paintedUpdates\`) and droplet removal (\`dropletsToRemove\`) for incoming droplets. Consider adding a visual effect when a droplet hits the shield.
+            - **Spring:** Modify \`playerPhysics.js\` (\`updatePlayerPhysics\`) to check for \`presence.springyBungee === true\`. If true, temporarily modify \`k\` (spring constant) or \`restLength\` for the main bungee calculation using multipliers from \`config.js\`. Reset to normal values if false.
+            - **Mega Can:** Modify \`playerInteractions.js\` (\`handlePaintCanPickup\`). When a can is picked up, check if \`presence.megaCanPowerup === true\`. If true, set the picked-up can's \`paintAmount\` to \`config.paintCanInitialAmount * config.megaCanCapacityMultiplier\` and potentially flag the can visually (e.g., a \`isMega\` property?). Also, set \`presence.megaCanPowerup = false\` after the buff is applied. Handle the visual representation in \`paintCan.js\` (\`renderPaintCan\`) if a flag is added. Ensure the paint level UI (\`ui-manager.js\`) accounts for the potentially larger max capacity.
         - 1.9.6: Add visual effects to indicate active power-ups on players
-            - Modify `playerRenderer.js` to draw indicators (e.g., shield outline, springy bungee visual change, mega-can indicator on player?) based on active power-up flags in presence.
+            - Modify \`playerRenderer.js\` to draw indicators (e.g., shield outline, springy bungee visual change, mega-can indicator on player?) based on active power-up flags in presence.
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
@@ -46,7 +46,7 @@ export function loadDevNotes() {
     if (container) {
         // Use textContent to avoid HTML injection issues
         // Replace backticks with a similar character or remove them for display
-        container.textContent = notes.replace(/`/g, "'"); // Replace backticks with single quotes for display
+        container.textContent = notes.replace(/\`/g, "'"); // Replace backticks with single quotes for display
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");
