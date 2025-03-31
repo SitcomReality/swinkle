@@ -7,96 +7,128 @@ import config from 'config';
 import { getCurrentLevel } from './level-manager.js';
 
 /**
- * Checks for collision between a circular representation of an object (e.g., player body center)
- * and a rectangular obstacle. Basic AABB check for simplicity.
- * A more accurate capsule vs rectangle or SAT collision would be better later.
+ * Checks for collision between a circular representation of an object
+ * and a potentially rotated rectangular obstacle.
+ * Uses Separating Axis Theorem (SAT) for accuracy with rotation.
  * @param {object} objectState - Physics state with position {x, y}.
- * @param {object} obstacle - Level obstacle data { x, y, width, height }.
+ * @param {object} obstacle - Level obstacle data { x, y, width, height, angle }.
  * @param {number} objectRadius - Approximate radius for collision check.
- * @returns {boolean} True if colliding, false otherwise.
+ * @returns {object|null} Collision details { overlap, normal: {x, y} } or null if no collision.
  */
-function checkCircleRectCollision(objectState, obstacle, objectRadius) {
-    const circle = { x: objectState.position.x, y: objectState.position.y, radius: objectRadius };
-    const rect = {
-        left: obstacle.x - obstacle.width / 2,
-        right: obstacle.x + obstacle.width / 2,
-        top: obstacle.y - obstacle.height / 2,
-        bottom: obstacle.y + obstacle.height / 2
-    };
+function checkCircleRotatedRectCollision(objectState, obstacle, objectRadius) {
+    const circlePos = objectState.position;
+    const rectCenter = { x: obstacle.x, y: obstacle.y };
+    const rectHalfWidth = obstacle.width / 2;
+    const rectHalfHeight = obstacle.height / 2;
+    const rectAngle = obstacle.angle || 0; // Default angle is 0
 
-    // Find the closest point to the circle within the rectangle
-    const closestX = Math.max(rect.left, Math.min(circle.x, rect.right));
-    const closestY = Math.max(rect.top, Math.min(circle.y, rect.bottom));
+    // Transform circle center to rectangle's local coordinates
+    const cosA = Math.cos(-rectAngle);
+    const sinA = Math.sin(-rectAngle);
+    const dx = circlePos.x - rectCenter.x;
+    const dy = circlePos.y - rectCenter.y;
+    const localCircleX = dx * cosA - dy * sinA;
+    const localCircleY = dx * sinA + dy * cosA;
 
-    // Calculate the distance between the circle's center and this closest point
-    const distanceX = circle.x - closestX;
-    const distanceY = circle.y - closestY;
+    // Find the closest point on the AABB in the rectangle's local space
+    const closestX = Math.max(-rectHalfWidth, Math.min(localCircleX, rectHalfWidth));
+    const closestY = Math.max(-rectHalfHeight, Math.min(localCircleY, rectHalfHeight));
 
-    // If the distance is less than the circle's radius, an overlap occurs
-    const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
-    return distanceSquared < (circle.radius * circle.radius);
+    // Calculate the distance squared between the local circle center and this closest point
+    const localDistX = localCircleX - closestX;
+    const localDistY = localCircleY - closestY;
+    const distanceSquared = (localDistX * localDistX) + (localDistY * localDistY);
+
+    // If the distance is less than the radius squared, an overlap occurs
+    if (distanceSquared < (objectRadius * objectRadius)) {
+        // Collision detected! Calculate overlap and normal
+        const distance = Math.sqrt(distanceSquared);
+        const overlap = objectRadius - distance;
+
+        if (distance < 0.001) {
+            // Circle center is inside the rectangle - push out along axis with min overlap
+            const overlapX = objectRadius + (localCircleX > 0 ? rectHalfWidth - localCircleX : rectHalfWidth + localCircleX);
+            const overlapY = objectRadius + (localCircleY > 0 ? rectHalfHeight - localCircleY : rectHalfHeight + localCircleY);
+             if (overlapX < overlapY) {
+                 const normalX_local = localCircleX > 0 ? 1 : -1;
+                 const normalY_local = 0;
+                 // Rotate normal back to world space
+                 const normalX_world = normalX_local * Math.cos(rectAngle) - normalY_local * Math.sin(rectAngle);
+                 const normalY_world = normalX_local * Math.sin(rectAngle) + normalY_local * Math.cos(rectAngle);
+                 return { overlap: overlapX, normal: { x: normalX_world, y: normalY_world } };
+             } else {
+                 const normalX_local = 0;
+                 const normalY_local = localCircleY > 0 ? 1 : -1;
+                 // Rotate normal back to world space
+                 const normalX_world = normalX_local * Math.cos(rectAngle) - normalY_local * Math.sin(rectAngle);
+                 const normalY_world = normalX_local * Math.sin(rectAngle) + normalY_local * Math.cos(rectAngle);
+                 return { overlap: overlapY, normal: { x: normalX_world, y: normalY_world } };
+             }
+
+        } else {
+            // Push out from the closest point direction
+            const normalX_local = localDistX / distance;
+            const normalY_local = localDistY / distance;
+            // Rotate normal back to world space
+            const normalX_world = normalX_local * Math.cos(rectAngle) - normalY_local * Math.sin(rectAngle);
+            const normalY_world = normalX_local * Math.sin(rectAngle) + normalY_local * Math.cos(rectAngle);
+            return { overlap, normal: { x: normalX_world, y: normalY_world } };
+        }
+    }
+
+    return null; // No collision
 }
+
 
 /**
  * Resolves collision between a dynamic object and a static rectangle obstacle.
  * Modifies the object's position and velocity directly.
- * Basic response: push out, apply friction and restitution.
+ * Uses collision normal for more accurate response.
  * @param {object} objectState - The physics state object { position: {x, y}, velocity: {x, y} }
- * @param {object} obstacle - The obstacle data object { x, y, width, height, properties: { friction, restitution } }.
- * @param {number} objectRadius - Approximate radius used for collision check.
+ * @param {object} obstacle - The obstacle data object { properties: { friction, restitution } }.
+ * @param {object} collisionInfo - Result from collision check { overlap, normal: {x, y} }.
  */
-function resolveCollision(objectState, obstacle, objectRadius) {
+function resolveCollision(objectState, obstacle, collisionInfo) {
     const objPos = objectState.position;
     const objVel = objectState.velocity;
-    const rectCenterX = obstacle.x;
-    const rectCenterY = obstacle.y;
-    const rectHalfWidth = obstacle.width / 2;
-    const rectHalfHeight = obstacle.height / 2;
+    const normal = collisionInfo.normal;
+    const overlap = collisionInfo.overlap;
 
     // Default physics properties if not defined on the obstacle
     const restitution = obstacle.properties?.restitution ?? 0.1; // Default slight bounce
     const friction = obstacle.properties?.friction ?? 0.9;     // Default friction
 
-    const dx = objPos.x - rectCenterX; // Vector from rect center to circle center
-    const dy = objPos.y - rectCenterY;
+    // --- Positional Correction ---
+    // Push the object out of the obstacle along the collision normal
+    // Use a small buffer (slop) to prevent constant contact / jitter
+    const slop = 0.01;
+    const correctionMagnitude = Math.max(0, overlap - slop);
+    objPos.x += normal.x * correctionMagnitude;
+    objPos.y += normal.y * correctionMagnitude;
 
-    // Calculate overlap in x and y directions
-    const overlapX = (rectHalfWidth + objectRadius) - Math.abs(dx);
-    const overlapY = (rectHalfHeight + objectRadius) - Math.abs(dy);
+    // --- Velocity Resolution ---
+    // Calculate relative velocity along the normal
+    const normalVelocity = objVel.x * normal.x + objVel.y * normal.y;
 
-    // Only resolve if there's actually an overlap (should always be true if called after collision check)
-    if (overlapX > 0 && overlapY > 0) {
-        // Determine minimum push direction
-        if (overlapX < overlapY) {
-            // Push horizontally
-            const pushSign = dx > 0 ? 1 : -1;
-            objPos.x += pushSign * overlapX; // Push out
+    // If object is moving into the wall, apply bounce and friction
+    if (normalVelocity < 0) {
+        // Calculate impulse magnitude for bounce (restitution)
+        // Simplified impulse calculation (assuming obstacle mass is infinite)
+        const impulseMagnitude = -(1 + restitution) * normalVelocity;
 
-            // Apply restitution and friction
-            // Velocity component perpendicular to the surface (normal velocity)
-            const normalVelX = objVel.x;
-            // Velocity component parallel to the surface (tangential velocity)
-            const tangentVelY = objVel.y;
+        // Apply bounce impulse along the normal
+        objVel.x += normal.x * impulseMagnitude;
+        objVel.y += normal.y * impulseMagnitude;
 
-            // Modify velocity based on collision response
-            objVel.x = -normalVelX * restitution; // Reverse and dampen normal velocity (bounce)
-            objVel.y = tangentVelY * friction;    // Apply friction to tangential velocity
+        // Calculate tangential velocity vector
+        const tangent = { x: -normal.y, y: normal.x };
+        const tangentVelocity = objVel.x * tangent.x + objVel.y * tangent.y;
 
-        } else {
-            // Push vertically
-            const pushSign = dy > 0 ? 1 : -1;
-            objPos.y += pushSign * overlapY; // Push out
-
-            // Apply restitution and friction
-            // Velocity component perpendicular to the surface (normal velocity)
-            const normalVelY = objVel.y;
-            // Velocity component parallel to the surface (tangential velocity)
-            const tangentVelX = objVel.x;
-
-            // Modify velocity based on collision response
-            objVel.y = -normalVelY * restitution; // Reverse and dampen normal velocity (bounce)
-            objVel.x = tangentVelX * friction;    // Apply friction to tangential velocity
-        }
+        // Apply friction impulse opposing tangential velocity
+        // Simple friction model: reduce tangential velocity directly
+        // A more accurate model uses impulse magnitude and friction coefficients
+        objVel.x -= tangent.x * tangentVelocity * (1 - friction);
+        objVel.y -= tangent.y * tangentVelocity * (1 - friction);
     }
 }
 
@@ -114,8 +146,9 @@ export function handlePlayerLevelCollision(playerState) {
 
     levelData.obstacles.forEach(obstacle => {
         if (obstacle.type === 'rectangle') {
-            if (checkCircleRectCollision(playerState, obstacle, playerRadius)) {
-                resolveCollision(playerState, obstacle, playerRadius);
+            const collisionInfo = checkCircleRotatedRectCollision(playerState, obstacle, playerRadius);
+            if (collisionInfo) {
+                resolveCollision(playerState, obstacle, collisionInfo);
             }
         }
         // Add checks for other obstacle types later
@@ -143,8 +176,9 @@ export function handleCanLevelCollision(canState) {
 
      levelData.obstacles.forEach(obstacle => {
          if (obstacle.type === 'rectangle') {
-             if (checkCircleRectCollision(adaptedCanState, obstacle, canRadius)) {
-                 resolveCollision(adaptedCanState, obstacle, canRadius);
+             const collisionInfo = checkCircleRotatedRectCollision(adaptedCanState, obstacle, canRadius);
+             if (collisionInfo) {
+                 resolveCollision(adaptedCanState, obstacle, collisionInfo);
                  // Update original canState with resolved position/velocity
                  canState.x = adaptedCanState.position.x;
                  canState.y = adaptedCanState.position.y;

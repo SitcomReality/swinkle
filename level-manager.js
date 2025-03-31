@@ -2,7 +2,7 @@
  * level-manager.js
  * Handles loading and providing access to level data.
  */
-import { defaultLevel } from './levels/level-data.js';
+import { allLevels } from './levels/level-data.js'; // Import all levels
 
 // Store the currently loaded level data
 let currentLevelData = null;
@@ -14,24 +14,27 @@ let currentLevelData = null;
 function loadLevel(levelObject) {
     if (!levelObject || !levelObject.id || !Array.isArray(levelObject.obstacles)) {
         console.error("Invalid level data provided:", levelObject);
-        // Optionally load default as fallback or throw error
-        console.warn("Falling back to default level.");
-        currentLevelData = defaultLevel;
+        // Fallback to the first level in the array if invalid data is somehow passed
+        console.warn("Falling back to the first defined level.");
+        currentLevelData = allLevels[0];
     } else {
         console.log(`Loading level: ${levelObject.name} (${levelObject.id})`);
         currentLevelData = levelObject;
     }
     // Potential future extension: Notify other systems that the level has changed.
+    // Update background color
+    document.body.style.backgroundColor = currentLevelData.backgroundColor || '#0a0a1e';
 }
 
 /**
- * Initializes the level manager, loading the default level.
+ * Initializes the level manager, loading a random level from the defined list.
  * Should be called once during game setup.
  */
 export function initializeLevelManager() {
-    // For now, we just load the default level.
-    // Later, this could take arguments to load specific levels.
-    loadLevel(defaultLevel);
+    // Choose a random level from the imported array
+    const randomIndex = Math.floor(Math.random() * allLevels.length);
+    const selectedLevel = allLevels[randomIndex];
+    loadLevel(selectedLevel);
 }
 
 /**

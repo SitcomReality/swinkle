@@ -12,17 +12,14 @@ export const notes = `
 **Next Steps:**
 
 - **1. Environment/Level Generation:**
-    *1.1-1.9.5: Done.*
-    - 1.9: Power-ups. Eg. Shorter, stiffer or springier bungee between cursor and capsule; temporary shield; acetone (a 'health pickup' that reduces how painted the player is); paint buckets with buffed attributes, like double sized (visually and in terms of paint volume), less viscous (drops faster), and a rare buff that makes every droplet a full burst.
-        - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
-        - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
-        - 1.9.3: *DONE* - Implemented collision detection to collect power-ups
-        - 1.9.4: *DONE* - Create active power-up processing system for timed effects
-        - 1.9.5: *DONE* - Implement each power-up effect (shield, acetone, spring, mega can)
-        - 1.9.6: *DONE* - Add visual effects to indicate active power-ups on players
+    *1.1-1.9.6: Done.*
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
+        - *DONE* - Added multiple level definitions (`level-data.js`).
+        - *DONE* - Updated `level-manager.js` to load a random level on init.
+        - *DONE* - Updated `level-renderer.js` and `level-collision.js` to handle basic rotation for rectangular obstacles defined in levels.
+        - *NEXT* - Implement a mechanism for level cycling or selection during gameplay (maybe based on time or votes?). Add support for polygon obstacles for more complex shapes.
     - 2.2: Environmental hazards? (Moving platforms, laser grids?).
     - 2.3: Better score tracking: reward players for painting other players.
 
