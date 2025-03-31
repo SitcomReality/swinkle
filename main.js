@@ -4,12 +4,14 @@ import config from 'config';
 // Import player state function directly if needed
 import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
+import { initializeLevelManager } from './level-manager.js'; // Import level manager initializer
 
 export const room = new WebsimSocket();
 
 // Initialize multiplayer connection and game state
 async function initGame() {
     await room.initialize();
+    initializeLevelManager(); // Load the level data
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -204,7 +206,6 @@ async function initGame() {
         }
         // Handle other request types here if needed
     });
-
 
     // Subscribe to room state changes (optional, for debugging or complex logic)
     room.subscribeRoomState((currentRoomState) => {

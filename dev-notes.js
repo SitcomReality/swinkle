@@ -21,7 +21,8 @@ export const notes = `
 - Aesthetic/Theme Implementation: Styled UI and added neon glow effects to canvas elements based on the theme.
 - 1.1: Create a basic file structure for map data (e.g., 'levels/level-data.js').
 - 1.2: Define a simple data structure for level geometry (e.g., an array of rectangle objects with position and dimensions).
-- **(Just Completed) 1.3: Create an initial default level with a few static rectangular platforms/obstacles in 'levels/level-data.js'.**
+- 1.3: Create an initial default level with a few static rectangular platforms/obstacles in 'levels/level-data.js'.
+- **(Just Completed) 1.4: Implement level loading in a new 'level-manager.js'. Load the 'defaultLevel' data in 'main.js'.**
 
 **Next Steps:**
 
@@ -29,8 +30,8 @@ export const notes = `
     *1.1: Create a basic file structure for map data (e.g., 'levels/level-data.js').* (Done)
     *1.2: Define a simple data structure for level geometry (e.g., an array of rectangle objects with position and dimensions).* (Done)
     *1.3: Create an initial default level with a few static rectangular platforms/obstacles in 'levels/level-data.js'.* (Done)
-    - **1.4: Implement level loading in 'main.js' or a new 'level-manager.js'. Load the 'defaultLevel' data.**
-    - 1.5: Implement rendering of the level geometry in 'game-loop.js' (or potentially a new 'level-renderer.js').
+    *1.4: Implement level loading in a new 'level-manager.js'. Load the 'defaultLevel' data in 'main.js'.* (Done)
+    - **1.5: Implement rendering of the level geometry in 'game-loop.js' (or potentially a new 'level-renderer.js'). Use data from 'level-manager.js'.**
     - 1.6: Implement basic collision detection and response between players/cans and the level geometry (e.g., in 'playerPhysics.js', 'paintCan.js', or a dedicated 'level-collision.js'). Start simply (stop movement on collision).
 `;
 
