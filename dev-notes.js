@@ -22,8 +22,8 @@ export const notes = `
     - *DONE* - 1.2: Implement basic rendering logic in notification-manager.js to display notifications (e.g., simple text boxes at a fixed position, perhaps fading in/out based on progress).
     - *DONE* - 1.3: Integrate the notification manager's update and render calls into game-loop.js.
     - *DONE* - 1.4: Add triggers in power-up-manager.js (checkPowerUpCollisions) to call the notification manager when a power-up is collected.
-    - *NEXT* - 1.5: Add triggers in collisionHandler.js (checkCollisionsWithPlayer) when a player is painted out, and in respawn-manager.js (checkPlayerRespawn) when a player respawns.
-    - 1.6: Add triggers for player join/leave events. This likely involves modifying the presence subscription in main.js or potentially adding logic to peer-manager.js and calling the notification manager from there.
+    - *DONE* - 1.5: Add triggers in collisionHandler.js (checkCollisionsWithPlayer) when a player is painted out, and in respawn-manager.js (checkPlayerRespawn) when a player respawns.
+    - *NEXT* - 1.6: Add triggers for player join/leave events. This likely involves modifying the presence subscription in main.js or potentially adding logic to peer-manager.js and calling the notification manager from there.
     - 1.7: Add styling for different notification types in style.css.
     - 1.8: Add logic for occasional whimsical/tip messages (maybe triggered randomly in the game loop or based on simple conditions like low paint).
 

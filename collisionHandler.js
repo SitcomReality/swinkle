@@ -6,6 +6,7 @@ import config from 'config';
 // Import the room instance directly to access peers and collections
 import { room } from './main.js';
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
+import { addNotification } from './notification-manager.js'; // Import notification function
 
 /**
  * Checks for collisions between the local player and all droplets.
@@ -118,6 +119,8 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             const username = room.peers[localClientId]?.username;
             if (username) {
                 console.log(`Recording loss for ${username}`);
+                // Add notification of player loss
+                addNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
                 room.collection('loss_v1').create({ loserUsername: username })
                     .then(record => console.log("Loss recorded:", record))
                     .catch(err => console.error("Error recording loss:", err));
