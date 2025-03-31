@@ -53,7 +53,7 @@ export const notes = `
 *   **Different weapon types / paint effects:** Consider adding different types of cans (e.g., wider spray, sticky paint, shield paint) or power-ups. This is a larger feature.
 
 **Refactoring:**
-*   Refactored `game-loop.js` into `gameUpdater.js` (logic) and `gameRenderer.js` (drawing) to improve organization and manage file length.
+*   Refactored \`game-loop.js\` into \`gameUpdater.js\` (logic) and \`gameRenderer.js\` (drawing) to improve organization and manage file length.
 
 `;
 
