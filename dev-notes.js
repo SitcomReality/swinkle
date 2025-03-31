@@ -4,7 +4,7 @@ export const notes = `
 **Design Goals & Considerations:**
 - **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players must manage the paint in their can and find ways to replenish it by acquiring new cans. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
-- **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright. **(Rotation implemented, fix applied, needs testing/tuning)**.
+- **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright. **(Rotation implemented, needs testing/tuning)**.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
@@ -28,12 +28,12 @@ export const notes = `
     - 3.4: Add player avatars to scoreboard/game.
     - 3.5: Tune player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
 
-**Debugging Rotation (If still needed after fix):**
-1. **Check Console Logs:** Ensure no *new* errors are occurring during physics updates.
-2. **Exaggerate Parameters:** Temporarily set `playerUprightingStrength` very low (e.g., 0.1) and `playerRotationalDamping` low (e.g., 0.5). Does it rotate *at all* now? Then try high values.
-3. **Visualize Forces/Torque:** Add `console.log` inside `updatePlayerPhysics` to output the calculated `totalTorque`, `bungeeTorque`, `uprightingTorque`, `dampingTorque`, `state.angle`, and `state.angularVelocity` each frame. See if the values make sense (e.g., does bungee torque change sign when swinging past the anchor?).
-4. **Simplify:** Temporarily comment out the uprighting and damping torques (`uprightingTorque = 0; dampingTorque = 0;`). Does the bungee torque alone cause *any* rotation? If not, the bungee torque calculation itself might be flawed.
-5. **Attachment Point:** Double-check the assumed attachment point for the bungee torque calculation (`attachmentOffsetY_local`). Is it significantly different from the center of mass? If it's attached exactly at the center, it won't cause rotation. Ensure `r_world_x` and `r_world_y` calculations are correct.
+**Debugging Rotation (If needed):**
+1. **Check Console Logs:** Ensure no errors are occurring during physics updates.
+2. **Exaggerate Parameters:** Temporarily set \`playerUprightingStrength\` very low (e.g., 0.1) and \`playerRotationalDamping\` low (e.g., 0.99). Does it rotate *at all* now?
+3. **Visualize Forces/Torque:** Add \`console.log\` inside \`updatePlayerPhysics\` to output the calculated \`totalTorque\`, \`T_bungee\`, \`uprightingTorque\`, \`dampingTorque\`, \`state.angle\`, and \`state.angularVelocity\` each frame. See if the values make sense.
+4. **Simplify:** Temporarily disable the uprighting and damping torques. Does the bungee torque alone cause *any* rotation?
+5. **Attachment Point:** Double-check the assumed attachment point for the bungee torque calculation. Is it significantly different from the center of mass? If it's attached exactly at the center, it won't cause rotation.
 `;
 
 export function loadDevNotes() {
