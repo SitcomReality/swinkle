@@ -5,8 +5,8 @@
 import config from 'config';
 import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './player.js';
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
-import { handleCanInteractions } from './playerInteractions.js'; // New import
-import { renderDroplets } from './dropletRenderer.js'; // New import
+import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js'; 
+import { renderDroplets } from './dropletRenderer.js'; 
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -58,6 +58,8 @@ function gameLoop(timestamp) {
     // --- Update Physics & Interactions ---
     let allPaintCanUpdates = {}; // Collect updates for ALL owned cans this frame
     let allDropletsToAdd = {};   // Collect ALL new droplets this frame
+    let allAvailablePaintCanUpdates = {}; // For can pickups
+    let localPresenceUpdates = {}; // For currentCanId changes
 
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
@@ -69,6 +71,26 @@ function gameLoop(timestamp) {
             const playerPhysicsState = getPlayerPhysicsState(clientId);
             if (!playerPhysicsState) return; // Skip if player physics state isn't ready
             const playerBodyPos = playerPhysicsState.position;
+
+            // IMPORTANT: Check for empty cans (only owner checks)
+            if (clientId === localClientId && presence.currentCanId) {
+                const canState = roomInstance.roomState.paintCans?.[presence.currentCanId];
+                if (canState) {
+                    const { paintCanUpdates, presenceUpdates } = handleEmptyPaintCan(
+                        localClientId, 
+                        canState, 
+                        presence
+                    );
+                    
+                    // Merge updates
+                    if (Object.keys(paintCanUpdates).length > 0) {
+                        allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
+                    }
+                    if (Object.keys(presenceUpdates).length > 0) {
+                        localPresenceUpdates = { ...localPresenceUpdates, ...presenceUpdates };
+                    }
+                }
+            }
 
             // Check if this player owns a paint can
             const currentCanId = presence.currentCanId;
@@ -110,19 +132,73 @@ function gameLoop(timestamp) {
                     }
                 }
             }
-            // TODO Step 5: Add collision check here between local player capsule and availablePaintCans
+            
+            // NEW: Check for paint can pickup (only for local player without a can)
+            if (clientId === localClientId && !presence.currentCanId) {
+                const availableCans = roomInstance.roomState.availablePaintCans || {};
+                const { paintCanUpdates, availablePaintCanUpdates, presenceUpdates } = handlePaintCanPickup(
+                    playerBodyPos,
+                    localClientId,
+                    presence,
+                    availableCans
+                );
+                
+                // Merge updates
+                if (Object.keys(paintCanUpdates).length > 0) {
+                    allPaintCanUpdates = { ...allPaintCanUpdates, ...paintCanUpdates };
+                }
+                if (Object.keys(availablePaintCanUpdates).length > 0) {
+                    allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...availablePaintCanUpdates };
+                }
+                if (Object.keys(presenceUpdates).length > 0) {
+                    localPresenceUpdates = { ...localPresenceUpdates, ...presenceUpdates };
+                }
+            }
         }
     });
 
+    // NEW: Spawn new paint cans randomly (simple approach)
+    if (localClientId && Math.random() < 0.005) { // ~0.5% chance per frame to spawn a can
+        const availableCans = roomInstance.roomState.availablePaintCans || {};
+        // Only spawn if there are fewer than 3 available cans
+        if (Object.keys(availableCans).length < 3) {
+            const canId = `can-${Math.random().toString(36).substring(2, 9)}`;
+            const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
+            
+            // Position the can somewhere in the visible canvas area
+            const margin = 100;
+            const x = margin + Math.random() * (canvas.width - margin * 2);
+            const y = margin + Math.random() * (canvas.height - margin * 2);
+            
+            allAvailablePaintCanUpdates[canId] = {
+                id: canId,
+                ownerId: null,
+                paintColor: config.paintCanColors[colorIndex],
+                paintAmount: config.paintCanInitialAmount,
+                x: x,
+                y: y
+            };
+        }
+    }
+
     // Send batched updates for cans owned by this client
     if (Object.keys(allPaintCanUpdates).length > 0) {
-        // console.log("Sending can updates:", allPaintCanUpdates);
         roomInstance.updateRoomState({ paintCans: allPaintCanUpdates });
     }
+    
+    // Send batched updates for available paint cans
+    if (Object.keys(allAvailablePaintCanUpdates).length > 0) {
+        roomInstance.updateRoomState({ availablePaintCans: allAvailablePaintCanUpdates });
+    }
+    
     // Send batched updates for new droplets created by this client
     if (Object.keys(allDropletsToAdd).length > 0) {
-        // console.log("Sending new droplets:", allDropletsToAdd);
         roomInstance.updateRoomState({ droplets: allDropletsToAdd });
+    }
+    
+    // Send any presence updates for the local client
+    if (Object.keys(localPresenceUpdates).length > 0) {
+        roomInstance.updatePresence(localPresenceUpdates);
     }
 
     // --- Render Scene ---

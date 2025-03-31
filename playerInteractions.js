@@ -82,3 +82,106 @@ export function handleCanInteractions(localClientId, canState, deltaTime, now) {
 
     return { paintCanUpdates, newDroplets };
 }
+
+/**
+ * Checks if the player can pick up an available paint can and returns the updates.
+ * @param {object} playerBodyPos - The player's body position {x, y}.
+ * @param {string} localClientId - The ID of the local client.
+ * @param {object} presence - The player's current presence data.
+ * @param {object} availablePaintCans - The available paint cans from roomState.
+ * @returns {object} Update objects for roomState and presence.
+ */
+export function handlePaintCanPickup(playerBodyPos, localClientId, presence, availablePaintCans) {
+    // Skip if player already has a can
+    if (presence.currentCanId) return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+
+    const pickupDistance = config.paintCanPickupDistance;
+    const nearestCan = findNearestAvailableCan(playerBodyPos, availablePaintCans, pickupDistance);
+    
+    if (nearestCan) {
+        console.log(`Player ${localClientId} picking up can ${nearestCan.id}`);
+        
+        // Updates to send
+        return {
+            // Add to paintCans with player as owner
+            paintCanUpdates: {
+                [nearestCan.id]: {
+                    ...nearestCan,
+                    ownerId: localClientId,
+                    // Initialize physics properties if not present
+                    vx: 0,
+                    vy: 0,
+                    isCharging: false,
+                    accumulatedDroplets: 0
+                }
+            },
+            // Remove from available cans
+            availablePaintCanUpdates: {
+                [nearestCan.id]: null
+            },
+            // Update player presence
+            presenceUpdates: {
+                currentCanId: nearestCan.id
+            }
+        };
+    }
+    
+    return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+}
+
+/**
+ * Checks for empty paint cans and returns updates to handle them.
+ * @param {string} localClientId - The ID of the local client.
+ * @param {object} canState - The current state of the player's paint can.
+ * @param {object} presence - The player's current presence data.
+ * @returns {object} Update objects for roomState and presence.
+ */
+export function handleEmptyPaintCan(localClientId, canState, presence) {
+    if (!canState || canState.ownerId !== localClientId) return { paintCanUpdates: {}, presenceUpdates: {} };
+    
+    // If can is empty, handle dropping it
+    if (canState.paintAmount <= 0) {
+        console.log(`Can ${canState.id} is empty, dropping it`);
+        
+        return {
+            // Simply remove the can when empty
+            paintCanUpdates: {
+                [canState.id]: null
+            },
+            // Update player presence to no longer hold this can
+            presenceUpdates: {
+                currentCanId: null
+            }
+        };
+    }
+    
+    return { paintCanUpdates: {}, presenceUpdates: {} };
+}
+
+/**
+ * Finds the nearest available paint can within pickup distance.
+ * @private
+ * @param {object} playerPos - The player's position {x, y}.
+ * @param {object} availableCans - The available paint cans object.
+ * @param {number} maxDistance - Maximum pickup distance.
+ * @returns {object|null} The nearest can state or null if none found.
+ */
+function findNearestAvailableCan(playerPos, availableCans, maxDistance) {
+    let nearestCan = null;
+    let nearestDistance = maxDistance;
+    
+    Object.values(availableCans).forEach(canState => {
+        if (!canState) return;
+        
+        const dx = canState.x - playerPos.x;
+        const dy = canState.y - playerPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestCan = canState;
+        }
+    });
+    
+    return nearestCan;
+}

@@ -15,6 +15,7 @@ export const notes = `
 *   Created 'dropletRenderer.js' to handle rendering of all droplets.
 *   Moved held paint can rendering and its bungee cord logic into 'playerRenderer.js'.
 *   'game-loop.js' now focuses on the core loop timing, canvas setup, peer disconnect checks, calling physics updates, calling interaction handling, batching state updates, and calling render functions for different scene elements.
+*   Further refactoring split player.js into playerState.js, playerPhysics.js, and playerRenderer.js with player.js now acting as a facade.
 
 **Painting Gameplay Plan (Incremental Steps - NEW DESIGN):**
 
@@ -74,21 +75,26 @@ export const notes = `
     *   **Held Can Rendering:** (Moved to 'playerRenderer.js') Held cans and their bungees are now drawn as part of the player rendering process.
     *   **Droplet Rendering:** (Moved to 'dropletRenderer.js') Handles drawing and fading of droplets.
 
-**5. Paint Can Replenishment:** (NEXT)
-    *   **Mechanism:** Refill zones or random spawning of 'availablePaintCans' in 'roomState'.
-    *   **Zone Management:** One client ('host'? First joined? Simplest: random timer on each client, only update if can doesn't exist) manages spawning cans into 'room.roomState.availablePaintCans' at predefined locations or random positions. Cans should have a random 'paintColor' from 'config.paintCanColors' and 'paintAmount: config.paintCanInitialAmount'. Include 'x, y, vx: 0, vy: 0, ownerId: null'.
-    *   **Pickup Logic:**
-        *   In 'game-loop.js' (physics update section, or maybe 'playerInteractions.js'?): Client-side collision check between local player *capsule* position ('playerPhysicsState.position') and center of cans in 'availablePaintCans' using 'config.paintCanPickupDistance'.
-        *   On collision:
-            *   If local player 'presence.currentCanId' is 'null':
-                *   Send 'room.updateRoomState' attempting to claim the can. Needs mechanism to handle races. Simplest:
-                    1. Read can state from 'availablePaintCans'.
-                    2. Send update: '{ availablePaintCans: { [canId]: null }, paintCans: { [canId]: { ...canState, ownerId: localClientId } } }'.
-                *   *After* confirmation (e.g., next state sync shows ownerId matches): Send 'room.updatePresence({ currentCanId: canId })'.
-            *   If player already has a can: Ignore the new one.
-    *   **Dropping/Losing Cans:** When 'paintAmount' hits 0, the owner sends 'room.updateRoomState' to set the can's 'ownerId = null' and move it back to 'availablePaintCans' (requires position reset) or just delete from 'paintCans' if empty cans disappear. Owner also sends 'room.updatePresence({ currentCanId: null })'. Handle disconnects (partially done in 'main.js' presence handler).
+**5. Paint Can Replenishment:** (DONE)
+    *   **Mechanism:** Implemented random spawning of 'availablePaintCans' in 'roomState' with a low probability each frame.
+    *   **Paint Can Spawning:** Added logic to 'game-loop.js' for randomly creating new paint cans in the visible area with a 0.5% chance per frame, limited to 3 available cans at a time.
+    *   **Pickup Logic:** Added to 'playerInteractions.js' and called from 'game-loop.js':
+        *   Implemented 'handlePaintCanPickup' function that performs client-side collision check between local player capsule position and centers of available cans using 'config.paintCanPickupDistance'.
+        *   On collision, generates updates to:
+            1. Remove can from 'availablePaintCans'
+            2. Add can to 'paintCans' with the player as the owner
+            3. Update player presence with 'currentCanId'
+    *   **Empty Can Handling:** Added to 'playerInteractions.js' and called from 'game-loop.js':
+        *   Implemented 'handleEmptyPaintCan' function that checks if a player's current can is empty.
+        *   When empty, generates updates to:
+            1. Remove the can from 'paintCans'
+            2. Update player presence to set 'currentCanId' to null
+    *   **Updates Batching:** Enhanced 'game-loop.js' to collect, merge, and send batched updates for:
+        *   Paint can physics and interactions
+        *   Available paint can additions/removals
+        *   Local player presence updates
 
-**6. Droplet Collision & Painting:**
+**6. Droplet Collision & Painting:** (NEXT)
     *   In 'game-loop.js' (after physics updates, or new collision module): Client-side collision detection.
         *   Iterate through local player's *capsule* physics state ('playerPhysicsState.position' and body dimensions) and all droplets in 'roomState.droplets'.
         *   Check for collision between capsule hitbox and droplets where 'droplet.ownerId !== localClientId'.
