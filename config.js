@@ -13,8 +13,8 @@ export default {
     playerEyeRadius: 4,   // Radius of the character's eyes
     playerEyeOffsetX: 6,  // Horizontal offset of eyes from center
     playerEyeOffsetY: -3, // Vertical offset of eyes from body center
-    playerBodyColor: '#FFAABB', // Color for the player body (Now mostly covered by paint visual)
-    playerBodyStrokeColor: '#FF88AA', // Base color for the player body stroke (gets blended with paint)
+    playerBodyColor: '#FFAABB', // Base color for the player body (gets blended with paint later)
+    playerBodyStrokeColor: '#FF88AA', // Base color for the player body stroke (gets blended with paint later)
 
     // Bungee Physics settings (Player -> Cursor)
     bungeeRestLength: 20,        // Natural length of the player's bungee cord
@@ -38,7 +38,7 @@ export default {
     limbMaxLengthMultiplier: 1.5,// Maximum stretch factor for limbs
 
     // Droplet settings (Formerly Squirt)
-    dropletColor: '#00FFFF', // Default color for droplets if not from a can (e.g., initial click)
+    dropletColor: '#00FFFF', // Default color for droplets if not from a can
     dropletSize: 3,       // Radius of the droplet particle
     dropletDuration: 2000, // How long droplets last in milliseconds before fading
 
@@ -52,18 +52,25 @@ export default {
         '#FF0000', // Red
         '#9D00FF', // Purple
     ],
-    paintCanWidth: 15,
-    paintCanHeight: 20,
+    paintCanWidth: 18,      // Visual width
+    paintCanHeight: 25,     // Visual height
     paintCanInitialAmount: 100, // Starting paint amount in a new can
+    paintCanStrokeColor: '#AAAAAA',
+    paintCanStrokeWidth: 1,
 
     // Paint Can Bungee Physics (Player Capsule -> Paint Can)
-    paintCanBungeeRestLength: 15,
-    paintCanBungeeSpringConstant: 8,
-    paintCanBungeeDampingFactor: 0.92,
-    paintCanMass: 0.3,
-    paintCanBungeeMaxLengthMultiplier: 5,
+    paintCanBungeeRestLength: 30, // Let it dangle a bit further
+    paintCanBungeeSpringConstant: 4, // Less stiff than player bungee
+    paintCanBungeeDampingFactor: 0.95, // More damped, less wild swinging
+    paintCanMass: 0.4, // Heavier than limbs, lighter than player
+    paintCanGravityFactor: 1.0, // Affected by full gravity
+    paintCanBungeeMaxLengthMultiplier: 10, // Max stretch factor
+    paintCanBungeeColor: 'rgba(180, 180, 180, 0.6)',
+    paintCanBungeeWidth: 1.5,
 
     // Paint Can Interaction settings
-    paintCanChargingSpeed: 10, // Droplets accumulated per second while holding click
-    paintCanMaxAccumulatedDroplets: 20, // Max droplets in a burst
+    paintCanChargingSpeed: 50, // Paint units accumulated per second while holding click
+    paintCanMaxAccumulatedDroplets: 20, // Max droplets in a single burst charge
+    paintCanAutoDropRate: 4, // Droplets per second when not charging (1000ms / 250ms)
+    paintCanPickupDistance: 30, // Radius for player capsule to collide with available can center
 };

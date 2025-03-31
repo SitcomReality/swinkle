@@ -9,6 +9,16 @@ import config from 'config';
 const playerPhysicsStates = new Map();
 
 /**
+ * Gets the current physics state for a player.
+ * Useful for accessing body position from other modules like game-loop.
+ * @param {string} clientId - The ID of the player.
+ * @returns {object | undefined} The physics state object or undefined if not found.
+ */
+export function getPlayerPhysicsState(clientId) {
+    return playerPhysicsStates.get(clientId);
+}
+
+/**
  * Initializes the physics state for a player if it doesn't exist, including limbs.
  * @param {string} clientId - The ID of the player.
  * @param {object} initialAnchorPos - The initial anchor position {x, y}.

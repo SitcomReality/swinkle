@@ -3,12 +3,15 @@
  * Manages the main rendering cycle of the game.
  */
 import config from 'config';
-// Import player functions, including the new updatePlayerPhysics
-import { renderPlayer, updatePlayerPhysics, removePlayerPhysicsState } from './player.js';
+// Import player functions, including physics update and state retrieval
+import { renderPlayer, updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './player.js';
+// Import paint can functions
+import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
 let previousPeers = new Set(); // To track disconnected peers
+const physicsUpdateBuffer = {}; // Buffer physics updates for cans
 
 // Basic rendering using canvas
 function gameLoop(timestamp) {
@@ -47,22 +50,56 @@ function gameLoop(timestamp) {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
             removePlayerPhysicsState(clientId);
-            // TODO: Handle can ownership transfer/cleanup if a player disconnects while holding one
+            // Can ownership handled via presence subscription in main.js for simplicity now
+            console.log(`Peer ${clientId} disconnected, player physics removed.`);
         }
     });
     previousPeers = currentPeerIds; // Update for next frame check
 
 
-    // --- Update Player Physics ---
-    // Iterate through all connected peers and update their physics simulation
+    // --- Update Player and Paint Can Physics ---
+    const paintCanUpdatesToSend = {}; // Collect can state updates owned by this client
+
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Only update if presence data exists
+            // Update player physics first
             updatePlayerPhysics(clientId, presence, deltaTime);
-            // TODO: If this client owns the can (presence.currentCanId && room.roomState.paintCans[presence.currentCanId].ownerId === clientId),
-            // call updatePaintCanPhysics here and send roomState update.
+
+            // Get the updated player body position (needed for can physics)
+            const playerPhysicsState = getPlayerPhysicsState(clientId);
+            if (!playerPhysicsState) return; // Skip if player physics state isn't ready
+            const playerBodyPos = playerPhysicsState.position;
+
+            // Check if this player owns a paint can
+            const currentCanId = presence.currentCanId;
+            if (currentCanId && roomInstance.roomState.paintCans && roomInstance.roomState.paintCans[currentCanId]) {
+                const canState = roomInstance.roomState.paintCans[currentCanId];
+
+                // Only the owner client calculates and sends updates for their can's physics
+                if (clientId === localClientId) {
+                    // Update paint can physics based on player body position
+                    updatePaintCanPhysics(canState, playerBodyPos, deltaTime);
+
+                    // Store the physics updates to send
+                    paintCanUpdatesToSend[currentCanId] = {
+                        x: canState.x,
+                        y: canState.y,
+                        vx: canState.vx,
+                        vy: canState.vy
+                    };
+                    // TODO Step 3: Add logic here to check for auto-dropping or charging based on canState.isCharging
+                }
+            }
+            // TODO Step 5: Add collision check here between local player capsule and availablePaintCans
         }
     });
+
+    // Send batched updates for cans owned by this client
+    if (Object.keys(paintCanUpdatesToSend).length > 0) {
+        roomInstance.updateRoomState({ paintCans: paintCanUpdatesToSend });
+    }
+
 
     // --- Render Droplets ---
     const droplets = roomInstance.roomState.droplets || {};
@@ -93,14 +130,41 @@ function gameLoop(timestamp) {
     }
 
     // --- Render Paint Cans (Held and Available) ---
-    // TODO: Loop through room.roomState.paintCans and call renderPaintCan for held cans.
-    // TODO: Loop through room.roomState.availablePaintCans and call renderPaintCan for available cans.
+    const paintCans = roomInstance.roomState.paintCans || {};
+    const availablePaintCans = roomInstance.roomState.availablePaintCans || {};
 
-    // --- Render Players ---
+    // Render available cans first (usually behind players)
+    Object.values(availablePaintCans).forEach(canState => {
+        if (canState) { // Check if can data exists
+            renderPaintCan(ctx, canState);
+        }
+    });
+
+    // Render players (limbs, body, name)
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
-        // Call the dedicated player rendering function, passing clientId AND localClientId
-        renderPlayer(ctx, clientId, localClientId, presence, peer);
+        renderPlayer(ctx, clientId, localClientId, presence, peer); // Renders player capsule & bungee
+
+        // Render the HELD paint can AFTER the player, but potentially before other players
+        // Also render the bungee connecting player to can
+        const currentCanId = presence?.currentCanId;
+        if (currentCanId && paintCans[currentCanId]) {
+            const canState = paintCans[currentCanId];
+            const playerState = getPlayerPhysicsState(clientId); // Get player body pos again
+
+            if (playerState) {
+                // Render can bungee cord
+                ctx.beginPath();
+                ctx.moveTo(playerState.position.x, playerState.position.y);
+                ctx.lineTo(canState.x, canState.y);
+                ctx.strokeStyle = config.paintCanBungeeColor || 'rgba(180, 180, 180, 0.6)';
+                ctx.lineWidth = config.paintCanBungeeWidth || 1.5;
+                ctx.stroke();
+
+                // Render the can itself
+                renderPaintCan(ctx, canState);
+            }
+        }
     });
 
     // Request the next frame to continue the loop
