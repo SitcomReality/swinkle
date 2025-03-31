@@ -12,19 +12,14 @@ export const notes = `
 **Next Steps:**
 
 - **1. Environment/Level Generation:**
-    *1.1-1.8: Done.*
+    *1.1-1.9.5: Done.*
     - 1.9: Power-ups. Eg. Shorter, stiffer or springier bungee between cursor and capsule; temporary shield; acetone (a 'health pickup' that reduces how painted the player is); paint buckets with buffed attributes, like double sized (visually and in terms of paint volume), less viscous (drops faster), and a rare buff that makes every droplet a full burst.
         - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
         - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
         - 1.9.3: *DONE* - Implemented collision detection to collect power-ups
         - 1.9.4: *DONE* - Create active power-up processing system for timed effects
         - 1.9.5: *DONE* - Implement each power-up effect (shield, acetone, spring, mega can)
-            - **Acetone:** *DONE* - Instant effect applied on collection.
-            - **Shield:** *DONE* - Modified 'collisionHandler.js' to check 'presence.shielded', skip paint application, and add 'blockSpark' effect.
-            - **Spring:** *DONE* - Modified 'playerPhysics.js' to check 'presence.springyBungee' and adjust main bungee spring constant.
-            - **Mega Can:** *DONE* - Modified 'playerInteractions.js' ('handlePaintCanPickup') to apply effect (double capacity, 'isMega' flag, consume powerup). Modified 'ui-manager.js' and 'paintCan.js' to visually represent the mega can and its capacity.
-        - 1.9.6: Add visual effects to indicate active power-ups on players
-            - Modify 'playerRenderer.js' to draw indicators (e.g., shield outline, springy bungee visual change, mega-can indicator on player?) based on active power-up flags in presence.
+        - 1.9.6: *DONE* - Add visual effects to indicate active power-ups on players
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
