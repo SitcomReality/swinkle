@@ -24,18 +24,21 @@ import { addNotification } from './notification-manager.js'; // Import notificat
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
-    const bodyWidth = config.playerBodyWidth;
-    const bodyHeight = config.playerBodyHeight;
     let paintedUpdates = {};
     let paintingOccurred = false;
     const currentPaintedData = currentPresence?.paintedData || {};
     const alreadyLost = currentPresence?.lost || false;
     const isShielded = currentPresence?.shielded || false; // Check for shield power-up
+    
+    // Track painting players for score updates
+    const paintingPlayers = new Set(); // Keep track of unique players who painted this player
 
     // If already lost, don't process further collisions or record losses again
     if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [] };
 
     // Simple rectangular hitbox for the player capsule
+    const bodyWidth = config.playerBodyWidth;
+    const bodyHeight = config.playerBodyHeight;
     const playerHitbox = {
         left: playerBodyPos.x - bodyWidth / 2,
         right: playerBodyPos.x + bodyWidth / 2,
@@ -84,6 +87,11 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                 const incrementAmount = config.paintIncrementPerDroplet || 2;
                 paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
                 paintingOccurred = true;
+                
+                // Store the player ID who painted this player (for score update)
+                if (droplet.ownerId) {
+                    paintingPlayers.add(droplet.ownerId);
+                }
             }
         }
     });
@@ -157,11 +165,26 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                      updateData.currentCanId = null; // Also update presence immediately
                  }
             }
-
         }
 
         // Send presence update only if something changed (paint or loss state)
         room.updatePresence(updateData);
+        
+        // Give points to players who painted this player
+        if (paintingPlayers.size > 0) {
+            paintingPlayers.forEach(painterId => {
+                if (painterId && painterId !== localClientId && room.peers[painterId]) {
+                    // Ask the painting player to increment their score
+                    room.requestPresenceUpdate(painterId, {
+                        type: 'incrementScore',
+                        amount: 1 // Basic 1 point per hit for now
+                    });
+                    
+                    // Optional: Log for debug
+                    console.log(`Player ${painterId} gets a point for painting ${localClientId}`);
+                }
+            });
+        }
     }
 
     return { dropletsToRemove, collisionPoints };

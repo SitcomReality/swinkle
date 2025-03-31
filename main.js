@@ -236,6 +236,13 @@ async function initGame() {
             } else {
                 console.log(`Processing request: Already have no can.`);
             }
+        } else if (updateRequest.type === 'incrementScore') {
+            // Handle score increment request
+            const currentScore = localPresence.score || 0;
+            const amount = updateRequest.amount || 1;
+            room.updatePresence({ 
+                score: currentScore + amount 
+            });
         }
         // Handle other request types here if needed
     });
