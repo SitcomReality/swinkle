@@ -10,6 +10,7 @@ import { renderPlayer } from './playerRenderer.js';
 import { renderPaintCan } from './paintCan.js';
 import { renderDroplets } from './dropletRenderer.js';
 import { updateAndRenderEffects, clearEffects, addEffect } from './effectsRenderer.js';
+import { renderLevel } from './level-renderer.js'; // Import level renderer
 // Physics & State Modules
 import { updatePlayerPhysics } from './playerPhysics.js';
 import { updatePaintCanPhysics } from './paintCan.js';
@@ -223,7 +224,9 @@ function gameLoop(timestamp) {
     });
 
     // --- Render Scene ---
-    updateAndRenderEffects(ctx, deltaTime, now); // Render effects first (often background)
+    renderLevel(ctx); // Render static level geometry first
+
+    updateAndRenderEffects(ctx, deltaTime, now); // Render effects (often background elements)
 
     const dropletsToRender = roomInstance.roomState.droplets || {};
     renderDroplets(ctx, dropletsToRender, now);
