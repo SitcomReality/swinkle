@@ -3,7 +3,7 @@
  * Handles rendering the player character (anchor, body, limbs, eyes, name)
  * and their associated held paint can and bungee.
  */
-import config from '../config';
+import config from '../config.js';
 import { getPlayerPhysicsState } from './playerState.js'; 
 import { calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
