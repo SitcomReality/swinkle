@@ -9,7 +9,7 @@ let effectCounter = 0; // Simple unique ID generation
 
 /**
  * Adds a new visual effect to be rendered.
- * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark').
+ * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark', 'blockSpark').
  * @param {object} properties - Properties specific to the effect (x, y, color, etc.).
  */
 export function addEffect(type, properties) {
@@ -21,9 +21,12 @@ export function addEffect(type, properties) {
         case 'splat':
             duration = config.splatEffectDuration || 500;
             break;
-        case 'stealSpark':
+        case 'stealSpark': // Also used for can pickup and powerup collect
             duration = config.stealSparkEffectDuration || 300;
             break;
+        case 'blockSpark': // For shield blocks
+             duration = config.blockSparkEffectDuration || 250;
+             break;
         default:
             console.warn(`Unknown effect type: ${type}`);
             return; // Don't add unknown effects
@@ -86,6 +89,9 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
             case 'stealSpark':
                 renderStealSpark(ctx, effect, progress);
                 break;
+            case 'blockSpark':
+                 renderBlockSpark(ctx, effect, progress);
+                 break;
             // Add other types here
         }
     });
@@ -147,6 +153,42 @@ function renderStealSpark(ctx, effect, progress) {
         ctx.stroke();
     }
     ctx.globalAlpha = 1.0; // Reset alpha
+}
+
+/**
+ * Renders a shield block spark effect (e.g., expanding white cross/spark).
+ * @private
+ * @param {CanvasRenderingContext2D} ctx - The drawing context.
+ * @param {object} effect - The block spark effect object.
+ * @param {number} progress - The normalized age of the effect (0 to 1).
+ */
+function renderBlockSpark(ctx, effect, progress) {
+    const maxRadius = config.blockSparkRadius || 15;
+    const currentRadius = Math.max(0, maxRadius * progress); // Linear expansion
+    const opacity = 1 - progress; // Linear fade out
+    const lineWidth = Math.max(0.1, 4 * (1 - progress)); // Thick lines fading out
+
+    if (currentRadius > 0 && lineWidth > 0) {
+        ctx.save();
+        ctx.translate(effect.x, effect.y);
+        ctx.strokeStyle = config.blockSparkColor || '#FFFFFF';
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = Math.max(0, opacity);
+        ctx.lineCap = 'round';
+
+        // Draw a 4-pointed star/cross
+        for (let i = 0; i < 4; i++) {
+            ctx.rotate(Math.PI / 2); // Rotate 90 degrees for each line
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, currentRadius);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1.0; // Reset alpha
+    ctx.lineCap = 'butt'; // Reset line cap
 }
 
 /**

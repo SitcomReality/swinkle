@@ -97,15 +97,16 @@ export function updatePaintCanPhysics(canState, playerBodyPos, deltaTime) {
 }
 
 /**
- * Renders a paint can.
+ * Renders a paint can, including visual indication for Mega Cans.
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
- * @param {object} canState - The state of the paint can { x, y, paintColor, paintAmount, isCharging, accumulatedDroplets }.
+ * @param {object} canState - The state of the paint can { x, y, paintColor, paintAmount, isCharging, accumulatedDroplets, isMega }.
  */
 export function renderPaintCan(ctx, canState) {
     const x = canState.x;
     const y = canState.y;
-    const width = config.paintCanWidth;
-    const height = config.paintCanHeight;
+    const isMega = canState.isMega || false;
+    const width = config.paintCanWidth * (isMega ? config.megaCanVisualSizeMultiplier : 1);
+    const height = config.paintCanHeight * (isMega ? config.megaCanVisualSizeMultiplier : 1);
     const color = canState.paintColor || '#CCCCCC'; // Default grey if no color
     const strokeColor = config.paintCanStrokeColor;
     const strokeWidth = config.paintCanStrokeWidth;
@@ -124,7 +125,8 @@ export function renderPaintCan(ctx, canState) {
     ctx.stroke();
 
     // Draw paint level indicator (filled rectangle inside)
-    const maxAmount = config.paintCanInitialAmount;
+    // Adjust maxAmount for mega cans
+    const maxAmount = isMega ? (config.paintCanInitialAmount * config.megaCanCapacityMultiplier) : config.paintCanInitialAmount;
     const currentAmount = canState.paintAmount || 0;
     const fillRatio = Math.max(0, Math.min(1, currentAmount / maxAmount));
     const fillHeight = height * fillRatio;
@@ -158,7 +160,7 @@ export function renderPaintCan(ctx, canState) {
 
     // Apply glow effect to the band if enabled
     if (shouldBandGlow) {
-        ctx.shadowBlur = glowBlur;
+        ctx.shadowBlur = glowBlur * (isMega ? 1.5 : 1); // More glow for mega cans
         ctx.shadowColor = color; // Use paint color for glow
     }
 
@@ -178,7 +180,7 @@ export function renderPaintCan(ctx, canState) {
         ctx.beginPath();
         ctx.rect(x - width / 2, bandY, width, bandHeight); // Clip pattern to the band area
         ctx.clip();
-        const patternSize = 4;
+        const patternSize = 4 * (isMega ? config.megaCanVisualSizeMultiplier : 1);
         for (let py = bandY; py < bandY + bandHeight; py += patternSize * 2) {
             for (let px = x - width / 2 + ( (py / patternSize) % 2 === 0 ? 0 : patternSize) ; px < x + width / 2; px += patternSize * 2) {
                  // Draw small squares or circles as pattern
@@ -202,10 +204,11 @@ export function renderPaintCan(ctx, canState) {
 
     // Draw Charge Indicator
     if (canState.isCharging && config.paintCanMaxAccumulatedDroplets > 0) {
-        const chargeBarWidth = config.paintCanChargeIndicatorWidth;
+        const chargeBarWidth = config.paintCanChargeIndicatorWidth * (isMega ? config.megaCanVisualSizeMultiplier : 1);
         const chargeBarHeight = config.paintCanChargeIndicatorHeight;
         const chargeBarX = x - chargeBarWidth / 2;
-        const chargeBarY = y - height / 2 - chargeBarHeight - 4; // Position above the can lip
+        // Adjust vertical position based on can height
+        const chargeBarY = y - height / 2 - chargeBarHeight - 4;
 
         const accumulated = canState.accumulatedDroplets || 0;
         const maxAccumulated = config.paintCanMaxAccumulatedDroplets;
@@ -227,5 +230,38 @@ export function renderPaintCan(ctx, canState) {
         }
     }
 
+    // Add Mega Can visual indicator (e.g., a star)
+    if (isMega) {
+        ctx.fillStyle = config.megaCanIndicatorColor;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 0.5;
+        const starSize = width * 0.3; // Size relative to can width
+        const starX = x + width / 2 - starSize / 1.5; // Position on top-right
+        const starY = y - height / 2 + starSize / 1.5;
+        drawStarIcon(ctx, starX, starY, starSize, 5, 0.5); // Reuse star drawing logic
+        ctx.fill();
+        ctx.stroke();
+    }
+
     ctx.restore(); // Restore context state from the beginning of the function
+}
+
+// Helper function to draw a star (could be moved to a utils file)
+function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
+    const outerRadius = size/2;
+    const innerRadius = outerRadius * innerFactor;
+
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const angle = (Math.PI * i) / spikes - Math.PI/2;
+        const pointX = x + radius * Math.cos(angle);
+        const pointY = y + radius * Math.sin(angle);
+        if (i === 0) {
+            ctx.moveTo(pointX, pointY);
+        } else {
+            ctx.lineTo(pointX, pointY);
+        }
+    }
+    ctx.closePath();
 }

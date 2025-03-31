@@ -98,10 +98,10 @@ function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
 
 /**
  * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
- * Also handles collision with level geometry.
+ * Also handles collision with level geometry and applies the 'springyBungee' power-up effect.
  *
  * @param {string} clientId - The ID of the player to update.
- * @param {object} presence - The player's presence data (containing anchor x, y).
+ * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee).
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  */
 export function updatePlayerPhysics(clientId, presence, deltaTime) {
@@ -112,9 +112,13 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
 
     const anchorPos = { x: presence.x, y: presence.y };
     const state = ensurePhysicsState(clientId, anchorPos);
+    const isSpringy = presence.springyBungee || false; // Check for springy power-up
 
     // --- Body Linear Physics (Position/Velocity) ---
-    const k = config.bungeeSpringConstant;
+    // Adjust spring constant based on power-up
+    const baseK = config.bungeeSpringConstant;
+    const k = isSpringy ? baseK * config.springyBungeeMultiplier : baseK;
+
     const restLength = config.bungeeRestLength;
     const damping = config.bungeeDampingFactor;
     const gravity = config.gravityAcceleration;

@@ -5,16 +5,18 @@
 import config from 'config';
 // Import the room instance directly to access peers and collections
 import { room } from './main.js';
+import { addEffect } from './effectsRenderer.js'; // Import addEffect
 
 /**
  * Checks for collisions between the local player and all droplets.
  * Updates the player's painted data when hit by another player's droplet.
  * Records a loss event when the player reaches the loss threshold.
+ * Accounts for the 'shield' power-up.
  *
  * @param {object} playerBodyPos - The body position of the local player {x, y}.
  * @param {object} droplets - The current droplets in the room state.
  * @param {string} localClientId - The ID of the local client.
- * @param {object} currentPresence - The player's current presence data (including paintedData, lost).
+ * @param {object} currentPresence - The player's current presence data (including paintedData, lost, shielded).
  * @param {number} now - The current timestamp (Date.now()).
  * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
  */
@@ -27,6 +29,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     let paintingOccurred = false;
     const currentPaintedData = currentPresence?.paintedData || {};
     const alreadyLost = currentPresence?.lost || false;
+    const isShielded = currentPresence?.shielded || false; // Check for shield power-up
 
     // If already lost, don't process further collisions or record losses again
     if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [] };
@@ -40,7 +43,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     };
 
     Object.entries(droplets).forEach(([dropletId, droplet]) => {
-        // Skip if droplet doesn't exist, is owned by the local player, or player is already lost
+        // Skip if droplet doesn't exist or is owned by the local player
         if (!droplet || droplet.ownerId === localClientId) return;
 
         // Simple circle-rectangle collision check
@@ -58,24 +61,33 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         // Check if the distance is less than the circle's radius squared
         if (distanceSquared <= (dropletRadius * dropletRadius)) {
             // Collision detected!
-            // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
 
-            // Mark this droplet for removal
+            // Mark this droplet for removal regardless of shield (it's consumed)
             dropletsToRemove[dropletId] = null;
 
-            // Record collision point for splat effect
-            collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
+            if (isShielded) {
+                // Shield blocked the paint!
+                // console.log(`Shield blocked droplet ${dropletId}`);
+                // Add a visual effect for the block
+                addEffect('blockSpark', { x: droplet.x, y: droplet.y, color: droplet.color });
+            } else {
+                // No shield - apply paint
+                // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
 
-            // Update painted data: increment the percentage for this color
-            const currentPercentage = currentPaintedData[droplet.color] || 0;
-            // Make increment amount configurable?
-            const incrementAmount = config.paintIncrementPerDroplet || 2;
-            paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
-            paintingOccurred = true;
+                // Record collision point for splat effect
+                collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
+
+                // Update painted data: increment the percentage for this color
+                const currentPercentage = currentPaintedData[droplet.color] || 0;
+                // Make increment amount configurable?
+                const incrementAmount = config.paintIncrementPerDroplet || 2;
+                paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
+                paintingOccurred = true;
+            }
         }
     });
 
-    // If any painting occurred, update the player's painted data
+    // If any painting occurred (and not shielded), update the player's painted data
     if (paintingOccurred) {
         // Calculate total paint percentage
         let totalPercentage = 0;
@@ -134,7 +146,8 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                                 ...canState,
                                 ownerId: null,
                                 vx: 0, vy: 0, // Reset physics
-                                isCharging: false, accumulatedDroplets: 0
+                                isCharging: false, accumulatedDroplets: 0,
+                                isMega: canState.isMega || false // Preserve mega status if it was mega
                              }
                          }
                      });

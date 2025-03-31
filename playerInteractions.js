@@ -1,11 +1,12 @@
 /**
  * playerInteractions.js
  * Handles interactions initiated by the local player:
- * - Picking up cans
+ * - Picking up cans (including applying Mega Can power-up)
  * - Handling empty cans
  * - Charging and auto-dropping paint from held cans.
  */
 import config from 'config';
+import { addEffect } from './effectsRenderer.js'; // Import for pickup effects
 
 // Separate state for auto-drop timer as it's purely local client visual/timing state
 let timeSinceLastAutoDrop = 0; // Milliseconds
@@ -80,6 +81,7 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
 
     // 2. Check for Paint Can Pickup (only if not currently holding a can)
     if (!currentCanId) {
+        // Pass the *current* presence state, which includes power-up status
         const pickupResult = handlePaintCanPickup(playerBodyPos, localClientId, presence, currentAvailableCans);
         Object.assign(aggregatedUpdates.paintCanUpdates, pickupResult.paintCanUpdates);
         Object.assign(aggregatedUpdates.availablePaintCanUpdates, pickupResult.availablePaintCanUpdates);
@@ -259,10 +261,11 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
 
 /**
  * Checks if the player can pick up an available paint can and returns the updates.
+ * Applies the Mega Can power-up effect if active.
  * INTERNAL function called by handleLocalPlayerInteractions.
  * @param {object} playerBodyPos - The player's body position {x, y}.
  * @param {string} localClientId - The ID of the local client.
- * @param {object} presence - The player's current presence data.
+ * @param {object} presence - The player's current presence data (including power-up states).
  * @param {object} availablePaintCans - The available paint cans from roomState.
  * @returns {object} Update objects for roomState and presence.
  */
@@ -275,6 +278,32 @@ function handlePaintCanPickup(playerBodyPos, localClientId, presence, availableP
 
     if (nearestCan) {
         console.log(`Player ${localClientId} picking up can ${nearestCan.id}`);
+        addEffect('stealSpark', { x: nearestCan.x, y: nearestCan.y }); // Visual effect on pickup
+
+        let isMega = false;
+        let paintAmount = nearestCan.paintAmount;
+        let presenceUpdatesForPickup = {};
+
+        // Check for Mega Can power-up effect
+        if (presence.megaCanPowerup === true) {
+            isMega = true;
+            paintAmount = config.paintCanInitialAmount * config.megaCanCapacityMultiplier;
+            // Consume the power-up
+            presenceUpdatesForPickup.megaCanPowerup = false; // Set to false in presence update
+            // Also remove from active power-ups tracking
+            if (presence.activePowerUps && presence.activePowerUps['megaCan']) {
+                // Create a new object for updates to avoid modifying the original presence directly
+                 presenceUpdatesForPickup.activePowerUps = { ...presence.activePowerUps };
+                 delete presenceUpdatesForPickup.activePowerUps['megaCan'];
+            }
+            console.log(`Mega Can power-up applied to can ${nearestCan.id}!`);
+        }
+
+        // Merge presence updates: new can ID + consuming the power-up
+        const finalPresenceUpdates = {
+            currentCanId: nearestCan.id,
+            ...presenceUpdatesForPickup
+        };
 
         return {
             paintCanUpdates: {
@@ -283,15 +312,15 @@ function handlePaintCanPickup(playerBodyPos, localClientId, presence, availableP
                     ownerId: localClientId,
                     vx: 0, vy: 0, // Reset physics state on pickup
                     isCharging: false,
-                    accumulatedDroplets: 0
+                    accumulatedDroplets: 0,
+                    paintAmount: paintAmount, // Apply potentially modified paint amount
+                    isMega: isMega            // Add the mega flag
                 }
             },
             availablePaintCanUpdates: {
                 [nearestCan.id]: null
             },
-            presenceUpdates: {
-                currentCanId: nearestCan.id
-            }
+            presenceUpdates: finalPresenceUpdates
         };
     }
 
@@ -317,6 +346,9 @@ function handleEmptyPaintCan(localClientId, canState, presence) {
     if (canState.paintAmount <= 0) {
         console.log(`Can ${canState.id} is empty, dropping it`);
 
+        // Don't destroy the can, make it available again (but empty)
+        // This allows others to pick it up maybe? Or maybe it should just vanish.
+        // For now, let's make it vanish.
         return {
             paintCanUpdates: {
                 [canState.id]: null // Remove the can entirely when empty
