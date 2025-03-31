@@ -17,12 +17,16 @@ export const notes = `
 
 **Next Steps:**
 
-✅ 1. Add player avatars to scoreboard.
-- 2. Better Score Tracking: Reward players for painting other players. (Requires tracking who painted whom).
-- 3. Sound effects.
-- 4. More visual effects (e.g., player respawn animation).
+~~✅ 1. Add player avatars to scoreboard.~~
+2. Better Score Tracking: Reward players for painting other players.
+   - 2.1: Add score tracking to player presence data structure and update scoreboard to show scores.
+   - 2.2: Modify paintedData in collisionHandler.js to track who painted whom by storing ownerId with each paint color.
+   - 2.3: Update paintedData rendering in playerRenderer.js to handle the modified data structure.
+   - 2.4: Add score increment logic in collisionHandler.js when droplet hits a player.
+   - 2.5: Add visual feedback (notification and effects) when a player scores points.
 
-    - 2.4: 
+3. Sound effects.
+4. More visual effects (e.g., player respawn animation).
 
 - **Future Ideas/Stretch Goals:**
     - Environmental hazards? (Moving platforms, laser grids?). Support for polygon obstacles.
