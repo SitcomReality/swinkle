@@ -14,6 +14,37 @@ let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
 let previousPeers = new Set(); // To track disconnected peers
 
+// UI Element References
+let paintIndicatorElement;
+let paintIndicatorFillElement;
+let paintIndicatorTextElement;
+
+/**
+ * Updates the paint level indicator UI element.
+ */
+function updatePaintLevelIndicator() {
+    if (!paintIndicatorElement) return; // Elements not ready
+
+    const localClientId = roomInstance.clientId;
+    const presence = roomInstance.presence[localClientId];
+    const paintCans = roomInstance.roomState.paintCans || {};
+
+    if (presence && !presence.lost && presence.currentCanId && paintCans[presence.currentCanId]) {
+        const canState = paintCans[presence.currentCanId];
+        const maxAmount = config.paintCanInitialAmount;
+        const currentAmount = canState.paintAmount || 0;
+        const fillRatio = Math.max(0, Math.min(1, currentAmount / maxAmount));
+        const percentage = (fillRatio * 100).toFixed(0);
+
+        paintIndicatorFillElement.style.width = `${fillRatio * 100}%`;
+        paintIndicatorFillElement.style.backgroundColor = canState.paintColor || config.dropletColor; // Match can color
+        paintIndicatorTextElement.textContent = `${percentage}%`;
+        paintIndicatorElement.style.display = 'block'; // Show the indicator
+    } else {
+        paintIndicatorElement.style.display = 'none'; // Hide if no can or lost
+    }
+}
+
 // Basic rendering using canvas
 function gameLoop(timestamp) {
     if (!roomInstance) {
@@ -272,11 +303,14 @@ function gameLoop(timestamp) {
         }
     });
 
-    const paintCans = roomInstance.roomState.paintCans || {}; 
+    const paintCans = roomInstance.roomState.paintCans || {};
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
         renderPlayer(ctx, clientId, localClientId, presence, peer, paintCans);
     });
+
+    // --- Update UI Elements ---
+    updatePaintLevelIndicator(); // Call the UI update function
 
     requestAnimationFrame(gameLoop);
 }
@@ -289,10 +323,25 @@ export function startGameLoop(room) {
     if (!room) {
         throw new Error("startGameLoop requires a valid room instance.");
     }
-    roomInstance = room; 
+    roomInstance = room;
     console.log("Starting game loop...");
-    lastTimestamp = 0; 
-    previousPeers = new Set(Object.keys(room.peers)); 
-    clearEffects(); 
-    requestAnimationFrame(gameLoop); 
+
+    // Get UI element references ONCE after DOM is ready
+    paintIndicatorElement = document.getElementById('paint-level-indicator');
+    if (paintIndicatorElement) {
+        paintIndicatorFillElement = paintIndicatorElement.querySelector('.indicator-bar-fill');
+        paintIndicatorTextElement = paintIndicatorElement.querySelector('.indicator-text');
+        if (!paintIndicatorFillElement || !paintIndicatorTextElement) {
+             console.error("Paint level indicator elements not found!");
+             paintIndicatorElement = null; // Disable if children are missing
+        }
+    } else {
+         console.error("Paint level indicator container not found!");
+    }
+
+
+    lastTimestamp = 0;
+    previousPeers = new Set(Object.keys(room.peers));
+    clearEffects();
+    requestAnimationFrame(gameLoop);
 }

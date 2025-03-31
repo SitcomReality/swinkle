@@ -90,3 +90,50 @@ body {
 #scoreboard-table .loss-count {
     text-align: right;
 }
+
+/* Paint Level Indicator */
+#paint-level-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(40, 40, 70, 0.8);
+    color: #e0e0e0;
+    z-index: 950; /* Above canvas, below dev notes/scoreboard */
+    padding: 8px 15px;
+    border: 1px solid #4a4a6a;
+    border-radius: 5px;
+    font-size: 0.9em;
+    width: 200px;
+    text-align: center;
+    display: none; /* Hidden by default */
+}
+
+#paint-level-indicator .indicator-label {
+    font-size: 0.8em;
+    color: #a0a0c0;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#paint-level-indicator .indicator-bar-background {
+    background-color: rgba(0, 0, 0, 0.3);
+    height: 10px;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    overflow: hidden; /* Ensure fill stays within bounds */
+    border: 1px solid #333;
+}
+
+#paint-level-indicator .indicator-bar-fill {
+    background-color: #00FFFF; /* Default/Placeholder color */
+    height: 100%;
+    width: 100%; /* Default to full */
+    border-radius: 3px;
+    transition: width 0.1s linear; /* Smooth transition for level changes */
+}
+
+#paint-level-indicator .indicator-text {
+    font-weight: bold;
+}

@@ -37,7 +37,7 @@ export const notes = `
 
 **10. UI:**
     *   Scoreboard / Player list displaying paint % and persistent loss count. (DONE - 'scoreboard.js')
-    *   Paint level indicator UI element (alternative to in-can).
+    *   Paint level indicator UI element (alternative to in-can). (DONE)
     *   Zone notifications (if implementing zones).
 
 **11. Gameplay Enhancements:**
