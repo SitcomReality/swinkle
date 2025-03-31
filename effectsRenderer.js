@@ -29,6 +29,17 @@ export function addEffect(type, properties) {
             return; // Don't add unknown effects
         }
 
+    // Basic validation
+    if (typeof duration !== 'number' || duration <= 0) {
+        console.warn(`Invalid duration for effect type ${type}:`, duration);
+        return;
+    }
+     if (typeof properties.x !== 'number' || typeof properties.y !== 'number') {
+         console.warn(`Invalid position for effect type ${type}:`, properties);
+         return;
+     }
+
+
     activeEffects.set(id, {
         id,
         type,
@@ -50,12 +61,22 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
 
     activeEffects.forEach(effect => {
         const age = now - effect.startTime;
+
+        // Validate calculated age and duration before proceeding
+        if (typeof age !== 'number' || typeof effect.duration !== 'number' || effect.duration <= 0) {
+             console.warn(`Invalid age or duration for effect ${effect.id}. Removing.`, { age, duration: effect.duration });
+             effectsToRemove.push(effect.id);
+             return;
+        }
+
+
         if (age >= effect.duration) {
             effectsToRemove.push(effect.id);
             return; // Skip rendering expired effects
         }
 
-        const progress = age / effect.duration; // 0 to 1
+        // Ensure progress is clamped between 0 and 1 to avoid potential issues
+        const progress = Math.max(0, Math.min(1, age / effect.duration));
 
         // Render based on type
         switch (effect.type) {
@@ -87,14 +108,15 @@ function renderSplat(ctx, effect, progress) {
     // Calculate current radius (expands quickly then stops/shrinks?)
     // Simple linear expansion for now
     const maxRadius = config.splatEffectMaxRadius || 15;
-    const currentRadius = maxRadius * Math.sin(progress * Math.PI / 2); // Ease-out expansion
+    // Ensure radius is non-negative
+    const currentRadius = Math.max(0, maxRadius * Math.sin(progress * Math.PI / 2)); // Ease-out expansion
 
     // Calculate current opacity (fade out)
     const opacity = 1 - progress;
 
     ctx.beginPath();
     ctx.arc(effect.x, effect.y, currentRadius, 0, Math.PI * 2);
-    ctx.fillStyle = effect.color;
+    ctx.fillStyle = effect.color || '#FF0000'; // Added default color
     ctx.globalAlpha = Math.max(0, opacity); // Apply fade out
     ctx.fill();
     ctx.globalAlpha = 1.0; // Reset alpha for next effect
@@ -109,15 +131,21 @@ function renderSplat(ctx, effect, progress) {
  */
 function renderStealSpark(ctx, effect, progress) {
     const maxRadius = config.stealSparkRadius || 20;
-    const currentRadius = maxRadius * progress; // Linear expansion
+    // Ensure radius is non-negative
+    const currentRadius = Math.max(0, maxRadius * progress); // Linear expansion
     const opacity = 1 - progress; // Linear fade out
+    // Ensure line width is non-negative
+    const currentLineWidth = Math.max(0.1, 3 * (1 - progress)); // Line gets thinner, ensure min width 0.1
 
-    ctx.beginPath();
-    ctx.arc(effect.x, effect.y, currentRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = config.stealSparkColor || '#FFFF00';
-    ctx.lineWidth = 3 * (1 - progress); // Line gets thinner as it expands/fades
-    ctx.globalAlpha = Math.max(0, opacity);
-    ctx.stroke();
+    // Only draw if radius is positive
+    if (currentRadius > 0 && currentLineWidth > 0) {
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, currentRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = config.stealSparkColor || '#FFFF00';
+        ctx.lineWidth = currentLineWidth;
+        ctx.globalAlpha = Math.max(0, opacity);
+        ctx.stroke();
+    }
     ctx.globalAlpha = 1.0; // Reset alpha
 }
 
