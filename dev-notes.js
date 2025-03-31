@@ -12,9 +12,14 @@ export const notes = `
 **Next Steps:**
 
 - **1. Environment/Level Generation:**
-    *1.1-1.7: Done.*
-    - ~~1.8: Refine collision response (e.g., add slight bounce/restitution based on obstacle properties, apply friction).~~ **(Implemented basic restitution and friction)**
+    *1.1-1.8: Done.*
     - 1.9: Power-ups. Eg. Shorter, stiffer or springier bungee between cursor and capsule; temporary shield; acetone (a 'health pickup' that reduces how painted the player is); paint buckets with buffed attributes, like double sized (visually and in terms of paint volume), less viscous (drops faster), and a rare buff that makes every droplet a full burst.
+        - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
+        - 1.9.2: Integrate power-up system with game loop for spawning and rendering
+        - 1.9.3: Implement collision detection to collect power-ups
+        - 1.9.4: Create active power-up processing system for timed effects
+        - 1.9.5: Implement each power-up effect (shield, acetone, spring, mega can)
+        - 1.9.6: Add visual effects to indicate active power-ups on players
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).

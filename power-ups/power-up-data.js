@@ -1,0 +1,118 @@
+/**
+ * power-up-data.js
+ * Defines the data structure for all power-ups in the game.
+ */
+
+/**
+ * Power-up definitions with their properties and effects
+ * Each power-up has:
+ * - id: Unique identifier string
+ * - name: Display name for the power-up
+ * - description: Text explaining what the power-up does
+ * - duration: How long the effect lasts in milliseconds (0 for instant effects)
+ * - color: Primary color for the power-up visual
+ * - glowColor: Color for the glow effect (usually same as color)
+ * - icon: Simple string identifier for what icon to render ('star', 'shield', etc)
+ * - size: Visual size for the power-up
+ * - rarity: How rare this power-up is (affects spawn rate, 1-10)
+ * - effect: Function that applies the power-up effect (stub implementations for now)
+ */
+export const powerUpDefinitions = {
+    'shield': {
+        id: 'shield',
+        name: 'Paint Shield',
+        description: 'Temporarily blocks incoming paint',
+        duration: 5000, // 5 seconds
+        color: '#88FFFF',
+        glowColor: '#00FFFF',
+        icon: 'shield',
+        size: 25,
+        rarity: 4,
+        effect: (clientId, presence) => {
+            console.log(`Shield effect applied to ${clientId}`);
+            // Will handle actual implementation later
+            return {
+                shielded: true,
+                shieldEndTime: Date.now() + 5000
+            };
+        }
+    },
+    'acetone': {
+        id: 'acetone',
+        name: 'Acetone',
+        description: 'Cleans off paint from your character',
+        duration: 0, // Instant effect
+        color: '#FFFFFF',
+        glowColor: '#CCFFFF',
+        icon: 'droplet',
+        size: 22,
+        rarity: 5,
+        effect: (clientId, presence) => {
+            console.log(`Acetone effect applied to ${clientId}`);
+            // Will handle actual implementation later
+            return {
+                paintedData: {} // Reset painted data
+            };
+        }
+    },
+    'spring': {
+        id: 'spring',
+        name: 'Springy Bungee',
+        description: 'Makes your bungee more springy for quick movement',
+        duration: 8000, // 8 seconds
+        color: '#FFFF00',
+        glowColor: '#AAAA00',
+        icon: 'spring',
+        size: 20,
+        rarity: 3,
+        effect: (clientId, presence) => {
+            console.log(`Spring effect applied to ${clientId}`);
+            // Will handle actual implementation later
+            return {
+                springyBungee: true,
+                springyBungeeEndTime: Date.now() + 8000
+            };
+        }
+    },
+    'megaCan': {
+        id: 'megaCan',
+        name: 'Mega Paint Can',
+        description: 'Next paint can you pick up will have double capacity',
+        duration: 15000, // Until next can pickup or timeout
+        color: '#FF88FF',
+        glowColor: '#FF00FF',
+        icon: 'can',
+        size: 28,
+        rarity: 2,
+        effect: (clientId, presence) => {
+            console.log(`Mega can effect applied to ${clientId}`);
+            // Will handle actual implementation later
+            return {
+                megaCanPowerup: true,
+                megaCanEndTime: Date.now() + 15000
+            };
+        }
+    }
+};
+
+/**
+ * Get a random power-up definition based on rarity weights
+ * @returns {object} A randomly selected power-up definition
+ */
+export function getRandomPowerUpDefinition() {
+    // Create a weighted array based on rarity values
+    const weightedChoices = [];
+    for (const [id, powerUp] of Object.entries(powerUpDefinitions)) {
+        // Lower rarity = less common, so we invert the value
+        const weight = 11 - (powerUp.rarity || 5); // Default to medium rarity (5)
+        for (let i = 0; i < weight; i++) {
+            weightedChoices.push(id);
+        }
+    }
+    
+    // Select a random item from the weighted array
+    const randomIndex = Math.floor(Math.random() * weightedChoices.length);
+    const selectedId = weightedChoices[randomIndex];
+    
+    return powerUpDefinitions[selectedId];
+}

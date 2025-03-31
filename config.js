@@ -99,5 +99,17 @@ export default {
     neonGlowBlur: 10,           // Intensity of the glow effect for neon elements
     anchorPointGlowColor: 'rgba(255, 255, 255, 0.7)', // Glow color for the anchor point
     paintCanBandGlow: true,     // Whether the paint can color band should glow
-    dropletGlow: true           // Whether droplets should glow
+    dropletGlow: true,           // Whether droplets should glow
+    
+    // Power-up settings
+    maxActivePowerUps: 3,         // Maximum number of power-ups active in the world
+    powerUpCollectDistance: 30,   // Distance to collect a power-up
+    powerUpDuration: 10000,       // Default duration for power-ups (10 seconds)
+    powerUpSpawnInterval: 20000,  // Average time between power-up spawns (20 seconds)
+    
+    // Power-up effect parameters
+    shieldEffectiveness: 100,     // Percentage of paint blocked by shield
+    acetoneCleansing: 50,         // Percentage of paint removed by acetone
+    springyBungeeMultiplier: 1.5, // How much springier the bungee gets
+    megaCanCapacityMultiplier: 2, // How much larger mega cans are
 };
