@@ -9,16 +9,6 @@ export const notes = `
 - **Performance:** Ensure smooth rendering and efficient networking. Use canvas optimally.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
 
-**Current State & Overview:**
-- Multiplayer connection via WebsimSocket is functional. Player joins/leaves handled.
-- Player presence includes cursor position (`x`, `y`), color, and potentially other state. Room state used for shared objects.
-- Players are rendered as capsules dangling from a bungee cord attached to their cursor position (anchor).
-- Bungee and limb physics (spring, gravity, damping, constraints) are implemented in \`player.js\`, providing dynamic movement. Physics state is managed locally per client.
-- Character rendering includes body, eyes (local player eyes track cursor), limbs, and username.
-- Configuration for physics and appearance is stored in \`config.js\`.
-- A basic "squirt" mechanic exists (click to create temporary particles at cursor) using room state - **this will be replaced by the paint droplet system.**
-- Basic dev notes system loads this content into the UI.
-
 **Painting Gameplay Plan (Incremental Steps):**
 
 1.  **Player Paint State Management:**
@@ -87,7 +77,7 @@ export const notes = `
 - **Visual Polish:** Droplet appearance (splat?), character reactions to getting hit, charge-up animation/indicator, neon glow effects.
 - **Environment:** Add simple obstacles or walls? Might require basic physics interactions.
 - **Sound Effects:** For dripping, charging, bursting, getting hit, paint refill.
-- **UI:** Scoreboard/Leaderboard showing painted percentages.
+- **UI:** Scoreboard/Leaderboard showing painted percentages. A notifications or alert system to show warnings, join/leave messages, winners and losers, etc.
 
 **Key Questions:**
 - How should unique player `paintColor`s be assigned reliably? Predefined list? Hashing username/ID? Derived from avatar?
