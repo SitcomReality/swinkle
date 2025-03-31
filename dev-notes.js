@@ -1,13 +1,17 @@
+/**
+ * dev-notes.js
+ * Contains developer notes, TODOs, and plan for the project.
+ */
 export const notes = `
 ## Developer Notes - Multiplayer Painter
 
 **Design Goals & Considerations:**
-- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players must manage the paint in their can and find ways to replenish it by acquiring new cans. Players without a can can steal one by colliding with a player holding one.
+- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players must manage the paint in their can and find ways to replenish it by acquiring new cans. Players without a can can steal one by colliding with a player holding one. Cans can be thrown.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
-- **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
+- **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes.
 
 **Gameplay Plan (Incremental Steps):**
 
@@ -24,8 +28,8 @@ export const notes = `
     *   Droplet splat effects on collision. (DONE)
     *   Zone visuals (if implementing zones).
 
-**9. Sound Effects:**
-    *   Dripping, bursting, hitting, pickup, empty can drop, steal. (Requires audio asset handling)
+**9. Sound Effects:** (SKIPPED - Requires audio assets)
+    *   Dripping, bursting, hitting, pickup, empty can drop, steal.
 
 **10. UI:**
     *   Scoreboard / Player list displaying paint % and persistent loss count. (DONE)
@@ -35,11 +39,17 @@ export const notes = `
 **11. Gameplay Enhancements:**
     *   Player respawn mechanism after loss. (DONE)
     *   Stealing cans from other players? (DONE - Implemented via body collision)
-    *   Throwing cans?
+    *   Throwing cans? (IN PROGRESS)
     *   Different weapon types / paint effects?
 
 **12. Networking Robustness:**
     *   Improve handling of state update races (e.g., simultaneous pickup attempts, disconnect handling refinement - making can available, droplet timeout removal responsibility, steal race conditions).
+
+**Current Focus: Throwing Cans**
+*   Add keybind (e.g., 'G') to throw held can.
+*   Implement physics for thrown cans (gravity, damping, wall bounce).
+*   Modify pickup logic to handle picking up moving (thrown) cans.
+*   Update roomState to track thrown can state (using velocity properties on available cans).
 
 `;
 

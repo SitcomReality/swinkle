@@ -75,6 +75,12 @@ export default {
     paintCanMaxAccumulatedDroplets: 20, // Max droplets in a single burst charge
     paintCanAutoDropRate: 4, // Droplets per second when not charging (1000ms / 250ms)
     paintCanPickupDistance: 30, // Radius for player capsule to collide with available can center
+    paintCanThrowKey: 'g', // Key to press to throw the can
+    paintCanThrowVelocityMultiplier: 15, // Multiplier applied to player velocity + cursor direction for throw speed
+    paintCanThrowInheritVelocityFactor: 0.5, // Factor of player velocity inherited by thrown can
+    paintCanThrownDamping: 0.995, // Damping factor for thrown cans (per frame @ 60fps)
+    paintCanThrownRestitution: 0.6, // Bounciness factor (0=no bounce, 1=perfect bounce)
+    paintCanThrownStopThreshold: 10, // Velocity magnitude below which thrown can stops moving
 
     // Collision & Loss settings
     paintIncrementPerDroplet: 2, // How much % paint increases per droplet hit

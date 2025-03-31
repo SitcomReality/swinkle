@@ -4,8 +4,13 @@ import config from 'config';
 // Import player state function directly if needed
 import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
+// Import interaction handler for throwing
+import { handleThrowPaintCan } from './playerInteractions.js';
 
 export const room = new WebsimSocket();
+
+// Store key state
+const keyState = {};
 
 // Initialize multiplayer connection and game state
 async function initGame() {
@@ -137,6 +142,43 @@ async function initGame() {
         }
     });
 
+    // Handle keyboard events for throwing
+    window.addEventListener('keydown', (e) => {
+        keyState[e.key.toLowerCase()] = true; // Store key state
+
+        // Handle throw action immediately on key press
+        if (e.key.toLowerCase() === config.paintCanThrowKey) {
+             const localPresence = room.presence[room.clientId];
+             const roomState = room.roomState;
+             const anchorPos = { x: localPresence?.x, y: localPresence?.y }; // Get current anchor
+
+             if (localPresence && roomState && anchorPos.x !== undefined) {
+                 // Attempt to handle the throw
+                 const { paintCanUpdates, availablePaintCanUpdates, presenceUpdates } = handleThrowPaintCan(
+                    room.clientId,
+                    localPresence,
+                    roomState,
+                    anchorPos
+                 );
+
+                 // Send updates if throw was successful
+                 if (Object.keys(presenceUpdates).length > 0) {
+                     room.updatePresence(presenceUpdates);
+                 }
+                 const roomUpdates = {};
+                  if (Object.keys(paintCanUpdates).length > 0) roomUpdates.paintCans = paintCanUpdates;
+                  if (Object.keys(availablePaintCanUpdates).length > 0) roomUpdates.availablePaintCans = availablePaintCanUpdates;
+                 if (Object.keys(roomUpdates).length > 0) {
+                     room.updateRoomState(roomUpdates);
+                 }
+             }
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+         keyState[e.key.toLowerCase()] = false;
+    });
+
+
     // Initial presence update with a default color and new state fields
     room.updatePresence({
         x: window.innerWidth / 2,
@@ -171,7 +213,9 @@ async function initGame() {
                      ...canState,
                      ownerId: null, // Mark as unowned
                      // Reset dynamic state
-                     vx: 0, vy: 0, isCharging: false, accumulatedDroplets: 0
+                     vx: null, // Ensure velocity is null when made available this way
+                     vy: null,
+                     isCharging: false, accumulatedDroplets: 0
                   };
                   // Mark the owned can for removal
                   ownedCansToRemove[canId] = null;

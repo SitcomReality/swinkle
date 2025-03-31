@@ -1,8 +1,10 @@
 /**
  * playerInteractions.js
- * Handles interactions initiated by the player, specifically paint can charging and dropping.
+ * Handles interactions initiated by the player: charging, dropping, picking up, throwing cans.
  */
 import config from 'config';
+// Need player state to get velocity for throwing
+import { getPlayerPhysicsState } from './playerState.js';
 
 // Maintain state for auto-dropping timer PER CAN - This needs to be managed carefully.
 // For simplicity, let's assume only one can is handled per client at a time,
@@ -85,6 +87,7 @@ export function handleCanInteractions(localClientId, canState, deltaTime, now) {
 
 /**
  * Checks if the player can pick up an available paint can and returns the updates.
+ * Now also handles picking up thrown (moving) cans, resetting their velocity.
  * @param {object} playerBodyPos - The player's body position {x, y}.
  * @param {string} localClientId - The ID of the local client.
  * @param {object} presence - The player's current presence data.
@@ -97,10 +100,10 @@ export function handlePaintCanPickup(playerBodyPos, localClientId, presence, ava
 
     const pickupDistance = config.paintCanPickupDistance;
     const nearestCan = findNearestAvailableCan(playerBodyPos, availablePaintCans, pickupDistance);
-    
+
     if (nearestCan) {
         console.log(`Player ${localClientId} picking up can ${nearestCan.id}`);
-        
+
         // Updates to send
         return {
             // Add to paintCans with player as owner
@@ -108,9 +111,9 @@ export function handlePaintCanPickup(playerBodyPos, localClientId, presence, ava
                 [nearestCan.id]: {
                     ...nearestCan,
                     ownerId: localClientId,
-                    // Initialize physics properties if not present
-                    vx: 0,
-                    vy: 0,
+                    // Reset physics properties upon pickup
+                    vx: null, // Ensure velocity is nulled
+                    vy: null,
                     isCharging: false,
                     accumulatedDroplets: 0
                 }
@@ -125,8 +128,86 @@ export function handlePaintCanPickup(playerBodyPos, localClientId, presence, ava
             }
         };
     }
-    
+
     return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+}
+
+/**
+ * Handles throwing the currently held paint can.
+ * @param {string} localClientId - The ID of the local client.
+ * @param {object} presence - The player's current presence data.
+ * @param {object} roomState - The current room state (to get can data).
+ * @param {object} playerAnchorPos - The player's anchor (cursor) position {x, y}.
+ * @returns {object} Update objects for roomState and presence, or empty if cannot throw.
+ */
+export function handleThrowPaintCan(localClientId, presence, roomState, playerAnchorPos) {
+    const canId = presence?.currentCanId;
+    const canState = canId ? roomState?.paintCans?.[canId] : null;
+    const playerPhysics = getPlayerPhysicsState(localClientId);
+
+    // Conditions to throw: holding a can, not lost, can exists, physics exists
+    if (!canId || !canState || presence.lost || !playerPhysics || !playerAnchorPos) {
+        return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+    }
+
+    console.log(`Player ${localClientId} throwing can ${canId}`);
+
+    // Calculate throw velocity
+    // 1. Get player's current velocity (optional inheritance)
+    const inheritFactor = config.paintCanThrowInheritVelocityFactor;
+    const playerVx = playerPhysics.velocity.x * inheritFactor;
+    const playerVy = playerPhysics.velocity.y * inheritFactor;
+
+    // 2. Calculate direction from player body to anchor (cursor)
+    const dirX = playerAnchorPos.x - playerPhysics.position.x;
+    const dirY = playerAnchorPos.y - playerPhysics.position.y;
+    const dist = Math.sqrt(dirX * dirX + dirY * dirY);
+    let throwVx = 0;
+    let throwVy = 0;
+    if (dist > 1) {
+        const normX = dirX / dist;
+        const normY = dirY / dist;
+        const throwSpeed = config.paintCanThrowVelocityMultiplier * dist; // More force if further away? Or just fixed? Let's try fixed for now.
+        // const throwSpeed = config.paintCanThrowVelocityMultiplier * 10; // Fixed speed multiplier
+        throwVx = normX * throwSpeed;
+        throwVy = normY * throwSpeed;
+    } else {
+         // If cursor is on top of player, maybe throw straight up or based on last movement?
+         // For now, just small velocity if dist is small.
+         const fallbackSpeed = config.paintCanThrowVelocityMultiplier * 5;
+         throwVy = -fallbackSpeed; // Default to throwing slightly up
+    }
+
+
+    // Combine inherited velocity and throw velocity
+    const initialVx = playerVx + throwVx;
+    const initialVy = playerVy + throwVy;
+
+    // Prepare updates
+    return {
+        // Remove from owned cans
+        paintCanUpdates: {
+            [canId]: null
+        },
+        // Add to available cans with velocity
+        availablePaintCanUpdates: {
+            [canId]: {
+                ...canState, // Keep paint amount, color etc.
+                ownerId: null, // No owner
+                x: canState.x, // Start at current position
+                y: canState.y,
+                vx: initialVx, // Set initial velocity
+                vy: initialVy,
+                // Clear interaction state
+                isCharging: false,
+                accumulatedDroplets: 0,
+            }
+        },
+        // Update player presence to drop the can
+        presenceUpdates: {
+            currentCanId: null
+        }
+    };
 }
 
 /**

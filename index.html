@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Interactive Web Project</title>
+    <title>Multiplayer Painter</title>
     <link rel="stylesheet" href="style.css">
     <script type="importmap">
     {
@@ -16,7 +16,8 @@
             "./dropletRenderer.js": "./dropletRenderer.js",
             "./collisionHandler.js": "./collisionHandler.js",
             "./scoreboard.js": "./scoreboard.js",
-            "./effectsRenderer.js": "./effectsRenderer.js"
+            "./effectsRenderer.js": "./effectsRenderer.js",
+            "./thrownCan.js": "./thrownCan.js"
         }
     }
     </script>
@@ -39,7 +40,6 @@
         </table>
     </div>
     <canvas id="game-canvas"></canvas>
-    <!-- Ensure canvas takes up space -->
     <div id="paint-level-indicator">
         <div class="indicator-label">Paint Bucket</div>
         <div class="indicator-bar-background">
