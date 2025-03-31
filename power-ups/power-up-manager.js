@@ -5,6 +5,7 @@
 import { getRandomPowerUpDefinition, powerUpDefinitions } from './power-up-data.js';
 import config from '../config.js';
 import { addEffect } from '../effectsRenderer.js'; // Import for visual feedback
+import { room } from '../main.js'; // Import room to access peers
 
 /**
  * Checks if a new power-up should spawn and generates it if needed
@@ -112,6 +113,13 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
                 
                 // Add a visual effect at the power-up location upon collection
                 addEffect('stealSpark', { x: powerUp.x, y: powerUp.y }); // Reuse steal spark for now
+                
+                // Add notification about power-up collection
+                import('../notification-manager.js').then(({ addNotification }) => {
+                    // Get player username if possible
+                    const username = room?.peers?.[clientId]?.username || 'Player';
+                    addNotification(`${username} collected ${powerUpDef.name}!`, 'pickup', 3000);
+                }).catch(err => console.error('Error importing notification manager:', err));
                 
             } else {
                 console.warn(`No definition or effect function found for power-up type: ${powerUp.typeId}`);
