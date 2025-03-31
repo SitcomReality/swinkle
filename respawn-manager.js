@@ -15,11 +15,11 @@ import { room } from './main.js'; // Import room to access peers
  * @returns {object} Presence updates for respawn
  */
 export function checkPlayerRespawn(localClientId, localPresence, now, canvasWidth, canvasHeight) {
-    if (localPresence?.lost && localPresence.respawnTime && now >= localPresence.respawnTime) {
+    if (localPresence.lost && localPresence.respawnTime && now >= localPresence.respawnTime) {
         console.log(`Respawning player ${localClientId}`);
         
         // Get username for notification
-        const username = room?.peers?[localClientId]?.username || 'Player';
+        const username = room.peers[localClientId].username || 'Player';
         addNotification(`${username} respawned!`, 'info', 3000);
         
         const spawnX = canvasWidth / 2;
