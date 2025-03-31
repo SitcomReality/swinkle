@@ -11,7 +11,8 @@ import config from 'config';
  * @param {number} now - The current timestamp (Date.now()) for age calculation.
  */
 export function renderDroplets(ctx, droplets, now) {
-    // const dropletsToRemove = {}; // No authoritative removal here yet (Step 7)
+    const shouldGlow = config.dropletGlow;
+    const glowBlur = config.neonGlowBlur || 10;
 
     Object.entries(droplets).forEach(([id, droplet]) => {
         if (!droplet) return; // Skip if droplet data is null (already removed or invalid)
@@ -21,26 +22,29 @@ export function renderDroplets(ctx, droplets, now) {
 
         // Client-side visual removal on timeout
         if (age > duration) {
-            // dropletsToRemove[id] = null; // Mark for removal - DISABLED FOR NOW (Step 7)
             return; // Don't render expired droplets
         }
 
-        // Draw the droplet particle (simple circle for now)
-        ctx.beginPath();
-        // Fade out effect based on age
         const lifeRatio = 1 - (age / duration);
-        // Start fading after half life maybe? Or fade linearly from start? Let's do linear fade.
-        // ctx.globalAlpha = Math.max(0, Math.min(1, lifeRatio * 2)); // Fade out in last half
+        const dropletColor = droplet.color || config.dropletColor || '#0FF';
+
+        ctx.save(); // Save context state before drawing droplet
+
+        // Fade out effect based on age
         ctx.globalAlpha = Math.max(0, Math.min(1, lifeRatio)); // Linear fade out
-        ctx.arc(droplet.x, droplet.y, config.dropletSize || 3, 0, Math.PI * 2); // Use dropletSize, default 3
-        ctx.fillStyle = droplet.color || config.dropletColor || '#0FF'; // Use dropletColor from state or config default
+
+        // Add glow effect
+        if (shouldGlow) {
+            ctx.shadowBlur = glowBlur;
+            ctx.shadowColor = dropletColor; // Use droplet color for glow
+        }
+
+        // Draw the droplet particle
+        ctx.beginPath();
+        ctx.arc(droplet.x, droplet.y, config.dropletSize || 3, 0, Math.PI * 2);
+        ctx.fillStyle = dropletColor;
         ctx.fill();
+
+        ctx.restore(); // Restore context state (resets alpha, shadow)
     });
-
-    ctx.globalAlpha = 1.0; // Reset global alpha IMPORTANT!
-
-    // Request removal of expired droplets from roomState - Moved to Step 7 / Hit detection
-    // if (Object.keys(dropletsToRemove).length > 0) {
-    //     roomInstance.updateRoomState({ droplets: dropletsToRemove }); // Needs roomInstance passed in or handled elsewhere
-    // }
 }

@@ -102,6 +102,10 @@ export function renderPaintCan(ctx, canState) {
     const color = canState.paintColor || '#CCCCCC'; // Default grey if no color
     const strokeColor = config.paintCanStrokeColor;
     const strokeWidth = config.paintCanStrokeWidth;
+    const glowBlur = config.neonGlowBlur || 10;
+    const shouldBandGlow = config.paintCanBandGlow;
+
+    ctx.save(); // Save context state before drawing can
 
     // Draw can body (rectangle)
     ctx.fillStyle = '#DDDDDD'; // Can metal color
@@ -144,16 +148,26 @@ export function renderPaintCan(ctx, canState) {
     // Paint can appearance variation: Add a colored band matching the paint
     const bandHeight = labelHeight * 0.5; // Height of the colored band
     const bandY = labelY + (labelHeight - bandHeight) / 2; // Center the band within the label area
+
+    // Apply glow effect to the band if enabled
+    if (shouldBandGlow) {
+        ctx.shadowBlur = glowBlur;
+        ctx.shadowColor = color; // Use paint color for glow
+    }
+
     ctx.fillStyle = color; // Use the paint color for the band
     ctx.beginPath();
     ctx.rect(x - width / 2, bandY, width, bandHeight);
     ctx.fill();
 
+    // Reset shadow for subsequent elements like patterns or charge indicator
+    ctx.shadowBlur = 0;
+
     // --- Add a simple pattern based on color (optional example) ---
     const colorIndex = config.paintCanColors.indexOf(color);
     if (colorIndex !== -1) { // Only apply pattern if color is known
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Subtle dark pattern
-        ctx.save();
+        ctx.save(); // Save before clipping
         ctx.beginPath();
         ctx.rect(x - width / 2, bandY, width, bandHeight); // Clip pattern to the band area
         ctx.clip();
@@ -164,7 +178,7 @@ export function renderPaintCan(ctx, canState) {
                  ctx.fillRect(px, py, patternSize, patternSize);
             }
         }
-        ctx.restore();
+        ctx.restore(); // Restore after clipping
     }
     // --- End pattern example ---
 
@@ -174,6 +188,9 @@ export function renderPaintCan(ctx, canState) {
     ctx.beginPath();
     ctx.rect(x - width / 2 - strokeWidth, y - height / 2 - 2, width + strokeWidth*2, 2);
     ctx.fill();
+    // Stroke the lip *after* filling potential patterns
+    ctx.strokeStyle = strokeColor; // Use can stroke color
+    ctx.lineWidth = strokeWidth;
     ctx.stroke();
 
     // Draw Charge Indicator
@@ -194,8 +211,14 @@ export function renderPaintCan(ctx, canState) {
 
         // Draw filled portion
         if (chargeRatio > 0) {
-            ctx.fillStyle = config.paintCanChargeIndicatorColor;
-            ctx.fillRect(chargeBarX, chargeBarY, chargeBarWidth * chargeRatio, chargeBarHeight);
+             ctx.save(); // Save before potentially adding glow
+             ctx.shadowBlur = glowBlur / 2; // Subtle glow for charge bar
+             ctx.shadowColor = config.paintCanChargeIndicatorColor;
+             ctx.fillStyle = config.paintCanChargeIndicatorColor;
+             ctx.fillRect(chargeBarX, chargeBarY, chargeBarWidth * chargeRatio, chargeBarHeight);
+             ctx.restore(); // Restore after drawing filled portion
         }
     }
+
+    ctx.restore(); // Restore context state from the beginning of the function
 }

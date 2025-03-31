@@ -47,6 +47,7 @@ function updateScoreboard() {
 
     const peers = scoreboardRoom.peers || {};
     const presence = scoreboardRoom.presence || {};
+    const localClientId = scoreboardRoom.clientId;
 
     // Create an array of player data for sorting/rendering
     const playersData = Object.entries(peers).map(([clientId, peer]) => {
@@ -85,14 +86,15 @@ function updateScoreboard() {
     playersData.forEach(player => {
         const row = scoreboardTableBody.insertRow();
         row.style.opacity = player.isLost ? 0.5 : 1; // Dim lost players
+        if (player.clientId === localClientId) {
+             row.classList.add('local-player'); // Add class for CSS styling
+        }
+
 
         const nameCell = row.insertCell();
         nameCell.textContent = player.username;
         nameCell.classList.add('player-name');
-        if (player.clientId === scoreboardRoom.clientId) {
-             nameCell.style.fontWeight = 'bold'; // Highlight local player
-             nameCell.style.color = '#FFFF99'; // Yellowish tint for local player
-        }
+        // Removed direct style manipulation, handled by CSS class '.local-player .player-name' now
 
 
         const paintCell = row.insertCell();

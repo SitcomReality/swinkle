@@ -18,13 +18,17 @@ export const notes = `
 - UI distinction between paint levels and painted status
 - Code refactoring: Split game-loop.js into specialized modules
 - Code refactoring: Further distillation of game-loop.js logic into subsystems
+- **(Just Completed) Aesthetic/Theme Implementation:** Styled UI and added neon glow effects to canvas elements based on the theme.
 
 **Next Steps:**
 
-- **1. Aesthetic/Theme Implementation:**
-    1.1: Style the UI based on the theme.
-    1.2: Add more thematic stylization to the game and canvas elements, such as adding glow to make paint look more neon.
-- **2. Environment/Level Generation:** Create file structure for storage of map data for our initial default level with the expectation we will end up with multiple maps eventually. The initial level will be a comprised of a few rectangles as obstacles/platforms.
+- **1. Environment/Level Generation:**
+    1.1: Create a basic file structure for map data (e.g., 'levels/level-data.js').
+    1.2: Define a simple data structure for level geometry (e.g., an array of rectangle objects with position and dimensions).
+    1.3: Create an initial default level with a few static rectangular platforms/obstacles.
+    1.4: Implement level loading in 'main.js' or a new 'level-manager.js'.
+    1.5: Implement rendering of the level geometry in 'game-loop.js' (or potentially a new 'level-renderer.js').
+    1.6: Implement basic collision detection and response between players/cans and the level geometry (e.g., in 'playerPhysics.js', 'paintCan.js', or a dedicated 'level-collision.js'). Start simply (stop movement on collision).
 `;
 
 export function loadDevNotes() {

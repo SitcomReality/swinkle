@@ -4,7 +4,7 @@
  * and their associated held paint can and bungee.
  */
 import config from '../config.js';
-import { getPlayerPhysicsState } from './playerState.js'; 
+import { getPlayerPhysicsState } from './playerState.js';
 import { calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 
@@ -26,20 +26,30 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
 
     const anchorX = presence.x;
     const anchorY = presence.y;
-    const baseColor = presence.color || config.defaultPlayerColor || '#FFF'; 
-    const paintedData = presence.paintedData || {}; 
+    const baseColor = presence.color || config.defaultPlayerColor || '#FFF';
+    const paintedData = presence.paintedData || {};
+    const glowBlur = config.neonGlowBlur || 10;
+    const anchorGlowColor = config.anchorPointGlowColor || 'rgba(255, 255, 255, 0.7)';
 
     // --- Render Anchor Point (Cursor) ---
+    ctx.save();
+    ctx.shadowBlur = glowBlur;
+    ctx.shadowColor = anchorGlowColor; // White/Translucent glow for anchor
+
     ctx.beginPath();
     ctx.arc(anchorX, anchorY, config.cursorSize || 8, 0, Math.PI * 2);
-    ctx.fillStyle = baseColor; 
+    ctx.fillStyle = baseColor;
+    ctx.fill();
+
+    // Draw a less prominent stroke over the glow
+    ctx.shadowBlur = 0; // Turn off shadow for the stroke
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 1;
-    ctx.fill();
     ctx.stroke();
+    ctx.restore(); // Restore shadow settings etc.
 
     // --- Get Player Physics State ---
-    const physicsState = getPlayerPhysicsState(clientId); 
+    const physicsState = getPlayerPhysicsState(clientId);
     if (!physicsState) {
         console.warn(`No physics state found for client ${clientId} during render.`);
         return; // Cannot render body/limbs without physics state
@@ -56,9 +66,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.stroke();
 
     // --- Render Limbs ---
-    ctx.strokeStyle = config.limbColor; 
+    ctx.strokeStyle = config.limbColor;
     ctx.lineWidth = config.limbWidth;
-    ctx.lineCap = 'round'; 
+    ctx.lineCap = 'round';
 
     physicsState.limbs.forEach(limb => {
         const attachmentPointX = bodyX + limb.attachmentOffset.x;
@@ -74,15 +84,13 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const bodyWidth = config.playerBodyWidth || 20;
     const bodyHeight = config.playerBodyHeight || 30;
     const radius = bodyWidth / 2;
-    const rectHeight = bodyHeight - bodyWidth; 
+    const rectHeight = bodyHeight - bodyWidth;
 
     const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
     const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData);
 
+    // Draw Fill First
     ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
-    ctx.strokeStyle = blendedStrokeColor; // Use blended stroke color
-    ctx.lineWidth = 2;
-
     ctx.beginPath();
     ctx.moveTo(bodyX - radius, bodyY - rectHeight / 2); // Top-left start of capsule arc
     ctx.arc(bodyX, bodyY - rectHeight / 2, radius, Math.PI, 0); // Top semi-circle
@@ -91,15 +99,24 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.lineTo(bodyX - radius, bodyY - rectHeight / 2); // Left side vertical line
     ctx.closePath();
     ctx.fill();
-    ctx.stroke(); // Draw blended stroke
+
+    // Draw Blended Stroke (potentially with glow)
+    ctx.save();
+    // Optional: Add glow to stroke based on blended color? Might be visually noisy.
+    // ctx.shadowBlur = glowBlur / 2; // Subtle glow for stroke
+    // ctx.shadowColor = blendedStrokeColor;
+    ctx.strokeStyle = blendedStrokeColor; // Use blended stroke color
+    ctx.lineWidth = 2;
+    ctx.stroke(); // Draw blended stroke using the same path
+    ctx.restore();
 
     // --- Render Eyes ---
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
-    const eyeOffsetY = config.playerEyeOffsetY || -3; 
+    const eyeOffsetY = config.playerEyeOffsetY || -3;
     const leftEyeX = bodyX - eyeOffsetX;
     const rightEyeX = bodyX + eyeOffsetX;
-    const eyeY = bodyY + eyeOffsetY; 
+    const eyeY = bodyY + eyeOffsetY;
 
     ctx.fillStyle = '#FFFFFF'; // White part of the eye
     ctx.strokeStyle = '#000000'; // Black outline
@@ -161,7 +178,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     if (presence.lost) {
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
-        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight);
+        ctx.textAlign = 'center'; // Ensure it's centered
+        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight); // Position above body
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---

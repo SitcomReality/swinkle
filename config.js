@@ -89,4 +89,10 @@ export default {
     stealSparkEffectDuration: 300, // Duration of the steal spark effect
     stealSparkColor: '#FFFF00', // Color of the steal spark
     stealSparkRadius: 20,      // Max radius of the steal spark
+
+    // --- NEW: Theme & Glow Settings ---
+    neonGlowBlur: 10,           // Intensity of the glow effect for neon elements
+    anchorPointGlowColor: 'rgba(255, 255, 255, 0.7)', // Glow color for the anchor point
+    paintCanBandGlow: true,     // Whether the paint can color band should glow
+    dropletGlow: true           // Whether droplets should glow
 };

@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Press+Start+2P&display=swap');
+
 body {
-    font-family: sans-serif;
+    font-family: 'Lucida Console', Monaco, monospace; 
     margin: 0;
     padding: 0;
-    background-color: #1a1a2e; /* Dark background */
-    color: #e0e0e0; /* Light text for contrast */
-    overflow: hidden; /* Prevent scrollbars due to canvas */
+    background-color: #0a0a1e; 
+    color: #e0e0e0; 
+    overflow: hidden; 
 }
 
 #dev-notes-container {
@@ -12,16 +14,19 @@ body {
     top: 10px;
     right: 10px;
     width: 300px;
-    background-color: rgba(40, 40, 70, 0.9); /* Darker, slightly transparent */
-    color: #e0e0e0; /* Light text */
+    background-color: rgba(20, 20, 50, 0.85); 
+    color: #c0c0f0; 
     z-index: 1000;
-    opacity: 0.3;
-    transition: opacity 0.3s;
+    opacity: 0.4; 
+    transition: opacity 0.3s ease-in-out;
     padding: 15px;
-    border: 1px solid #4a4a6a; /* Border matching theme */
+    border: 2px solid #66f; 
+    box-shadow: 0 0 10px #66f; 
+    border-radius: 5px;
     max-height: 300px;
     overflow-y: auto;
-    white-space: pre-wrap; /* Preserve formatting */
+    white-space: pre-wrap; 
+    font-size: 0.8em;
 }
 
 #dev-notes-container:hover {
@@ -40,22 +45,28 @@ body {
     position: fixed;
     top: 10px;
     left: 10px;
-    background-color: rgba(40, 40, 70, 0.8);
+    background-color: rgba(20, 20, 50, 0.8); 
     color: #e0e0e0;
-    z-index: 900; /* Below dev notes */
+    z-index: 900; 
     padding: 10px 15px;
-    border: 1px solid #4a4a6a;
+    border: 2px solid #f0f; 
+    box-shadow: 0 0 8px #f0f; 
     border-radius: 5px;
     font-size: 0.9em;
-    min-width: 200px;
+    min-width: 220px; 
 }
 
 #scoreboard h2 {
+    font-family: 'Orbitron', sans-serif; 
     margin: 0 0 10px 0;
-    font-size: 1.1em;
+    font-size: 1.2em; 
     text-align: center;
-    border-bottom: 1px solid #4a4a6a;
+    border-bottom: 1px solid #f0f; 
     padding-bottom: 5px;
+    color: #fff; 
+    text-shadow: 0 0 5px #f0f; 
+    text-transform: uppercase; 
+    letter-spacing: 1px;
 }
 
 #scoreboard-table {
@@ -65,14 +76,16 @@ body {
 
 #scoreboard-table th,
 #scoreboard-table td {
-    padding: 4px 8px;
+    padding: 5px 10px; 
     text-align: left;
-    border-bottom: 1px solid rgba(74, 74, 106, 0.5); /* Lighter border for rows */
+    border-bottom: 1px solid rgba(255, 0, 255, 0.3); 
 }
 
 #scoreboard-table th {
     font-weight: bold;
-    color: #a0a0c0; /* Slightly lighter than main text */
+    color: #ff99ff; 
+    text-transform: uppercase;
+    font-size: 0.9em;
 }
 
 #scoreboard-table tbody tr:last-child td {
@@ -85,11 +98,21 @@ body {
 
 #scoreboard-table .paint-percentage {
     text-align: right;
+    color: #f9f966; 
 }
 
 #scoreboard-table .loss-count {
     text-align: right;
+    color: #ff6666; 
 }
+
+#scoreboard-table .local-player td {
+    background-color: rgba(255, 255, 100, 0.1); 
+}
+#scoreboard-table .local-player .player-name {
+     color: #FFFF99; 
+}
+
 
 /* Paint Level Indicator */
 #paint-level-indicator {
@@ -97,43 +120,49 @@ body {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(40, 40, 70, 0.8);
+    background-color: rgba(20, 20, 50, 0.85); 
     color: #e0e0e0;
-    z-index: 950; /* Above canvas, below dev notes/scoreboard */
-    padding: 8px 15px;
-    border: 1px solid #4a4a6a;
+    z-index: 950; 
+    padding: 10px 20px;
+    border: 2px solid #0ff; 
+    box-shadow: 0 0 10px #0ff; 
     border-radius: 5px;
     font-size: 0.9em;
-    width: 200px;
+    width: 220px; 
     text-align: center;
-    display: none; /* Hidden by default */
+    display: none; 
 }
 
 #paint-level-indicator .indicator-label {
     font-size: 0.8em;
-    color: #a0a0c0;
-    margin-bottom: 4px;
+    color: #8ff; 
+    margin-bottom: 5px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-weight: bold;
 }
 
 #paint-level-indicator .indicator-bar-background {
-    background-color: rgba(0, 0, 0, 0.3);
-    height: 10px;
-    border-radius: 3px;
-    margin-bottom: 4px;
-    overflow: hidden; /* Ensure fill stays within bounds */
-    border: 1px solid #333;
+    background-color: rgba(0, 0, 0, 0.5); 
+    height: 12px; 
+    border-radius: 4px;
+    margin-bottom: 6px;
+    overflow: hidden; 
+    border: 1px solid #088; 
 }
 
 #paint-level-indicator .indicator-bar-fill {
-    background-color: #00FFFF; /* Default/Placeholder color */
+    background-color: #00FFFF; 
     height: 100%;
-    width: 100%; /* Default to full */
-    border-radius: 3px;
-    transition: width 0.1s linear; /* Smooth transition for level changes */
+    width: 100%; 
+    border-radius: 3px; 
+    transition: width 0.1s linear, background-color 0.2s linear; 
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5); 
 }
 
 #paint-level-indicator .indicator-text {
     font-weight: bold;
+    color: #fff; 
+    text-shadow: 0 0 5px #0ff; 
+    font-size: 1.1em;
 }
