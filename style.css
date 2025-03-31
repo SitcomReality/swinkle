@@ -35,3 +35,58 @@ body {
     width: 100%;
     height: 100%;
 }
+
+#scoreboard {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(40, 40, 70, 0.8);
+    color: #e0e0e0;
+    z-index: 900; /* Below dev notes */
+    padding: 10px 15px;
+    border: 1px solid #4a4a6a;
+    border-radius: 5px;
+    font-size: 0.9em;
+    min-width: 200px;
+}
+
+#scoreboard h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    text-align: center;
+    border-bottom: 1px solid #4a4a6a;
+    padding-bottom: 5px;
+}
+
+#scoreboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#scoreboard-table th,
+#scoreboard-table td {
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(74, 74, 106, 0.5); /* Lighter border for rows */
+}
+
+#scoreboard-table th {
+    font-weight: bold;
+    color: #a0a0c0; /* Slightly lighter than main text */
+}
+
+#scoreboard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#scoreboard-table .player-name {
+    font-weight: bold;
+}
+
+#scoreboard-table .paint-percentage {
+    text-align: right;
+}
+
+#scoreboard-table .loss-count {
+    text-align: right;
+}

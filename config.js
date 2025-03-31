@@ -1,7 +1,3 @@
-// Configuration values for the project
-// Use this file to store values that might need tweaking,
-// like animation speeds, colors, or API endpoints.
-
 export default {
     // Player settings
     defaultPlayerColor: '#FFFFFF', // Default color if presence doesn't specify
@@ -77,7 +73,8 @@ export default {
     paintCanAutoDropRate: 4, // Droplets per second when not charging (1000ms / 250ms)
     paintCanPickupDistance: 30, // Radius for player capsule to collide with available can center
 
-    // Loss condition settings
+    // Collision & Loss settings
+    paintIncrementPerDroplet: 2, // How much % paint increases per droplet hit
     lossThreshold: 100, // Percentage of paint at which a player loses
     lossMessageColor: '#FFFFFF', // Color of the "painted out" message
     lossMessageFont: '24px "Lucida Console", Monaco, monospace', // Font for loss message

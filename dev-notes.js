@@ -5,7 +5,7 @@ export const notes = `
 - **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players must manage the paint in their can and find ways to replenish it by acquiring new cans.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord.
-- **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions).
+- **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
 
@@ -65,7 +65,7 @@ export const notes = `
     *   Dripping, bursting, hitting, pickup, empty can drop. (Requires audio asset handling)
 
 **10. UI:**
-    *   Scoreboard / Player list.
+    *   Scoreboard / Player list displaying paint % and persistent loss count. (DONE - 'scoreboard.js')
     *   Paint level indicator UI element (alternative to in-can).
     *   Zone notifications (if implementing zones).
 
@@ -73,9 +73,10 @@ export const notes = `
     *   Stealing cans from other players?
     *   Throwing cans?
     *   Different weapon types / paint effects?
+    *   Player respawn mechanism after loss.
 
 **12. Networking Robustness:**
-    *   Improve handling of state update races (e.g., simultaneous pickup attempts, disconnect handling, droplet timeout removal responsibility).
+    *   Improve handling of state update races (e.g., simultaneous pickup attempts, disconnect handling refinement - making can available, droplet timeout removal responsibility).
 
 `;
 

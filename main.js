@@ -3,6 +3,7 @@ import { startGameLoop } from './game-loop.js';
 import config from 'config';
 // Import player functions from the facade module
 import { removePlayerPhysicsState } from './player.js';
+import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
 
 export const room = new WebsimSocket();
 
@@ -18,23 +19,9 @@ async function initGame() {
     }
     if (room.roomState.paintCans === undefined) {
         initialRoomStateUpdates.paintCans = {};
-        // TEMPORARY: Add a test can for initial development
-        const testCanId = `test-can-${Math.random().toString(36).substring(2, 9)}`;
-        initialRoomStateUpdates.paintCans[testCanId] = {
-            id: testCanId,
-            ownerId: null, // Initially unowned
-            paintColor: config.paintCanColors[0] || '#FF00FF',
-            paintAmount: config.paintCanInitialAmount,
-            x: window.innerWidth / 2 + 50, y: window.innerHeight / 2 + 50, // Start somewhere visible
-            vx: 0, vy: 0,
-            isCharging: false,
-            accumulatedDroplets: 0
-        };
     }
     if (room.roomState.availablePaintCans === undefined) {
         initialRoomStateUpdates.availablePaintCans = {};
-        // TEMPORARY: Move the test can here if needed for testing pickup later
-        // For now, leave it in paintCans to test rendering/physics immediately if picked up manually
     }
     if (Object.keys(initialRoomStateUpdates).length > 0) {
         console.log("Initializing room state:", initialRoomStateUpdates);
@@ -64,7 +51,7 @@ async function initGame() {
     // Handle mouse down/up for paint charging
     canvas.addEventListener('mousedown', (e) => {
         const localPresence = room.presence[room.clientId];
-        if (localPresence && localPresence.currentCanId) {
+        if (localPresence && localPresence.currentCanId && !localPresence.lost) { // Prevent interaction if lost
             const canId = localPresence.currentCanId;
             // Check if can still exists and is owned by us (prevent race condition errors)
             const canState = room.roomState.paintCans?.[canId];
@@ -80,7 +67,8 @@ async function initGame() {
     });
     canvas.addEventListener('mouseup', (e) => {
         const localPresence = room.presence[room.clientId];
-        if (localPresence && localPresence.currentCanId) {
+        // Don't burst if lost, even if mouseup happens after loss
+        if (localPresence && localPresence.currentCanId && !localPresence.lost) {
             const canId = localPresence.currentCanId;
             const canState = room.roomState.paintCans?.[canId];
 
@@ -145,6 +133,7 @@ async function initGame() {
     // Setup presence subscription for other players
     room.subscribePresence((presence) => {
         // Presence updates are now primarily handled within the game loop's rendering logic
+        // and the scoreboard subscription.
         // This subscription remains useful for triggering specific events on presence change if needed later.
         // Example: Detect when a peer disconnects to handle can ownership transfer
         const currentPeers = new Set(Object.keys(room.peers));
@@ -159,27 +148,37 @@ async function initGame() {
                 // Check if the disconnected player owned any cans
                 const paintCans = room.roomState.paintCans || {};
                 const cansToUpdate = {};
+                let availableCansToAdd = {};
+                let ownedCansToRemove = {};
+
                 for (const [canId, canState] of Object.entries(paintCans)) {
                     if (canState && canState.ownerId === clientId) {
-                        console.log(`Player ${clientId} disconnected, releasing can ${canId}`);
-                        // Option 1: Make can available again (simple)
-                        // We need to move it from paintCans to availablePaintCans
-                        // Setting ownerId to null and adding to availablePaintCans
-                        // Requires careful state management, maybe a dedicated function later.
-                        // For now, just mark as unowned. Pickup logic (Step 5) will handle finding it.
-                        cansToUpdate[canId] = { ...canState, ownerId: null };
-
-                        // If this client was the owner, they should update the state
-                        // However, any client can detect the disconnect. Let's make the "first" client do it?
-                        // Simplification: Assume the client running this code can update the state.
-                        // This might lead to race conditions, needs refinement later.
-                        // TODO: Refine disconnect handling - maybe only one client should do this update?
-                        room.updateRoomState({
-                            paintCans: { [canId]: { ownerId: null } } // Just remove owner for now
-                            // TODO Step 5: Move to availablePaintCans properly
-                        });
+                        console.log(`Player ${clientId} disconnected, making can ${canId} available`);
+                        // Create an entry to add to availablePaintCans
+                         availableCansToAdd[canId] = {
+                            ...canState,
+                            ownerId: null, // Mark as unowned
+                            // Reset dynamic state
+                            vx: 0,
+                            vy: 0,
+                            isCharging: false,
+                            accumulatedDroplets: 0
+                         };
+                         // Mark the owned can for removal
+                         ownedCansToRemove[canId] = null;
                     }
                 }
+
+                 // Send updates IF this client is the one detecting the disconnect
+                 // TODO: This could still cause race conditions if multiple clients detect simultaneously.
+                 // A more robust solution might involve a leader election or distributed lock,
+                 // but for now, any client can attempt the update.
+                 if (Object.keys(availableCansToAdd).length > 0) {
+                     room.updateRoomState({
+                        paintCans: ownedCansToRemove,
+                        availablePaintCans: availableCansToAdd
+                    });
+                 }
             }
         });
     });
@@ -191,6 +190,9 @@ async function initGame() {
 
     // Start rendering loop, passing the room instance
     startGameLoop(room);
+
+    // Initialize the scoreboard AFTER the room is ready and loop is starting
+    initScoreboard(room);
 }
 
 // Initialize the app

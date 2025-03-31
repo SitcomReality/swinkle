@@ -13,13 +13,30 @@
             "./playerRenderer.js": "./playerRenderer.js",
             "./colorUtils.js": "./colorUtils.js",
             "./playerInteractions.js": "./playerInteractions.js",
-            "./dropletRenderer.js": "./dropletRenderer.js"
+            "./dropletRenderer.js": "./dropletRenderer.js",
+            "./collisionHandler.js": "./collisionHandler.js",
+            "./scoreboard.js": "./scoreboard.js"
         }
     }
     </script>
 </head>
 <body>
     <div id="dev-notes-container"></div>
+    <div id="scoreboard">
+        <h2>Scoreboard</h2>
+        <table id="scoreboard-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Paint %</th>
+                    <th>Losses</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Player rows will be added here -->
+            </tbody>
+        </table>
+    </div>
     <canvas id="game-canvas"></canvas>
     <!-- Ensure canvas takes up space -->
     <script type="module" src="main.js"></script>
