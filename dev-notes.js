@@ -64,7 +64,7 @@ export const notes = `
 
 **4. Visual Feedback Updates:** (NEXT)
     *   **Player Capsule Stroke:** In \`player.js/renderPlayer\`: Modify capsule stroke rendering. Calculate the final stroke color by blending the base stroke color (from config) with colors stored in the player's \`presence.paintedData\`. Use a weighted average based on percentages.
-    *   **Paint Can Amount:** (DONE in Step 2 `renderPaintCan`) Visually represent the \`canState.paintAmount\` (fill level rectangle inside the can).
+    *   **Paint Can Amount:** (DONE in Step 2 \`renderPaintCan\`) Visually represent the \`canState.paintAmount\` (fill level rectangle inside the can).
 
 **5. Paint Can Replenishment:**
     *   **Mechanism:** Refill zones or random spawning of \`availablePaintCans\` in \`roomState\`.
