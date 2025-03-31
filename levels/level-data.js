@@ -30,7 +30,7 @@ export const defaultLevel = {
             width: 200,
             height: 30,
             color: '#2a2a4a', // Darker purple/blue
-            properties: { friction: 0.8, restitution: 0.1 }
+            properties: { friction: 0.8, restitution: 0.2 } // Adjusted restitution
         },
         {
             id: 'block-left',
@@ -40,7 +40,7 @@ export const defaultLevel = {
             width: 50,
             height: 100,
             color: '#333366',
-            properties: { friction: 0.7, restitution: 0.2 }
+            properties: { friction: 0.7, restitution: 0.3 } // Adjusted restitution
         },
          {
             id: 'block-right',
@@ -50,7 +50,7 @@ export const defaultLevel = {
             width: 80,
             height: 40,
             color: '#333366',
-            properties: { friction: 0.9, restitution: 0.1 }
+            properties: { friction: 0.9, restitution: 0.1 } // Kept low restitution
         },
         // --- End initial obstacles ---
     ]

@@ -40,9 +40,9 @@ function checkCircleRectCollision(objectState, obstacle, objectRadius) {
 /**
  * Resolves collision between a dynamic object and a static rectangle obstacle.
  * Modifies the object's position and velocity directly.
- * Basic response: push out and zero velocity towards the obstacle.
+ * Basic response: push out, apply friction and restitution.
  * @param {object} objectState - The physics state object { position: {x, y}, velocity: {x, y} }
- * @param {object} obstacle - The obstacle data object { x, y, width, height }.
+ * @param {object} obstacle - The obstacle data object { x, y, width, height, properties: { friction, restitution } }.
  * @param {number} objectRadius - Approximate radius used for collision check.
  */
 function resolveCollision(objectState, obstacle, objectRadius) {
@@ -52,6 +52,10 @@ function resolveCollision(objectState, obstacle, objectRadius) {
     const rectCenterY = obstacle.y;
     const rectHalfWidth = obstacle.width / 2;
     const rectHalfHeight = obstacle.height / 2;
+
+    // Default physics properties if not defined on the obstacle
+    const restitution = obstacle.properties?.restitution ?? 0.1; // Default slight bounce
+    const friction = obstacle.properties?.friction ?? 0.9;     // Default friction
 
     const dx = objPos.x - rectCenterX; // Vector from rect center to circle center
     const dy = objPos.y - rectCenterY;
@@ -67,24 +71,34 @@ function resolveCollision(objectState, obstacle, objectRadius) {
             // Push horizontally
             const pushSign = dx > 0 ? 1 : -1;
             objPos.x += pushSign * overlapX; // Push out
-            if ((pushSign > 0 && objVel.x < 0) || (pushSign < 0 && objVel.x > 0)) {
-                 objVel.x = 0; // Zero velocity component moving into the obstacle
-            }
-            // Optional: Apply friction or restitution later
-            // objVel.y *= obstacle.properties?.friction || 0.8;
+
+            // Apply restitution and friction
+            // Velocity component perpendicular to the surface (normal velocity)
+            const normalVelX = objVel.x;
+            // Velocity component parallel to the surface (tangential velocity)
+            const tangentVelY = objVel.y;
+
+            // Modify velocity based on collision response
+            objVel.x = -normalVelX * restitution; // Reverse and dampen normal velocity (bounce)
+            objVel.y = tangentVelY * friction;    // Apply friction to tangential velocity
+
         } else {
             // Push vertically
             const pushSign = dy > 0 ? 1 : -1;
             objPos.y += pushSign * overlapY; // Push out
-            if ((pushSign > 0 && objVel.y < 0) || (pushSign < 0 && objVel.y > 0)) {
-                objVel.y = 0; // Zero velocity component moving into the obstacle
-            }
-             // Optional: Apply friction or restitution later
-            // objVel.x *= obstacle.properties?.friction || 0.8;
+
+            // Apply restitution and friction
+            // Velocity component perpendicular to the surface (normal velocity)
+            const normalVelY = objVel.y;
+            // Velocity component parallel to the surface (tangential velocity)
+            const tangentVelX = objVel.x;
+
+            // Modify velocity based on collision response
+            objVel.y = -normalVelY * restitution; // Reverse and dampen normal velocity (bounce)
+            objVel.x = tangentVelX * friction;    // Apply friction to tangential velocity
         }
     }
 }
-
 
 /**
  * Checks and resolves collisions between the player's body and level obstacles.
