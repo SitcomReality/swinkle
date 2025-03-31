@@ -40,12 +40,11 @@ export const notes = `
     *   Consider limb shapes other than lines?
 
 **Future Considerations:**
-- Squirt cooldown/rate limiting.
 - Player color assignment influencing body/cord/limb color.
-- Squirt interactions (if any).
-- SVG character integration (if Canvas primitives become limiting).
-- More expressive eyes (shape changes, etc.).
+- Squirting: interactions (if any), cooldown/rate limiting, making squirt come from character body instead of cursor.
 - Rotating the player capsule based on movement/velocity.
+- More expressive eyes (shape changes, etc.).
+- Other gameplay mechanics.
 - Collision detection/response (player-player, player-environment).
 
 **Key Questions:**
