@@ -56,22 +56,78 @@ async function initGame() {
         });
     });
 
-    // Handle clicks for squirting (now droplets)
+    // Handle clicks for squirting (now droplets) - Disabled
     canvas.addEventListener('click', (e) => {
-        // TODO: This click logic needs to be updated based on the new design (paint can interaction, charging)
-        // Step 3: Droplet Generation from Can will replace this.
-        // Temporarily disable default droplet creation on click
-        console.log("Canvas click - Droplet creation temporarily disabled.");
+        // Default click action disabled, handled by mousedown/up for charging/burst
     });
 
-    // Handle mouse down/up for paint charging (Step 3)
+    // Handle mouse down/up for paint charging
     canvas.addEventListener('mousedown', (e) => {
-        // TODO: Implement Step 3: Start charging if holding a can
-        console.log("Mouse down - Charging logic needed");
+        const localPresence = room.presence[room.clientId];
+        if (localPresence && localPresence.currentCanId) {
+            const canId = localPresence.currentCanId;
+            // Check if can still exists and is owned by us (prevent race condition errors)
+            const canState = room.roomState.paintCans?.[canId];
+             if (canState && canState.ownerId === room.clientId) {
+                console.log(`Starting charge for can ${canId}`);
+                room.updateRoomState({
+                    paintCans: {
+                        [canId]: { isCharging: true }
+                    }
+                });
+             }
+        }
     });
     canvas.addEventListener('mouseup', (e) => {
-        // TODO: Implement Step 3: Stop charging and release burst if holding a can
-        console.log("Mouse up - Burst logic needed");
+        const localPresence = room.presence[room.clientId];
+        if (localPresence && localPresence.currentCanId) {
+            const canId = localPresence.currentCanId;
+            const canState = room.roomState.paintCans?.[canId];
+
+            // Only proceed if the can exists, is owned by us, and was potentially charging
+            if (canState && canState.ownerId === room.clientId) {
+                console.log(`Stopping charge / Releasing burst for can ${canId}`);
+                const dropletsToBurst = canState.accumulatedDroplets || 0;
+                const updates = {
+                    paintCans: {
+                        [canId]: {
+                            isCharging: false,
+                            accumulatedDroplets: 0 // Reset accumulation regardless of burst
+                        }
+                    }
+                };
+
+                if (dropletsToBurst > 0) {
+                    const burstDroplets = {};
+                    const canX = canState.x;
+                    const canY = canState.y;
+                    console.log(`Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
+
+                    for (let i = 0; i < dropletsToBurst; i++) {
+                        // Simple unique ID
+                        const dropletId = `${room.clientId}-${Date.now()}-${i}`;
+                        // Add slight random offset for burst effect
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = Math.random() * 15; // Spread within 15 pixels
+                        burstDroplets[dropletId] = {
+                            id: dropletId,
+                            ownerId: room.clientId, // Owner of the droplet is the player who fired it
+                            color: canState.paintColor,
+                            x: canX + Math.cos(angle) * radius,
+                            y: canY + Math.sin(angle) * radius,
+                            createdAt: Date.now()
+                        };
+                    }
+                    // Add droplets to the same update object sent to the server
+                    updates.droplets = burstDroplets;
+                } else {
+                     console.log(`No accumulated droplets for ${canId}, just stopping charge.`);
+                }
+
+                // Send the combined update (stop charge, reset accum, add burst droplets if any)
+                room.updateRoomState(updates);
+            }
+        }
     });
 
     // Initial presence update with a default color and new state fields
@@ -116,6 +172,7 @@ async function initGame() {
                         // However, any client can detect the disconnect. Let's make the "first" client do it?
                         // Simplification: Assume the client running this code can update the state.
                         // This might lead to race conditions, needs refinement later.
+                        // TODO: Refine disconnect handling - maybe only one client should do this update?
                         room.updateRoomState({
                             paintCans: { [canId]: { ownerId: null } } // Just remove owner for now
                             // TODO Step 5: Move to availablePaintCans properly

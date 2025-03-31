@@ -13,6 +13,9 @@ let lastTimestamp = 0; // For calculating delta time
 let previousPeers = new Set(); // To track disconnected peers
 const physicsUpdateBuffer = {}; // Buffer physics updates for cans
 
+// --- Client-side state for owned can interactions ---
+let timeSinceLastAutoDrop = 0; // Milliseconds
+
 // Basic rendering using canvas
 function gameLoop(timestamp) {
     if (!roomInstance) {
@@ -57,8 +60,9 @@ function gameLoop(timestamp) {
     previousPeers = currentPeerIds; // Update for next frame check
 
 
-    // --- Update Player and Paint Can Physics ---
+    // --- Update Player and Paint Can Physics & Interactions ---
     const paintCanUpdatesToSend = {}; // Collect can state updates owned by this client
+    const dropletsToAdd = {}; // Collect new droplets created this frame by the local client
 
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
@@ -76,19 +80,76 @@ function gameLoop(timestamp) {
             if (currentCanId && roomInstance.roomState.paintCans && roomInstance.roomState.paintCans[currentCanId]) {
                 const canState = roomInstance.roomState.paintCans[currentCanId];
 
-                // Only the owner client calculates and sends updates for their can's physics
+                // Only the owner client calculates and sends updates for their can's physics and interactions
                 if (clientId === localClientId) {
                     // Update paint can physics based on player body position
                     updatePaintCanPhysics(canState, playerBodyPos, deltaTime);
 
-                    // Store the physics updates to send
+                    // Store the physics updates to send (always send position updates)
                     paintCanUpdatesToSend[currentCanId] = {
+                        ...(paintCanUpdatesToSend[currentCanId] || {}), // Keep potential interaction updates
                         x: canState.x,
                         y: canState.y,
                         vx: canState.vx,
                         vy: canState.vy
                     };
-                    // TODO Step 3: Add logic here to check for auto-dropping or charging based on canState.isCharging
+
+                    // --- Handle Can Interactions (Charging / Auto-Dropping) ---
+                    const currentPaintAmount = canState.paintAmount || 0;
+                    const currentAccumulated = canState.accumulatedDroplets || 0;
+                    const updatesForCan = paintCanUpdatesToSend[currentCanId]; // Get reference to the update object
+
+                    if (canState.isCharging && currentPaintAmount > 0) {
+                        // --- Charging Logic ---
+                        const chargeRate = config.paintCanChargingSpeed; // Units per second
+                        const maxAccumulation = config.paintCanMaxAccumulatedDroplets;
+
+                        // Calculate how much paint would be consumed and how many droplets accumulated this frame
+                        const paintToConsume = chargeRate * deltaTime;
+                        const dropletsToAccumulate = chargeRate * deltaTime; // Assuming 1 unit paint = 1 droplet potential
+
+                        // Determine actual amounts considering remaining paint and max accumulation
+                        const actualPaintConsumed = Math.min(paintToConsume, currentPaintAmount);
+                        const actualDropletsAccumulated = Math.min(dropletsToAccumulate, maxAccumulation - currentAccumulated, actualPaintConsumed);
+
+                        if (actualDropletsAccumulated > 0 || actualPaintConsumed > 0) {
+                             // Apply the changes to the update batch
+                             updatesForCan.paintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
+                             updatesForCan.accumulatedDroplets = Math.min(maxAccumulation, currentAccumulated + actualDropletsAccumulated);
+                             // console.log(`Charging: Consumed ${actualPaintConsumed.toFixed(2)}, Accumulated ${actualDropletsAccumulated.toFixed(2)}. New Amount: ${updatesForCan.paintAmount.toFixed(2)}, New Acc: ${updatesForCan.accumulatedDroplets.toFixed(2)}`);
+                        }
+                        // Reset auto-drop timer while charging
+                        timeSinceLastAutoDrop = 0;
+
+                    } else if (!canState.isCharging && currentPaintAmount > 0) {
+                        // --- Auto-Dropping Logic ---
+                        timeSinceLastAutoDrop += deltaTime * 1000; // Accumulate time in ms
+                        const autoDropInterval = 1000 / config.paintCanAutoDropRate; // ms per drop
+
+                        let dropsThisFrame = 0;
+                        while (timeSinceLastAutoDrop >= autoDropInterval && (currentPaintAmount - dropsThisFrame) > 0) {
+                            timeSinceLastAutoDrop -= autoDropInterval;
+                            dropsThisFrame++;
+
+                            // Create the droplet object
+                            const dropletId = `${localClientId}-${Date.now()}-auto-${dropsThisFrame}`;
+                            dropletsToAdd[dropletId] = {
+                                id: dropletId,
+                                ownerId: localClientId,
+                                color: canState.paintColor,
+                                x: canState.x, // Use current (updated) can position
+                                y: canState.y,
+                                createdAt: now // Use consistent timestamp for frame
+                            };
+                            // console.log(`Auto-dropping droplet ${dropletId}`);
+                        }
+
+                        if (dropsThisFrame > 0) {
+                            // Update paint amount in the update batch
+                            updatesForCan.paintAmount = Math.max(0, currentPaintAmount - dropsThisFrame);
+                            // console.log(`Dropped ${dropsThisFrame}. New Amount: ${updatesForCan.paintAmount}`);
+                        }
+                    }
                 }
             }
             // TODO Step 5: Add collision check here between local player capsule and availablePaintCans
@@ -97,13 +158,19 @@ function gameLoop(timestamp) {
 
     // Send batched updates for cans owned by this client
     if (Object.keys(paintCanUpdatesToSend).length > 0) {
+        // console.log("Sending can updates:", paintCanUpdatesToSend);
         roomInstance.updateRoomState({ paintCans: paintCanUpdatesToSend });
+    }
+    // Send batched updates for new droplets created by this client
+     if (Object.keys(dropletsToAdd).length > 0) {
+        // console.log("Sending new droplets:", dropletsToAdd);
+        roomInstance.updateRoomState({ droplets: dropletsToAdd });
     }
 
 
     // --- Render Droplets ---
     const droplets = roomInstance.roomState.droplets || {};
-    const dropletsToRemove = {}; // Track droplets to remove
+    const dropletsToRemove = {}; // Track droplets to remove (Only for visual timeout for now)
 
     Object.entries(droplets).forEach(([id, droplet]) => {
         if (!droplet) return; // Skip if droplet data is null (already removed or invalid)
@@ -111,23 +178,27 @@ function gameLoop(timestamp) {
         const age = now - droplet.createdAt;
 
         // Use droplet config values
-        if (age > (config.dropletDuration || 1000)) { // Use dropletDuration, default 1s
-            // Mark for removal if expired
-            dropletsToRemove[id] = null;
+        if (age > (config.dropletDuration || 2000)) { // Use dropletDuration, default 2s
+            // Mark for visual removal if expired (actual removal handled by hitter or maybe later cleanup)
+             // Client-side removal on timeout:
+            // dropletsToRemove[id] = null; // DISABLED FOR NOW - Step 7 will clarify removal
         } else {
             // Draw the droplet particle (simple circle for now)
             ctx.beginPath();
+            // Fade out effect based on age
+            const lifeRatio = 1 - (age / (config.dropletDuration || 2000));
+            ctx.globalAlpha = Math.max(0, Math.min(1, lifeRatio * 2)); // Fade out in last half
             ctx.arc(droplet.x, droplet.y, config.dropletSize || 3, 0, Math.PI * 2); // Use dropletSize, default 3
             ctx.fillStyle = droplet.color || config.dropletColor || '#0FF'; // Use dropletColor from state or config default
             ctx.fill();
+            ctx.globalAlpha = 1.0; // Reset alpha
         }
     });
 
-    // Request removal of expired droplets from roomState
-    // TODO: This removal logic might need refinement based on dev-notes (who removes: owner on timeout or hitter on collision?)
-    if (Object.keys(dropletsToRemove).length > 0) {
-        roomInstance.updateRoomState({ droplets: dropletsToRemove });
-    }
+    // Request removal of expired droplets from roomState - Moved to Step 7
+    // if (Object.keys(dropletsToRemove).length > 0) {
+    //     roomInstance.updateRoomState({ droplets: dropletsToRemove });
+    // }
 
     // --- Render Paint Cans (Held and Available) ---
     const paintCans = roomInstance.roomState.paintCans || {};
@@ -183,5 +254,6 @@ export function startGameLoop(room) {
     console.log("Starting game loop...");
     lastTimestamp = 0; // Reset timestamp when starting
     previousPeers = new Set(Object.keys(room.peers)); // Initialize peer tracking
+    timeSinceLastAutoDrop = 0; // Reset auto-drop timer
     requestAnimationFrame(gameLoop); // Kick off the first frame
 }
