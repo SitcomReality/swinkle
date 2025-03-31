@@ -5,7 +5,8 @@
 import config from 'config';
 // Import player functions directly for clarity (facade pattern might obscure origins)
 import { renderPlayer } from './playerRenderer.js';
-import { updatePlayerPhysics, getPlayerPhysicsState, removePlayerPhysicsState } from './playerState.js'; // Get state/physics functions directly
+import { updatePlayerPhysics } from './playerPhysics.js'; 
+import { getPlayerPhysicsState, removePlayerPhysicsState } from './playerState.js'; // Get state/physics functions directly
 import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
 import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js';
 import { renderDroplets } from './dropletRenderer.js';
