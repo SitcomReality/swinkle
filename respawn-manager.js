@@ -9,7 +9,7 @@
  * @param {object} localPresence - The local player's presence data
  * @param {number} now - Current timestamp
  * @param {number} canvasWidth - Width of the game canvas
- * @param {number} canvasHeight - Height of the game canvas
+* @param {number} canvasHeight - Height of the game canvas
  * @returns {object} Presence updates for respawn
  */
 export function checkPlayerRespawn(localClientId, localPresence, now, canvasWidth, canvasHeight) {

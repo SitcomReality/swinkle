@@ -17,7 +17,7 @@ export const notes = `
 - Scoring system with persistent loss tracking
 - UI distinction between paint levels and painted status
 - Code refactoring: Split game-loop.js into specialized modules
-- Architecture improvements: Reorganized codebase with dedicated modules for all subsystems, making game-loop a proper "hub"
+- Code refactoring: Further distillation of game-loop.js logic into subsystems
 
 **Next Steps:**
 
