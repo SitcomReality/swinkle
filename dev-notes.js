@@ -16,9 +16,9 @@ export const notes = `
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
-        - *DONE* - Added multiple level definitions (`level-data.js`).
-        - *DONE* - Updated `level-manager.js` to load a random level on init.
-        - *DONE* - Updated `level-renderer.js` and `level-collision.js` to handle basic rotation for rectangular obstacles defined in levels.
+        - *DONE* - Added multiple level definitions (\`level-data.js\`).
+        - *DONE* - Updated \`level-manager.js\` to load a random level on init.
+        - *DONE* - Updated \`level-renderer.js\` and \`level-collision.js\` to handle basic rotation for rectangular obstacles defined in levels.
         - *NEXT* - Implement a mechanism for level cycling or selection during gameplay (maybe based on time or votes?). Add support for polygon obstacles for more complex shapes.
     - 2.2: Environmental hazards? (Moving platforms, laser grids?).
     - 2.3: Better score tracking: reward players for painting other players.
@@ -46,7 +46,7 @@ export function loadDevNotes() {
     if (container) {
         // Use textContent to avoid HTML injection issues
         // Replace backticks with a similar character or remove them for display
-        container.textContent = notes.replace(/\`/g, "'"); // Replace backticks with single quotes for display
+        container.textContent = notes.replace(/\\`/g, "'"); // Replace backticks with single quotes for display
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");
