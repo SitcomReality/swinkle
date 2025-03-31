@@ -9,6 +9,15 @@ export const notes = `
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
 
+**Completed Steps:**
+- Basic player movement and physics system
+- Paint can interaction and physics system
+- Droplet management and collision detection
+- Visual effects for collisions and interactions
+- Scoring system with persistent loss tracking
+- UI distinction between paint levels and painted status
+- Code refactoring: Split game-loop.js into specialized modules
+
 **Next Steps:**
 
 - **1. Aesthetic/Theme Implementation:**
