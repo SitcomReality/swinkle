@@ -13,14 +13,14 @@ export default {
     playerBodyStrokeColor: '#FF88AA', // Base color for the player body stroke (gets blended with paint later)
 
     // Bungee Physics settings (Player -> Cursor)
-    bungeeRestLength: 20,        // Natural length of the player's bungee cord
+    bungeeRestLength: 8,        // Natural length of the player's bungee cord
     bungeeSpringConstant: 5,     // Stiffness of the player's bungee cord
     bungeeDampingFactor: 0.98,   // Damping factor for player's bungee (Less damping = more swing)
     gravityAcceleration: 1200,   // Force of gravity pulling the player body down
     playerBodyMass: 0.8,         // Mass affects how forces influence player acceleration
     bungeeCordColor: 'rgba(255, 255, 255, 0.5)', // Color of the player's bungee line
     bungeeCordWidth: 2,         // Width of the player's bungee line
-    bungeeMaxLengthMultiplier: 30, // Max stretch factor for player bungee relative to rest length
+    bungeeMaxLengthMultiplier: 50, // Max stretch factor for player bungee relative to rest length
 
     // Limb Physics & Appearance Settings
     numberOfLimbs: 4,            // How many limbs the character has
