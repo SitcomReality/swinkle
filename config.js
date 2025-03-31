@@ -1,5 +1,5 @@
+// Player settings
 export default {
-    // Player settings
     defaultPlayerColor: '#FFFFFF', // Default color if presence doesn't specify
     cursorSize: 8, // Radius of the player anchor point
     nameColor: '#DDDDDD', // Color for player names
@@ -78,6 +78,7 @@ export default {
     lossThreshold: 100, // Percentage of paint at which a player loses
     lossMessageColor: '#FFFFFF', // Color of the "painted out" message
     lossMessageFont: '24px "Lucida Console", Monaco, monospace', // Font for loss message
+    respawnDelay: 5000, // Time in milliseconds before a player respawns after losing
 
     // Visual Effects settings
     splatEffectDuration: 500,   // Duration of splat effect in ms

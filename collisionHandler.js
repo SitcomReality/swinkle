@@ -15,9 +15,10 @@ import { room } from './main.js';
  * @param {object} droplets - The current droplets in the room state.
  * @param {string} localClientId - The ID of the local client.
  * @param {object} currentPresence - The player's current presence data (including paintedData, lost).
+ * @param {number} now - The current timestamp (Date.now()).
  * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
  */
-export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence) {
+export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
     const bodyWidth = config.playerBodyWidth;
@@ -97,6 +98,8 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         if (totalPercentage >= config.lossThreshold) {
             console.log(`Player ${localClientId} has been fully painted out! (${totalPercentage}%)`);
             updateData.lost = true;
+            // Set the respawn time
+            updateData.respawnTime = now + (config.respawnDelay || 5000);
             justLost = true; // Flag that the loss occurred this frame
 
             // Record the loss in the database
