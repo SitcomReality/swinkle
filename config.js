@@ -57,9 +57,8 @@ export default {
     paintCanChargeIndicatorHeight: 4, // Height of the charge bar
     paintCanChargeIndicatorWidth: 20, // Width of the charge bar background
     paintCanChargeIndicatorColor: '#FFFFFF', // Color of the charge bar fill
-    initialAvailableCans: 3, // Number of cans to spawn initially
-    maxTotalCans: 6,       // Max number of available + owned cans allowed on map at once
-    spawnRatePerSecond: 0.1, // Chance per second to attempt spawning a new can if below max
+    initialAvailableCans: 2, // Number of cans to spawn initially
+    maxAvailableCans: 3,    // Max number of available cans allowed on map
 
     // Paint Can Bungee Physics (Player Capsule -> Paint Can)
     paintCanBungeeRestLength: 30, // Let it dangle a bit further
@@ -74,15 +73,8 @@ export default {
     // Paint Can Interaction settings
     paintCanChargingSpeed: 50, // Paint units accumulated per second while holding click
     paintCanMaxAccumulatedDroplets: 20, // Max droplets in a single burst charge
-    paintCanAutoDropRate: 4, // Droplets per second when not charging (averaged over time)
+    paintCanAutoDropRate: 4, // Droplets per second when not charging (1000ms / 250ms)
     paintCanPickupDistance: 30, // Radius for player capsule to collide with available can center
-    paintCanThrowKey: 'g', // Key to press to throw the can
-    paintCanThrowBaseSpeed: 500, // Base velocity magnitude when throwing
-    paintCanThrowDistanceMultiplier: 1, // Added velocity magnitude per pixel distance from player to cursor
-    paintCanThrowInheritVelocityFactor: 0.5, // Factor of player velocity inherited by thrown can
-    paintCanThrownDamping: 0.995, // Damping factor for thrown cans (per frame @ 60fps)
-    paintCanThrownRestitution: 0.6, // Bounciness factor (0=no bounce, 1=perfect bounce)
-    paintCanThrownStopThreshold: 10, // Velocity magnitude below which thrown can stops moving
 
     // Collision & Loss settings
     paintIncrementPerDroplet: 2, // How much % paint increases per droplet hit

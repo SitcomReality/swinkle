@@ -1,7 +1,6 @@
 /**
  * collisionHandler.js
  * Handles collision detection between game objects, particularly players and droplets.
- * Also includes helper functions for collision geometry.
  */
 import config from 'config';
 // Import the room instance directly to access peers and collections
@@ -17,16 +16,11 @@ import { room } from './main.js';
  * @param {string} localClientId - The ID of the local client.
  * @param {object} currentPresence - The player's current presence data (including paintedData, lost).
  * @param {number} now - The current timestamp (Date.now()).
- * @returns {{
- *   dropletsToRemove: object,
- *   collisionPoints: Array<object>,
- *   presenceUpdates: object // Updates for the local player's presence
- * }} - Droplets to remove, points where collisions occurred, and presence changes.
+ * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
  */
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
-    let presenceUpdates = {}; // Collect presence updates for this player
     const bodyWidth = config.playerBodyWidth;
     const bodyHeight = config.playerBodyHeight;
     let paintedUpdates = {};
@@ -35,7 +29,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     const alreadyLost = currentPresence?.lost || false;
 
     // If already lost, don't process further collisions or record losses again
-    if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [], presenceUpdates: {} };
+    if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [] };
 
     // Simple rectangular hitbox for the player capsule
     const playerHitbox = {
@@ -46,33 +40,44 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     };
 
     Object.entries(droplets).forEach(([dropletId, droplet]) => {
-        // Skip if droplet doesn't exist, is owned by the local player
+        // Skip if droplet doesn't exist, is owned by the local player, or player is already lost
         if (!droplet || droplet.ownerId === localClientId) return;
 
         // Simple circle-rectangle collision check
         const dropletRadius = config.dropletSize || 3;
 
+        // Find the closest point on the rectangle to the circle
         const closestX = Math.max(playerHitbox.left, Math.min(droplet.x, playerHitbox.right));
         const closestY = Math.max(playerHitbox.top, Math.min(droplet.y, playerHitbox.bottom));
 
+        // Calculate distance between the closest point and the circle center
         const distanceX = droplet.x - closestX;
         const distanceY = droplet.y - closestY;
         const distanceSquared = distanceX * distanceX + distanceY * distanceY;
 
+        // Check if the distance is less than the circle's radius squared
         if (distanceSquared <= (dropletRadius * dropletRadius)) {
             // Collision detected!
+            // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
+
+            // Mark this droplet for removal
             dropletsToRemove[dropletId] = null;
+
+            // Record collision point for splat effect
             collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
 
+            // Update painted data: increment the percentage for this color
             const currentPercentage = currentPaintedData[droplet.color] || 0;
+            // Make increment amount configurable?
             const incrementAmount = config.paintIncrementPerDroplet || 2;
             paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
             paintingOccurred = true;
         }
     });
 
-    // If any painting occurred, update the player's painted data and check for loss
+    // If any painting occurred, update the player's painted data
     if (paintingOccurred) {
+        // Calculate total paint percentage
         let totalPercentage = 0;
         const updatedPaintedData = { ...currentPaintedData, ...paintedUpdates };
 
@@ -80,74 +85,68 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             totalPercentage += percentage;
         });
 
+        // Clamp total percentage at the loss threshold to avoid going over visually
         totalPercentage = Math.min(totalPercentage, config.lossThreshold);
 
+        // console.log(`Player ${localClientId} painted: ${totalPercentage}% total`);
+
         // Prepare presence update data
-        presenceUpdates.paintedData = updatedPaintedData;
+        const updateData = { paintedData: updatedPaintedData };
+        let justLost = false;
 
         // Check if player has reached loss threshold (and wasn't already lost)
         if (totalPercentage >= config.lossThreshold) {
             console.log(`Player ${localClientId} has been fully painted out! (${totalPercentage}%)`);
-            presenceUpdates.lost = true;
-            presenceUpdates.respawnTime = now + (config.respawnDelay || 5000);
+            updateData.lost = true;
+            // Set the respawn time
+            updateData.respawnTime = now + (config.respawnDelay || 5000);
+            justLost = true; // Flag that the loss occurred this frame
 
             // Record the loss in the database
             const username = room.peers[localClientId]?.username;
             if (username) {
                 console.log(`Recording loss for ${username}`);
                 room.collection('loss_v1').create({ loserUsername: username })
+                    .then(record => console.log("Loss recorded:", record))
                     .catch(err => console.error("Error recording loss:", err));
+                // Use loss_v1 to invalidate any old test records if schema changes
             } else {
                 console.warn(`Could not find username for client ${localClientId} to record loss.`);
             }
 
-            // Drop the player's current paint can if they lose (add to presence update)
+            // Optionally: Drop the player's current paint can if they lose
             if (currentPresence.currentCanId) {
                  console.log(`Player ${localClientId} lost, dropping can ${currentPresence.currentCanId}`);
-                 presenceUpdates.currentCanId = null; // Drop can in presence update
-
-                 // Trigger room state update to make the can available (handled by gameUpdater/main based on presence change)
-                 // We need to ensure the can actually becomes available in roomState.
-                 // The logic in main.js listening to presence changes should handle this,
-                 // or gameUpdater could explicitly create the availablePaintCan update based on the loss event.
-                 // Let's rely on main.js presence subscription for now to handle making the can available.
+                 const canId = currentPresence.currentCanId;
+                 const canState = room.roomState.paintCans?.[canId];
+                 if (canState) {
+                    // Send room state updates to make the can available
+                    // This might be better handled in game-loop or playerInteractions on presence change detection
+                    // For now, let's just update presence to drop it.
+                    // The disconnect logic in main.js might handle the roomState update implicitly,
+                    // OR we need dedicated logic here or elsewhere.
+                    // Simplest: Update presence. Game loop will eventually see player has no can.
+                    // We need to ensure the can itself becomes available though.
+                     room.updateRoomState({
+                         paintCans: { [canId]: null }, // Remove from owned cans
+                         availablePaintCans: { // Add to available cans
+                            [canId]: {
+                                ...canState,
+                                ownerId: null,
+                                vx: 0, vy: 0, // Reset physics
+                                isCharging: false, accumulatedDroplets: 0
+                             }
+                         }
+                     });
+                     updateData.currentCanId = null; // Also update presence immediately
+                 }
             }
+
         }
-        // Note: The actual presence update is sent by game-loop after collecting all updates.
+
+        // Send presence update only if something changed (paint or loss state)
+        room.updatePresence(updateData);
     }
 
-    return { dropletsToRemove, collisionPoints, presenceUpdates };
-}
-
-/**
- * Simple Axis-Aligned Bounding Box collision check.
- * @param {object} rectA - { left, right, top, bottom }
- * @param {object} rectB - { left, right, top, bottom }
- * @returns {boolean} True if colliding, false otherwise.
- */
-export function checkRectCollision(rectA, rectB) {
-    if (!rectA || !rectB) return false;
-    return (
-        rectA.left < rectB.right &&
-        rectA.right > rectB.left &&
-        rectA.top < rectB.bottom &&
-        rectA.bottom > rectB.top
-    );
-}
-
-/**
- * Creates a bounding box for a player based on their physics state.
- * @param {object} physicsState - The player's physics state.
- * @returns {object|null} Bounding box { left, right, top, bottom } or null.
- */
-export function getPlayerBoundingBox(physicsState) {
-    if (!physicsState) return null;
-    const bodyWidth = config.playerBodyWidth;
-    const bodyHeight = config.playerBodyHeight;
-    return {
-        left: physicsState.position.x - bodyWidth / 2,
-        right: physicsState.position.x + bodyWidth / 2,
-        top: physicsState.position.y - bodyHeight / 2,
-        bottom: physicsState.position.y + bodyHeight / 2
-    };
+    return { dropletsToRemove, collisionPoints };
 }
