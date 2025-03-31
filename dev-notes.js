@@ -6,7 +6,7 @@ export const notes = `
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright. **(Rotation implemented, parameters tuned for stability)**.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
-- **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans and droplets, and 'presence' for player anchor/painted state.
+- **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
 
 **Next Steps:**
@@ -15,11 +15,19 @@ export const notes = `
     *1.1-1.8: Done.*
     - 1.9: Power-ups. Eg. Shorter, stiffer or springier bungee between cursor and capsule; temporary shield; acetone (a 'health pickup' that reduces how painted the player is); paint buckets with buffed attributes, like double sized (visually and in terms of paint volume), less viscous (drops faster), and a rare buff that makes every droplet a full burst.
         - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
-        - 1.9.2: Integrate power-up system with game loop for spawning and rendering
+        - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
         - 1.9.3: Implement collision detection to collect power-ups
+            - Modify `game-loop.js` to call a collision check function from `power-up-manager.js`.
+            - Implement `checkPowerUpCollisions` in `power-up-manager.js` to detect player-powerup proximity.
+            - When collision occurs, generate room state updates to remove the power-up and presence updates to apply the effect (or activate it).
         - 1.9.4: Create active power-up processing system for timed effects
+            - Modify `game-loop.js` to call `processActivePowerUps` from `power-up-manager.js` for each player.
+            - Implement `processActivePowerUps` to check `presence.activePowerUps` for expired timers and generate presence updates to deactivate effects.
         - 1.9.5: Implement each power-up effect (shield, acetone, spring, mega can)
+            - Modify player physics, collision handling, and interactions based on active power-up flags in presence data.
+            - Handle immediate effects (like Acetone) directly during collection.
         - 1.9.6: Add visual effects to indicate active power-ups on players
+            - Modify `playerRenderer.js` to draw indicators (e.g., shield outline, springy bungee visual) based on active power-up flags.
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).

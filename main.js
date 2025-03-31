@@ -43,6 +43,11 @@ async function initGame() {
          initialRoomStateUpdates.availablePaintCans = initialCans;
         // initialRoomStateUpdates.availablePaintCans = {}; // Original empty init
     }
+    // Add initial power-ups state if needed
+    if (room.roomState.powerUps === undefined) {
+        initialRoomStateUpdates.powerUps = {};
+    }
+
     if (Object.keys(initialRoomStateUpdates).length > 0) {
         console.log("Initializing room state:", initialRoomStateUpdates);
         room.updateRoomState(initialRoomStateUpdates);

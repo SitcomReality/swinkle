@@ -11,6 +11,7 @@ import { renderPaintCan } from './paintCan.js';
 import { renderDroplets } from './dropletRenderer.js';
 import { updateAndRenderEffects, clearEffects, addEffect } from './effectsRenderer.js';
 import { renderLevel } from './level-renderer.js'; // Import level renderer
+import { renderPowerUp } from './power-ups/power-up-renderer.js'; // Import power-up renderer
 // Physics & State Modules
 import { updatePlayerPhysics } from './playerPhysics.js';
 import { updatePaintCanPhysics } from './paintCan.js';
@@ -24,6 +25,7 @@ import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
 import { cleanupDisconnectedPeers } from './peer-manager.js';
+import { spawnPowerUps } from './power-ups/power-up-manager.js'; // Import power-up spawner
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -169,6 +171,7 @@ function gameLoop(timestamp) {
     // --- Global Updates & Checks (Local Client Authority) ---
     let allDropletRemovals = {};
     let presenceRequests = [];
+    let allPowerUpUpdates = {}; // Store power-up updates
 
     // Player-Player Collisions (Stealing)
     const collisionResults = handlePlayerCollisions(localClientId, roomInstance);
@@ -183,6 +186,11 @@ function gameLoop(timestamp) {
     // Spawn New Cans
     const newCanUpdates = spawnPaintCans(deltaTime, now, roomInstance.roomState.availablePaintCans || {}, canvas.width, canvas.height);
     allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...newCanUpdates };
+
+    // Spawn New Power-ups
+    const newPowerUpUpdates = spawnPowerUps(deltaTime, now, roomInstance.roomState.powerUps || {}, canvas.width, canvas.height);
+    allPowerUpUpdates = { ...allPowerUpUpdates, ...newPowerUpUpdates };
+
 
     // Droplet Collision with Local Player
     const localPlayerPhysics = getPlayerPhysicsState(localClientId);
@@ -211,6 +219,11 @@ function gameLoop(timestamp) {
     if (Object.keys(allDropletRemovals).length > 0) {
         roomStateUpdates.droplets = { ...(roomStateUpdates.droplets || {}), ...allDropletRemovals };
     }
+    // Include power-up updates
+    if (Object.keys(allPowerUpUpdates).length > 0) {
+        roomStateUpdates.powerUps = allPowerUpUpdates;
+    }
+
     if (Object.keys(roomStateUpdates).length > 0) {
         roomInstance.updateRoomState(roomStateUpdates);
     }
@@ -235,6 +248,13 @@ function gameLoop(timestamp) {
     Object.values(availableCansToRender).forEach(canState => {
         if (canState) renderPaintCan(ctx, canState);
     });
+
+    // Render Active Power-ups
+    const powerUpsToRender = roomInstance.roomState.powerUps || {};
+    Object.values(powerUpsToRender).forEach(powerUpState => {
+        if (powerUpState) renderPowerUp(ctx, powerUpState, now);
+    });
+
 
     const ownedCansToRender = roomInstance.roomState.paintCans || {}; // Needed for rendering held cans
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
