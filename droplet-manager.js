@@ -1,5 +1,3 @@
-###
-
     // Update localPresence update: {
         const roomInstance.currentCanId = roomInstance.droplacetatype: {
         if (room.presence.currentCan update);
