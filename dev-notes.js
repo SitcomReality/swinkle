@@ -111,9 +111,10 @@ export const notes = `
     *   Modified 'main.js':
         *   Exported the room instance for use by the collision handler.
 
-**7. Droplet Cleanup:** (NEXT)
+**7. Droplet Cleanup:** (DONE)
     *   Client-side: Visually remove expired droplets based on 'createdAt' and 'config.dropletDuration' during rendering loop (fade out implemented in 'dropletRenderer.js').
-    *   Authoritative Removal: The *client that detected the hit* (Step 6) removes the droplet from 'roomState'. Timeout removal is currently not performed authoritatively (clients just stop rendering). Needs review if state bloats.
+    *   Authoritative Removal (Collisions): The *client that detected the hit* removes the droplet from 'roomState'.
+    *   Authoritative Removal (Timeout): The local client checks all droplets each frame. If a droplet's age exceeds 'config.dropletDuration', the local client sends an update to remove it from 'roomState'. This prevents indefinite growth of the droplet state but may cause redundant updates if multiple clients detect the same timeout simultaneously. Potential optimization: assign responsibility based on ownerId or clientId hash.
 
 **Future Considerations:**
 - **Loss Condition:** Implement check for total 'paintedData' percentage >= 100.
@@ -121,7 +122,7 @@ export const notes = `
 - **Sound Effects:** Dripping, bursting, hitting, pickup, empty can drop.
 - **UI:** Scoreboard, paint level indicator, zone notifications.
 - **Can Interaction:** Stealing cans? Throwing cans?
-- **Networking Robustness:** Improve handling of state update races (e.g., can pickup, disconnects).
+- **Networking Robustness:** Improve handling of state update races (e.g., can pickup, disconnects, droplet timeout removal).
 `;
 
 export function loadDevNotes() {

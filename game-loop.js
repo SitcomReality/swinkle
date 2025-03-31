@@ -61,6 +61,8 @@ function gameLoop(timestamp) {
     let allDropletsToAdd = {};   // Collect ALL new droplets this frame
     let allAvailablePaintCanUpdates = {}; // For can pickups
     let localPresenceUpdates = {}; // For currentCanId changes
+    let allDropletRemovals = {}; // Collect ALL droplets to remove (collisions + timeouts)
+
 
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
@@ -182,46 +184,63 @@ function gameLoop(timestamp) {
         }
     }
 
+    // --- Check for Droplet Collisions with Local Player ---
+    const localPlayerBodyPos = getPlayerPhysicsState(localClientId)?.position;
+    if (localPlayerBodyPos) {
+        const collidedDroplets = checkCollisionsWithPlayer(
+            localPlayerBodyPos,
+            roomInstance.roomState.droplets || {},
+            localClientId,
+            roomInstance.presence[localClientId]?.paintedData || {}
+        );
+        // Merge collision removals into the main removal batch
+        if (Object.keys(collidedDroplets).length > 0) {
+             allDropletRemovals = { ...allDropletRemovals, ...collidedDroplets };
+        }
+    }
+
+    // --- Check for Expired Droplets (Authoritative Removal) ---
+    const currentDroplets = roomInstance.roomState.droplets || {};
+    const dropletDuration = config.dropletDuration || 2000;
+    Object.entries(currentDroplets).forEach(([id, droplet]) => {
+        // Skip if droplet is null or already marked for removal by collision
+        if (!droplet || allDropletRemovals[id] === null) return;
+
+        const age = now - droplet.createdAt;
+        if (age > dropletDuration) {
+            // Mark this droplet for removal due to timeout
+            allDropletRemovals[id] = null;
+            // console.log(`Droplet ${id} expired, marking for removal.`);
+        }
+    });
+
+    // --- Send Batched Updates ---
     // Send batched updates for cans owned by this client
     if (Object.keys(allPaintCanUpdates).length > 0) {
         roomInstance.updateRoomState({ paintCans: allPaintCanUpdates });
     }
-    
     // Send batched updates for available paint cans
     if (Object.keys(allAvailablePaintCanUpdates).length > 0) {
         roomInstance.updateRoomState({ availablePaintCans: allAvailablePaintCanUpdates });
     }
-    
     // Send batched updates for new droplets created by this client
     if (Object.keys(allDropletsToAdd).length > 0) {
         roomInstance.updateRoomState({ droplets: allDropletsToAdd });
     }
-    
+    // Send batched updates for removed droplets (collisions + timeouts)
+    if (Object.keys(allDropletRemovals).length > 0) {
+        roomInstance.updateRoomState({ droplets: allDropletRemovals });
+    }
     // Send any presence updates for the local client
     if (Object.keys(localPresenceUpdates).length > 0) {
         roomInstance.updatePresence(localPresenceUpdates);
     }
 
-    // --- Check for Droplet Collisions with Local Player ---
-    const localPlayerBodyPos = getPlayerPhysicsState(localClientId)?.position;
-    if (localPlayerBodyPos) {
-        const dropletsToRemove = checkCollisionsWithPlayer(
-            localPlayerBodyPos, 
-            roomInstance.roomState.droplets || {}, 
-            localClientId,
-            roomInstance.presence[localClientId]?.paintedData || {}
-        );
-        
-        // Send updates for droplet collisions and painted data
-        if (Object.keys(dropletsToRemove).length > 0) {
-            roomInstance.updateRoomState({ droplets: dropletsToRemove });
-        }
-    }
-
     // --- Render Scene ---
     // Render Droplets (using dedicated renderer)
-    const droplets = roomInstance.roomState.droplets || {};
-    renderDroplets(ctx, droplets, now); // Call the dedicated droplet renderer
+    // Note: The renderer already visually fades/hides expired droplets client-side
+    const dropletsToRender = roomInstance.roomState.droplets || {};
+    renderDroplets(ctx, dropletsToRender, now);
 
     // Render Available Paint Cans
     const availablePaintCans = roomInstance.roomState.availablePaintCans || {};
