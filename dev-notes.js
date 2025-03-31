@@ -1,3 +1,8 @@
+/**
+ * dev-notes.js
+ * Contains developer notes and plans for the project.
+ * Loads notes into the UI.
+ */
 export const notes = `
 ## Developer Notes - Multiplayer Painter
 
@@ -16,12 +21,13 @@ export const notes = `
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
-        - *DONE* - Added multiple level definitions (\`level-data.js\`).
-        - *DONE* - Updated \`level-manager.js\` to load a random level on init.
-        - *DONE* - Updated \`level-renderer.js\` and \`level-collision.js\` to handle basic rotation for rectangular obstacles defined in levels.
-        - *NEXT* - Implement a mechanism for level cycling or selection during gameplay (maybe based on time or votes?). Add support for polygon obstacles for more complex shapes.
-    - 2.2: Environmental hazards? (Moving platforms, laser grids?).
-    - 2.3: Better score tracking: reward players for painting other players.
+        - *DONE* - Added multiple level definitions (level-data.js).
+        - *DONE* - Updated level-manager.js to load levels.
+        - *DONE* - Updated level-renderer.js and level-collision.js to handle basic rotation for rectangular obstacles defined in levels.
+        - *DONE* - Implement time-based level cycling (every 90s). Level ID and change time stored in roomState, managed by a designated 'host' client. Clients react to roomState changes to load the new level.
+        - *SKIPPED (for now)* - Add support for polygon obstacles. Sticking with rectangles for simplicity.
+        - *NEXT* - Environmental hazards? (Moving platforms, laser grids?).
+    - 2.2: Better score tracking: reward players for painting other players.
 
 - **3. Polish & Refinement:**
     - 3.1: Sound effects.

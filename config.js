@@ -116,4 +116,7 @@ export default {
     megaCanCapacityMultiplier: 2, // How much larger mega cans are
     megaCanVisualSizeMultiplier: 1.2, // How much bigger mega cans look
     megaCanIndicatorColor: '#FFFF00', // Color for the mega can indicator (e.g., star)
+
+    // Level Settings
+    levelCycleTime: 90000, // Time in milliseconds between level changes (90 seconds)
 };
