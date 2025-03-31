@@ -16,7 +16,7 @@ export function cleanupDisconnectedPeers(previousPeers, currentPeers) {
     previousPeers.forEach(clientId => {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
-            removePlayerPhysicsState(clientId`);
+            removePlayerPhysicsState(clientId);
             console.log(`Peer ${clientId} disconnected, player physics removed.`);
         }
     });
