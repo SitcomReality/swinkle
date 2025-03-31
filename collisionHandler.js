@@ -175,13 +175,25 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             paintingPlayers.forEach(painterId => {
                 if (painterId && painterId !== localClientId && room.peers[painterId]) {
                     // Ask the painting player to increment their score
+                    const incrementAmount = justLost ? 5 : 1; // More points for causing a loss
                     room.requestPresenceUpdate(painterId, {
                         type: 'incrementScore',
-                        amount: 1 // Basic 1 point per hit for now
+                        amount: incrementAmount
                     });
                     
+                    // Get painter's username for notification
+                    const painterUsername = room.peers[painterId]?.username || 'Player';
+                    const localUsername = room.peers[localClientId]?.username || 'Player';
+                    
+                    // Notify about score increase
+                    if (justLost) {
+                        addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'success', 4000);
+                    } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam
+                        addNotification(`${painterUsername} scored a point for painting ${localUsername}`, 'info', 2000);
+                    }
+                    
                     // Optional: Log for debug
-                    console.log(`Player ${painterId} gets a point for painting ${localClientId}`);
+                    console.log(`Player ${painterId} gets ${incrementAmount} points for painting ${localClientId}`);
                 }
             });
         }

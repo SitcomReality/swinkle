@@ -21,7 +21,7 @@ export const notes = `
 2. Better Score Tracking: Reward players for painting other players.
    - ✅ 2.1: Add score tracking to player presence data structure and update scoreboard to show scores.
    - ✅ 2.2: Modify collisionHandler.js to track who painted whom by storing ownerId with droplet hits.
-   - 2.3: Update score increment logic in collisionHandler.js when droplet hits a player.
+   - ✅ 2.3: Update score increment logic in collisionHandler.js when droplet hits a player.
    - 2.4: Add visual feedback (notification and effects) when a player scores points.
 
 3. Sound effects.
