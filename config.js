@@ -57,6 +57,9 @@ export default {
     paintCanInitialAmount: 100, // Starting paint amount in a new can
     paintCanStrokeColor: '#AAAAAA',
     paintCanStrokeWidth: 1,
+    paintCanChargeIndicatorHeight: 4, // Height of the charge bar
+    paintCanChargeIndicatorWidth: 20, // Width of the charge bar background
+    paintCanChargeIndicatorColor: '#FFFFFF', // Color of the charge bar fill
 
     // Paint Can Bungee Physics (Player Capsule -> Paint Can)
     paintCanBungeeRestLength: 30, // Let it dangle a bit further

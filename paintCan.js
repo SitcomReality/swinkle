@@ -91,7 +91,7 @@ export function updatePaintCanPhysics(canState, playerBodyPos, deltaTime) {
 /**
  * Renders a paint can.
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
- * @param {object} canState - The state of the paint can { x, y, paintColor, paintAmount }.
+ * @param {object} canState - The state of the paint can { x, y, paintColor, paintAmount, isCharging, accumulatedDroplets }.
  */
 export function renderPaintCan(ctx, canState) {
     const x = canState.x;
@@ -154,4 +154,26 @@ export function renderPaintCan(ctx, canState) {
     ctx.fill();
     ctx.stroke();
 
+    // Draw Charge Indicator
+    if (canState.isCharging && config.paintCanMaxAccumulatedDroplets > 0) {
+        const chargeBarWidth = config.paintCanChargeIndicatorWidth;
+        const chargeBarHeight = config.paintCanChargeIndicatorHeight;
+        const chargeBarX = x - chargeBarWidth / 2;
+        const chargeBarY = y - height / 2 - chargeBarHeight - 4; // Position above the can lip
+
+        const accumulated = canState.accumulatedDroplets || 0;
+        const maxAccumulated = config.paintCanMaxAccumulatedDroplets;
+        const chargeRatio = Math.min(1, Math.max(0, accumulated / maxAccumulated));
+
+        // Draw background/outline for the bar (optional, can be nice)
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(chargeBarX, chargeBarY, chargeBarWidth, chargeBarHeight);
+
+        // Draw filled portion
+        if (chargeRatio > 0) {
+            ctx.fillStyle = config.paintCanChargeIndicatorColor;
+            ctx.fillRect(chargeBarX, chargeBarY, chargeBarWidth * chargeRatio, chargeBarHeight);
+        }
+    }
 }
