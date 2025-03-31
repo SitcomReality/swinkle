@@ -4,6 +4,7 @@
  */
 import config from './config.js';
 import { ensurePhysicsState, getPlayerPhysicsState, setPlayerPhysicsState } from './playerState.js';
+import { handlePlayerLevelCollision } from './level-collision.js'; // Import level collision handler
 
 /**
  * Updates the physics simulation for a single limb.
@@ -91,6 +92,7 @@ function updateLimbPhysics(limbState, bodyPos, deltaTime) {
 
 /**
  * Updates the player's body physics state based on bungee forces, gravity, and damping.
+ * Also handles collision with level geometry.
  *
  * @param {string} clientId - The ID of the player to update.
  * @param {object} presence - The player's presence data (containing anchor x, y).
@@ -147,19 +149,24 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.position.x += state.velocity.x * deltaTime;
     state.position.y += state.velocity.y * deltaTime;
 
-    // Max Length Constraint for Bungee
-    const newDx = anchorPos.x - state.position.x;
-    const newDy = anchorPos.y - state.position.y;
-    const newDistance = Math.sqrt(newDx * newDx + newDy * newDy);
+    // --- Level Collision Check and Response (Body) ---
+    // Modifies state.position and state.velocity directly if collision occurs
+    handlePlayerLevelCollision(state);
 
-    if (newDistance > maxLength) {
-        const clampRatio = maxLength / newDistance;
-        state.position.x = anchorPos.x - newDx * clampRatio;
-        state.position.y = anchorPos.y - newDy * clampRatio;
+    // --- Constraints (Post-Collision) ---
+    // Max Length Constraint for Bungee (applied AFTER potential level collision adjustment)
+    const finalDx = anchorPos.x - state.position.x;
+    const finalDy = anchorPos.y - state.position.y;
+    const finalDistance = Math.sqrt(finalDx * finalDx + finalDy * finalDy);
+
+    if (finalDistance > maxLength) {
+        const clampRatio = maxLength / finalDistance;
+        state.position.x = anchorPos.x - finalDx * clampRatio;
+        state.position.y = anchorPos.y - finalDy * clampRatio;
 
         // Dampen velocity component moving away from the anchor point
-        const cordDirX = newDx / newDistance;
-        const cordDirY = newDy / newDistance;
+        const cordDirX = finalDx / finalDistance;
+        const cordDirY = finalDy / finalDistance;
         const dotProduct = state.velocity.x * cordDirX + state.velocity.y * cordDirY;
         if (dotProduct > 0) {
             state.velocity.x -= dotProduct * cordDirX;
@@ -168,9 +175,10 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     }
 
     // --- Update Limb Physics ---
-    // Pass the updated body position to limb physics calculations
+    // Pass the final, collision-adjusted body position to limb physics calculations
     state.limbs.forEach(limb => {
         updateLimbPhysics(limb, state.position, deltaTime);
+        // TODO: Add limb-level collision later if desired
     });
 
     // Update the state in the map (state object was modified by reference throughout)

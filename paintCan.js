@@ -4,9 +4,11 @@
  */
 import config from 'config';
 import { hexToRgb } from './colorUtils.js'; // Import hexToRgb for color manipulation
+import { handleCanLevelCollision } from './level-collision.js'; // Import level collision handler
 
 /**
  * Updates the physics simulation for a paint can attached to a player.
+ * Includes level collision handling.
  * @param {object} canState - The state object for the can { x, y, vx, vy }.
  * @param {object} playerBodyPos - The current position of the player's body {x, y}.
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
@@ -68,19 +70,24 @@ export function updatePaintCanPhysics(canState, playerBodyPos, deltaTime) {
     canState.x += canState.vx * deltaTime;
     canState.y += canState.vy * deltaTime;
 
-    // --- Max Length Constraint (relative to attachment point) ---
-    const newDx = attachmentPoint.x - canState.x;
-    const newDy = attachmentPoint.y - canState.y;
-    const newDistance = Math.sqrt(newDx * newDx + newDy * newDy);
+    // --- Level Collision Check and Response (Can) ---
+    // Modifies canState.x, y, vx, vy directly if collision occurs
+    handleCanLevelCollision(canState);
 
-    if (newDistance > maxLength) {
-        const clampRatio = maxLength / newDistance;
-        canState.x = attachmentPoint.x - newDx * clampRatio;
-        canState.y = attachmentPoint.y - newDy * clampRatio;
+    // --- Constraints (Post-Collision) ---
+    // Max Length Constraint (relative to attachment point) applied AFTER level collision
+    const finalDx = attachmentPoint.x - canState.x;
+    const finalDy = attachmentPoint.y - canState.y;
+    const finalDistance = Math.sqrt(finalDx * finalDx + finalDy * finalDy);
+
+    if (finalDistance > maxLength) {
+        const clampRatio = maxLength / finalDistance;
+        canState.x = attachmentPoint.x - finalDx * clampRatio;
+        canState.y = attachmentPoint.y - finalDy * clampRatio;
 
         // Dampen velocity component moving away from attachment point
-        const canDirX = newDx / newDistance;
-        const canDirY = newDy / newDistance;
+        const canDirX = finalDx / finalDistance;
+        const canDirY = finalDy / finalDistance;
         const dotProduct = canState.vx * canDirX + canState.vy * canDirY;
         if (dotProduct > 0) {
             canState.vx -= dotProduct * canDirX;
