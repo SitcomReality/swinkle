@@ -119,6 +119,15 @@ export const notes = `
     *   Authoritative Removal (Collisions): The *client that detected the hit* removes the droplet from 'roomState'.
     *   Authoritative Removal (Timeout): The local client checks all droplets each frame. If a droplet's age exceeds 'config.dropletDuration', the local client sends an update to remove it from 'roomState'. This prevents indefinite growth of the droplet state but may cause redundant updates if multiple clients detect the same timeout simultaneously. Potential optimization: assign responsibility based on ownerId or clientId hash.
 
+**8. Multiplayer Integration:** (DONE)
+    *   Modified the codebase to properly use WebsimSocket for multiplayer functionality:
+        *   Exported the room instance from main.js so it can be accessed by other modules.
+        *   Removed the passed roomInstance parameter from game-loop.js, using the imported room instance instead.
+        *   Updated collisionHandler.js to import the room instance.
+        *   Ensured all modules that need access to the room instance import it directly.
+        *   Established proper peer tracking and subscription to presence updates.
+        *   Room instance now manages all shared state (paintCans, droplets, player positions).
+
 **Future Considerations:**
 - **Visual Polish:** Can appearance variations, droplet splats, charge indicators, zone visuals.
 - **Sound Effects:** Dripping, bursting, hitting, pickup, empty can drop.

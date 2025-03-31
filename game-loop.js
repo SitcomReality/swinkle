@@ -8,14 +8,14 @@ import { renderPaintCan, updatePaintCanPhysics } from './paintCan.js';
 import { handleCanInteractions, handlePaintCanPickup, handleEmptyPaintCan } from './playerInteractions.js'; 
 import { renderDroplets } from './dropletRenderer.js'; 
 import { checkCollisionsWithPlayer } from './collisionHandler.js';
+import { room } from './main.js';
 
-let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
 let previousPeers = new Set(); // To track disconnected peers
 
 // Basic rendering using canvas
 function gameLoop(timestamp) {
-    if (!roomInstance) {
+    if (!room) {
         console.error("Room instance not available in game loop.");
         return; // Stop the loop if room is not set
     }
@@ -27,7 +27,7 @@ function gameLoop(timestamp) {
     }
     const ctx = canvas.getContext('2d');
     const now = Date.now(); // Keep using Date.now() for droplet age calculation
-    const localClientId = roomInstance.clientId; // Get the local client's ID
+    const localClientId = room.clientId; // Get the local client's ID
 
     // Calculate delta time for physics updates
     if (!lastTimestamp) lastTimestamp = timestamp;
@@ -45,7 +45,7 @@ function gameLoop(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // --- Identify Disconnected Peers ---
-    const currentPeerIds = new Set(Object.keys(roomInstance.peers));
+    const currentPeerIds = new Set(Object.keys(room.peers));
     previousPeers.forEach(clientId => {
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected, remove their physics state
@@ -64,8 +64,8 @@ function gameLoop(timestamp) {
     let allDropletRemovals = {}; // Collect ALL droplets to remove (collisions + timeouts)
 
 
-    Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
-        const presence = roomInstance.presence[clientId];
+    Object.entries(room.peers).forEach(([clientId, peer]) => {
+        const presence = room.presence[clientId];
         if (presence) { // Only update if presence data exists
             // Update player physics
             updatePlayerPhysics(clientId, presence, deltaTime);
@@ -77,7 +77,7 @@ function gameLoop(timestamp) {
 
             // IMPORTANT: Check for empty cans (only owner checks)
             if (clientId === localClientId && presence.currentCanId) {
-                const canState = roomInstance.roomState.paintCans?.[presence.currentCanId];
+                const canState = room.roomState.paintCans?.[presence.currentCanId];
                 if (canState) {
                     const { paintCanUpdates, presenceUpdates } = handleEmptyPaintCan(
                         localClientId, 
@@ -97,8 +97,8 @@ function gameLoop(timestamp) {
 
             // Check if this player owns a paint can
             const currentCanId = presence.currentCanId;
-            if (currentCanId && roomInstance.roomState.paintCans && roomInstance.roomState.paintCans[currentCanId]) {
-                const canState = roomInstance.roomState.paintCans[currentCanId];
+            if (currentCanId && room.roomState.paintCans && room.roomState.paintCans[currentCanId]) {
+                const canState = room.roomState.paintCans[currentCanId];
 
                 // Only the owner client calculates and sends updates for their can's physics and interactions
                 if (clientId === localClientId) {
@@ -138,7 +138,7 @@ function gameLoop(timestamp) {
             
             // NEW: Check for paint can pickup (only for local player without a can)
             if (clientId === localClientId && !presence.currentCanId) {
-                const availableCans = roomInstance.roomState.availablePaintCans || {};
+                const availableCans = room.roomState.availablePaintCans || {};
                 const { paintCanUpdates, availablePaintCanUpdates, presenceUpdates } = handlePaintCanPickup(
                     playerBodyPos,
                     localClientId,
@@ -162,7 +162,7 @@ function gameLoop(timestamp) {
 
     // NEW: Spawn new paint cans randomly (simple approach)
     if (localClientId && Math.random() < 0.005) { // ~0.5% chance per frame to spawn a can
-        const availableCans = roomInstance.roomState.availablePaintCans || {};
+        const availableCans = room.roomState.availablePaintCans || {};
         // Only spawn if there are fewer than 3 available cans
         if (Object.keys(availableCans).length < 3) {
             const canId = `can-${Math.random().toString(36).substring(2, 9)}`;
@@ -189,9 +189,9 @@ function gameLoop(timestamp) {
     if (localPlayerBodyPos) {
         const collidedDroplets = checkCollisionsWithPlayer(
             localPlayerBodyPos,
-            roomInstance.roomState.droplets || {},
+            room.roomState.droplets || {},
             localClientId,
-            roomInstance.presence[localClientId]?.paintedData || {}
+            room.presence[localClientId]?.paintedData || {}
         );
         // Merge collision removals into the main removal batch
         if (Object.keys(collidedDroplets).length > 0) {
@@ -200,7 +200,7 @@ function gameLoop(timestamp) {
     }
 
     // --- Check for Expired Droplets (Authoritative Removal) ---
-    const currentDroplets = roomInstance.roomState.droplets || {};
+    const currentDroplets = room.roomState.droplets || {};
     const dropletDuration = config.dropletDuration || 2000;
     Object.entries(currentDroplets).forEach(([id, droplet]) => {
         // Skip if droplet is null or already marked for removal by collision
@@ -217,33 +217,33 @@ function gameLoop(timestamp) {
     // --- Send Batched Updates ---
     // Send batched updates for cans owned by this client
     if (Object.keys(allPaintCanUpdates).length > 0) {
-        roomInstance.updateRoomState({ paintCans: allPaintCanUpdates });
+        room.updateRoomState({ paintCans: allPaintCanUpdates });
     }
     // Send batched updates for available paint cans
     if (Object.keys(allAvailablePaintCanUpdates).length > 0) {
-        roomInstance.updateRoomState({ availablePaintCans: allAvailablePaintCanUpdates });
+        room.updateRoomState({ availablePaintCans: allAvailablePaintCanUpdates });
     }
     // Send batched updates for new droplets created by this client
     if (Object.keys(allDropletsToAdd).length > 0) {
-        roomInstance.updateRoomState({ droplets: allDropletsToAdd });
+        room.updateRoomState({ droplets: allDropletsToAdd });
     }
     // Send batched updates for removed droplets (collisions + timeouts)
     if (Object.keys(allDropletRemovals).length > 0) {
-        roomInstance.updateRoomState({ droplets: allDropletRemovals });
+        room.updateRoomState({ droplets: allDropletRemovals });
     }
     // Send any presence updates for the local client
     if (Object.keys(localPresenceUpdates).length > 0) {
-        roomInstance.updatePresence(localPresenceUpdates);
+        room.updatePresence(localPresenceUpdates);
     }
 
     // --- Render Scene ---
     // Render Droplets (using dedicated renderer)
     // Note: The renderer already visually fades/hides expired droplets client-side
-    const dropletsToRender = roomInstance.roomState.droplets || {};
+    const dropletsToRender = room.roomState.droplets || {};
     renderDroplets(ctx, dropletsToRender, now);
 
     // Render Available Paint Cans
-    const availablePaintCans = roomInstance.roomState.availablePaintCans || {};
+    const availablePaintCans = room.roomState.availablePaintCans || {};
     Object.values(availablePaintCans).forEach(canState => {
         if (canState) {
             renderPaintCan(ctx, canState);
@@ -251,9 +251,9 @@ function gameLoop(timestamp) {
     });
 
     // Render Players (and their held cans + bungees via playerRenderer)
-    const paintCans = roomInstance.roomState.paintCans || {}; // Needed by playerRenderer
-    Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
-        const presence = roomInstance.presence[clientId];
+    const paintCans = room.roomState.paintCans || {}; // Needed by playerRenderer
+    Object.entries(room.peers).forEach(([clientId, peer]) => {
+        const presence = room.presence[clientId];
         // Pass paintCans state to renderPlayer so it can handle held can rendering
         renderPlayer(ctx, clientId, localClientId, presence, peer, paintCans);
     });
@@ -264,13 +264,8 @@ function gameLoop(timestamp) {
 
 /**
  * Initializes and starts the game loop.
- * @param {object} room - The WebsimSocket room instance.
  */
-export function startGameLoop(room) {
-    if (!room) {
-        throw new Error("startGameLoop requires a valid room instance.");
-    }
-    roomInstance = room; // Store the room instance for use in the loop
+export function startGameLoop() {
     console.log("Starting game loop...");
     lastTimestamp = 0; // Reset timestamp when starting
     previousPeers = new Set(Object.keys(room.peers)); // Initialize peer tracking
