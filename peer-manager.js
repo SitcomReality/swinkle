@@ -1,25 +1,49 @@
 /**
  * peer-manager.js
- * Manages peer tracking and cleanup
+ * Manages peer tracking, cleanup, and notifications for joins/leaves.
  */
 import { removePlayerPhysicsState } from './playerState.js';
 
 /**
- * Track disconnected peers and clean up their physics state
- * @param {Set} previousPeers - Set of previously connected peer IDs
- * @param {object} currentPeers - Current peer list from room.peers
- * @returns {Set} Updated set of connected peer IDs
+ * Track disconnected/joined peers, clean up physics state, and trigger notifications.
+ * @param {object} previousPeerData - Shallow copy of the previous `room.peers` object.
+ * @param {object} currentPeers - Current peer list from `room.peers`.
+ * @param {Function} addNotification - The notification function to call.
+ * @returns {object} Updated `previousPeerData` object for the next frame (a shallow copy of `currentPeers`).
  */
-export function cleanupDisconnectedPeers(previousPeers, currentPeers) {
+export function cleanupAndNotifyPeers(previousPeerData, currentPeers, addNotification) {
     const currentPeerIds = new Set(Object.keys(currentPeers));
-    
-    previousPeers.forEach(clientId => {
+    const previousPeerIds = new Set(Object.keys(previousPeerData));
+
+    // --- Handle Disconnections ---
+    previousPeerIds.forEach(clientId => {
         if (!currentPeerIds.has(clientId)) {
-            // Peer disconnected, remove their physics state
+            // Peer disconnected
+            const username = previousPeerData[clientId]?.username || 'Player'; // Get username from previous data
             removePlayerPhysicsState(clientId);
-            console.log(`Peer ${clientId} disconnected, player physics removed.`);
+            console.log(`Peer ${username} (${clientId}) disconnected, player physics removed.`);
+            if (addNotification) {
+                addNotification(`${username} left the game.`, 'leave', 3000);
+            }
         }
     });
-    
-    return currentPeerIds; // Return updated set for next frame
+
+    // --- Handle New Connections ---
+    currentPeerIds.forEach(clientId => {
+        if (!previousPeerIds.has(clientId)) {
+            // Peer joined
+            const username = currentPeers[clientId]?.username || 'Player';
+            console.log(`Peer ${username} (${clientId}) joined.`);
+            if (addNotification) {
+                // Don't notify about self joining initially
+                // Check if previousPeerData was empty to avoid initial join spam
+                if (previousPeerIds.size > 0) {
+                    addNotification(`${username} joined the game!`, 'join', 3000);
+                }
+            }
+        }
+    });
+
+    // Return a shallow copy of currentPeers for the next frame's comparison
+    return { ...currentPeers };
 }

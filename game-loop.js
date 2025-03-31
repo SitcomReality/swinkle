@@ -12,6 +12,7 @@ import { renderDroplets } from './dropletRenderer.js';
 import { updateAndRenderEffects, clearEffects, addEffect } from './effectsRenderer.js';
 import { renderLevel } from './level-renderer.js'; // Import level renderer
 import { renderPowerUp } from './power-ups/power-up-renderer.js'; // Import power-up renderer
+import { renderNotifications, updateNotifications } from './notification-manager.js'; // Import notification rendering/update
 // Physics & State Modules
 import { updatePlayerPhysics } from './playerPhysics.js';
 import { updatePaintCanPhysics } from './paintCan.js';
@@ -24,13 +25,14 @@ import { spawnPaintCans } from './can-manager.js';
 import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
-import { cleanupDisconnectedPeers } from './peer-manager.js';
+import { cleanupAndNotifyPeers } from './peer-manager.js'; // Updated peer manager function
+import { addNotification } from './notification-manager.js'; // Import addNotification directly
 // Power-up Modules
 import { spawnPowerUps, checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js'; // Import power-up functions
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
-let previousPeers = new Set(); // To track disconnected peers
+let previousPeerData = {}; // Use object to store peer data { id: { username, ... } }
 
 /**
  * Processes updates for a single player and their owned can (if any).
@@ -124,7 +126,12 @@ function gameLoop(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // --- State Updates & Cleanup ---
-    previousPeers = cleanupDisconnectedPeers(previousPeers, roomInstance.peers);
+    // Update notifications before peer checks
+    updateNotifications(now);
+
+    // Check for peer joins/leaves and trigger notifications/cleanup
+    previousPeerData = cleanupAndNotifyPeers(previousPeerData, roomInstance.peers, addNotification);
+
     const localPresenceBeforeUpdate = { ...(roomInstance.presence[localClientId] || {}) }; // Copy before updates
 
     // --- Respawn Check (Local Player) ---
@@ -317,6 +324,9 @@ function gameLoop(timestamp) {
         }
     });
 
+    // --- Render Notifications (On top of everything else) ---
+    renderNotifications(ctx, now);
+
     // --- Update UI ---
     updatePaintLevelIndicator(localClientId, roomInstance.presence[localClientId], ownedCansToRender);
 
@@ -335,7 +345,8 @@ export function startGameLoop(room) {
 
     initializeUI(); // Initialize UI elements
     lastTimestamp = 0;
-    previousPeers = new Set(Object.keys(room.peers || {}));
+    // Initialize previousPeerData with a copy of current peers
+    previousPeerData = { ...(room.peers || {}) };
     clearEffects(); // Clear any lingering effects from previous runs
     requestAnimationFrame(gameLoop);
 }

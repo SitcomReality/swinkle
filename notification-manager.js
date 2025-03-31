@@ -26,8 +26,8 @@ const NOTIFICATION_CONFIG = {
         error: '#FF5555',
         pickup: '#FF88FF',
         loss: '#FF5555',
-        join: '#66FF66',
-        leave: '#FFAA66',
+        join: '#66FF66',  
+        leave: '#FFAA66', 
         tip: '#FFFF66'
     }
 };
