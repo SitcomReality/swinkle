@@ -18,15 +18,15 @@ export const notes = `
 **Next Steps:**
 
 - **1. Notification System Implementation:**
-    - *NEXT* - 1.1: Create the basic notification manager module (\`notification-manager.js\`). Define functions to add/remove/update notifications and the basic structure of a notification object (id, message, type, startTime, duration).
-    - 1.2: Implement basic rendering logic in \`notification-manager.js\` to display notifications (e.g., simple text boxes at a fixed position, perhaps fading in/out based on progress).
+    - *DONE* - 1.1: Create the basic notification manager module (\`notification-manager.js\`). Define functions to add/remove/update notifications and the basic structure of a notification object (id, message, type, startTime, duration).
+    - *NEXT* - 1.2: Implement basic rendering logic in \`notification-manager.js\` to display notifications (e.g., simple text boxes at a fixed position, perhaps fading in/out based on progress).
     - 1.3: Integrate the notification manager's update and render calls into \`game-loop.js\`.
     - 1.4: Add triggers in \`power-up-manager.js\` (\`checkPowerUpCollisions\`) to call the notification manager when a power-up is collected.
     - 1.5: Add triggers in \`collisionHandler.js\` (\`checkCollisionsWithPlayer\`) when a player is painted out, and in \`respawn-manager.js\` (\`checkPlayerRespawn\`) when a player respawns.
     - 1.6: Add triggers for player join/leave events. This likely involves modifying the presence subscription in \`main.js\` or potentially adding logic to \`peer-manager.js\` and calling the notification manager from there.
     - 1.7: Add styling for different notification types in \`style.css\`.
     - 1.8: Add logic for occasional whimsical/tip messages (maybe triggered randomly in the game loop or based on simple conditions like low paint).
-    
+
 - **2. Better Score Tracking:** Reward players for painting other players. (Requires tracking who painted whom).
 
 - **3. Polish & Refinement:**
@@ -34,9 +34,9 @@ export const notes = `
     - 3.2: More visual effects (e.g., player respawn animation).
     - 3.3: Add player avatars to scoreboard/game.
     - 3.4: Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
-    
+
 - **4. Future Ideas/Stretch Goals:**
-    - Environmental hazards? (Moving platforms, laser grids?). Support for polygon obstacles. 
+    - Environmental hazards? (Moving platforms, laser grids?). Support for polygon obstacles.
     - Optimize rendering and physics.
 `;
 
