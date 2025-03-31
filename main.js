@@ -5,6 +5,8 @@ import config from 'config';
 import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
 import { initializeLevelManager } from './level-manager.js'; // Import level manager initializer
+// Import the burst droplet helper
+import { createBurstDroplets } from './playerInteractions.js';
 
 export const room = new WebsimSocket();
 
@@ -93,50 +95,47 @@ async function initGame() {
             const canId = localPresence.currentCanId;
             const canState = room.roomState.paintCans?.[canId];
 
-            // Only proceed if the can exists, is owned by us, and was potentially charging
+            // Only proceed if the can exists, is owned by us
             if (canState && canState.ownerId === room.clientId) {
-                // console.log(`Stopping charge / Releasing burst for can ${canId}`);
                 const dropletsToBurst = canState.accumulatedDroplets || 0;
                 const updates = {
                     paintCans: {
                         [canId]: {
-                            isCharging: false,
-                            accumulatedDroplets: 0 // Reset accumulation regardless of burst
+                            isCharging: false, // Stop charging on mouseup
+                            accumulatedDroplets: 0 // Reset accumulation regardless of burst amount
                         }
                     }
                 };
 
+                // Use the helper function to create burst droplets
                 if (dropletsToBurst > 0) {
-                    const burstDroplets = {};
-                    const canX = canState.x;
-                    const canY = canState.y;
-                    // console.log(`Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
-
-                    for (let i = 0; i < dropletsToBurst; i++) {
-                        // Simple unique ID
-                        const dropletId = `${room.clientId}-${Date.now()}-${i}`;
-                        // Add slight random offset for burst effect
-                        const angle = Math.random() * Math.PI * 2;
-                        const radius = Math.random() * config.burstSpreadRadius; // Use config for spread
-                        burstDroplets[dropletId] = {
-                            id: dropletId,
-                            ownerId: room.clientId, // Owner of the droplet is the player who fired it
-                            color: canState.paintColor,
-                            x: canX + Math.cos(angle) * radius,
-                            y: canY + Math.sin(angle) * radius,
-                            createdAt: Date.now()
-                        };
-                    }
-                    // Add droplets to the same update object sent to the server
-                    updates.droplets = burstDroplets;
+                    console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
+                    const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
+                    updates.droplets = burstData; // Add generated droplets to the update
                 } else {
-                     // console.log(`No accumulated droplets for ${canId}, just stopping charge.`);
+                     // console.log(`Mouse Up: No accumulated droplets for ${canId}, just stopping charge.`);
                 }
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
                 room.updateRoomState(updates);
             }
         }
+         // Also stop charging if mouse is released outside the canvas or if player lost the can meanwhile
+         // This ensures charging stops even if the initial `if` condition fails
+         const currentlyOwnedCanId = room.presence[room.clientId]?.currentCanId;
+         if (currentlyOwnedCanId) {
+             const currentCanState = room.roomState.paintCans?.[currentlyOwnedCanId];
+             // Check if the can is still owned and currently charging
+             if (currentCanState && currentCanState.ownerId === room.clientId && currentCanState.isCharging) {
+                 console.log(`Mouse Up (Fallback): Stopping charge for can ${currentlyOwnedCanId}`);
+                  room.updateRoomState({
+                      paintCans: {
+                          [currentlyOwnedCanId]: { isCharging: false }
+                          // Don't reset accumulated here, only on successful burst trigger
+                      }
+                  });
+             }
+         }
     });
 
     // Initial presence update with a default color and new state fields
@@ -160,7 +159,6 @@ async function initGame() {
         let availableCansToAdd = {};
 
         // Check for players who were present before but are not now
-        // Iterate over previous presence keys if needed, or rely on game loop check for simplicity.
         // The game loop approach using previousPeers is sufficient for physics cleanup.
         // For can cleanup, we check all currently owned cans against the current peer list.
 

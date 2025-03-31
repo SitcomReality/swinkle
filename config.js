@@ -37,7 +37,7 @@ export default {
     dropletColor: '#00FFFF', // Default color for droplets if not from a can
     dropletSize: 3,       // Radius of the droplet particle
     dropletDuration: 2000, // How long droplets last in milliseconds before fading
-    burstSpreadRadius: 15, // How far droplets spread when bursting from charge
+    burstSpreadRadius: 30, // How far droplets spread when bursting from charge (Increased from 15)
 
     // Paint Can settings
     paintCanColors: [ // Predefined list of possible paint colors

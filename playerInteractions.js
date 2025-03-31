@@ -11,6 +11,36 @@ import config from 'config';
 let timeSinceLastAutoDrop = 0; // Milliseconds
 
 /**
+ * Creates the droplet data for a paint burst.
+ * @param {string} ownerId - The ID of the player releasing the burst.
+ * @param {object} canState - The state of the can releasing the burst { x, y, paintColor }.
+ * @param {number} numDroplets - The number of droplets to create.
+ * @param {number} now - The current timestamp.
+ * @returns {object} An object containing droplet data keyed by unique droplet IDs.
+ */
+export function createBurstDroplets(ownerId, canState, numDroplets, now) {
+    const burstDroplets = {};
+    const canX = canState.x;
+    const canY = canState.y;
+    const spreadRadius = config.burstSpreadRadius; // Use config value
+
+    for (let i = 0; i < numDroplets; i++) {
+        const dropletId = `${ownerId}-${now}-burst-${i}`;
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * spreadRadius; // Random distance within spread radius
+        burstDroplets[dropletId] = {
+            id: dropletId,
+            ownerId: ownerId,
+            color: canState.paintColor,
+            x: canX + Math.cos(angle) * radius,
+            y: canY + Math.sin(angle) * radius,
+            createdAt: now
+        };
+    }
+    return burstDroplets;
+}
+
+/**
  * Facade function to handle all local player interactions within a frame.
  * Calls specific interaction handlers and aggregates their updates.
  *
@@ -34,7 +64,9 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
     let currentCanId = presence.currentCanId; // Get current can ID
     let canState = currentCanId ? currentOwnedCans[currentCanId] : null;
 
-    // 1. Check for Empty Can Drop
+    // 1. Check for Empty Can Drop (Applies if can becomes empty due to auto-drop OR charging)
+    // This check might now be partly redundant due to burst-on-empty logic in charging,
+    // but keeping it ensures cans are dropped if they somehow become empty without bursting.
     if (currentCanId && canState) {
         const emptyCanResult = handleEmptyPaintCan(localClientId, canState, presence);
         Object.assign(aggregatedUpdates.paintCanUpdates, emptyCanResult.paintCanUpdates);
@@ -55,11 +87,6 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
         // If can was picked up, update local state for subsequent checks
         if (pickupResult.presenceUpdates.currentCanId) {
             currentCanId = pickupResult.presenceUpdates.currentCanId;
-            // NOTE: canState here would be the state *added* to paintCanUpdates,
-            // it might not be in currentOwnedCans yet. handleCanCharging needs the updated state.
-            // For simplicity, we'll fetch it again inside handleCanCharging if needed,
-            // or rely on the game loop passing the updated state next frame.
-            // Let's assume handleCanCharging will use the state from the updates if available.
              canState = pickupResult.paintCanUpdates[currentCanId]; // Get the state intended for update
         }
     }
@@ -67,15 +94,31 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
     // 3. Handle Charging / Auto-Dropping (only if holding a valid can)
      // Re-fetch state in case it was just picked up or modified
      if (currentCanId) {
+         // Ensure we use the most up-to-date state for interactions, potentially including pickup updates
          const currentCanStateForInteraction = aggregatedUpdates.paintCanUpdates[currentCanId] || currentOwnedCans[currentCanId];
          if (currentCanStateForInteraction) {
              const chargeDropResult = handleCanChargingAndDropping(localClientId, currentCanStateForInteraction, deltaTime, now);
              // Merge results, potentially overwriting previous paintCanUpdates for this can ID
              aggregatedUpdates.paintCanUpdates[currentCanId] = {
-                 ...(aggregatedUpdates.paintCanUpdates[currentCanId] || {}),
-                 ...chargeDropResult.paintCanUpdates
+                 ...(aggregatedUpdates.paintCanUpdates[currentCanId] || {}), // Keep existing updates (like ownership from pickup)
+                 ...chargeDropResult.paintCanUpdates // Add/overwrite charge/drop updates
              };
              Object.assign(aggregatedUpdates.newDroplets, chargeDropResult.newDroplets);
+
+            // Check if the can was emptied and dropped by handleEmptyPaintCan *after* charge/drop calculations
+            // If so, nullify the can update to prevent resurrection
+            if (aggregatedUpdates.presenceUpdates.currentCanId === null && aggregatedUpdates.paintCanUpdates[currentCanId] === null) {
+                 // Can was dropped by handleEmptyPaintCan, ensure we don't send other updates for it
+            } else if (aggregatedUpdates.paintCanUpdates[currentCanId]?.paintAmount <= 0 && aggregatedUpdates.presenceUpdates.currentCanId !== null) {
+                // If charging/dropping emptied the can but it wasn't explicitly dropped yet,
+                // re-run the empty check based on the *new* state from chargeDropResult
+                const potentiallyEmptyCanState = { ...currentCanStateForInteraction, ...chargeDropResult.paintCanUpdates };
+                 const finalEmptyCheckResult = handleEmptyPaintCan(localClientId, potentiallyEmptyCanState, presence);
+                 if (finalEmptyCheckResult.presenceUpdates.currentCanId === null) {
+                      Object.assign(aggregatedUpdates.paintCanUpdates, finalEmptyCheckResult.paintCanUpdates);
+                      Object.assign(aggregatedUpdates.presenceUpdates, finalEmptyCheckResult.presenceUpdates);
+                 }
+            }
          }
      }
 
@@ -83,9 +126,9 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
     return aggregatedUpdates;
 }
 
-
 /**
  * Handles paint can charging and auto-dropping logic for the local client's owned can.
+ * Includes logic for bursting accumulated droplets if the can runs out while charging.
  * This function is INTERNAL and called by handleLocalPlayerInteractions.
  *
  * @param {string} localClientId - The ID of the local client.
@@ -98,54 +141,66 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
     const paintCanUpdates = {}; // Updates for the paintCans state object
     const newDroplets = {};     // Updates for the droplets state object
 
-    // Ensure canState exists and is owned by the local player before proceeding
     if (!canState || canState.ownerId !== localClientId) {
-        timeSinceLastAutoDrop = 0; // Reset timer if can is invalid/not owned
+        timeSinceLastAutoDrop = 0;
         return { paintCanUpdates, newDroplets };
     }
 
-
     const currentPaintAmount = canState.paintAmount || 0;
     const currentAccumulated = canState.accumulatedDroplets || 0;
+    let triggeredBurstOnEmpty = false; // Flag to prevent auto-drop after burst-on-empty
 
     if (canState.isCharging && currentPaintAmount > 0) {
-        // --- Charging Logic ---
-        const chargeRate = config.paintCanChargingSpeed; // Units per second
+        const chargeRate = config.paintCanChargingSpeed;
         const maxAccumulation = config.paintCanMaxAccumulatedDroplets;
-
         const paintToConsume = chargeRate * deltaTime;
         const dropletsToAccumulate = chargeRate * deltaTime;
 
         const actualPaintConsumed = Math.min(paintToConsume, currentPaintAmount);
-        const actualDropletsAccumulated = Math.min(dropletsToAccumulate, maxAccumulation - currentAccumulated, actualPaintConsumed);
+        // Accumulate droplets only if paint is consumed, up to the max
+        const potentialNewAccumulated = Math.min(maxAccumulation, currentAccumulated + Math.min(dropletsToAccumulate, actualPaintConsumed));
+        const actualDropletsAccumulated = potentialNewAccumulated - currentAccumulated;
 
-        if (actualDropletsAccumulated > 0 || actualPaintConsumed > 0) {
-             paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
-             paintCanUpdates.accumulatedDroplets = Math.min(maxAccumulation, currentAccumulated + actualDropletsAccumulated);
+        // Apply updates
+        const newPaintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
+        paintCanUpdates.paintAmount = newPaintAmount;
+        if (actualDropletsAccumulated > 0) {
+            paintCanUpdates.accumulatedDroplets = potentialNewAccumulated;
         }
-        timeSinceLastAutoDrop = 0;
 
-    } else if (!canState.isCharging && currentPaintAmount > 0) {
+        timeSinceLastAutoDrop = 0; // Reset auto-drop timer while charging
+
+        // --- Burst on Empty Check ---
+        // Use the *newly calculated* amounts for the check
+        const accumulatedAfterUpdate = paintCanUpdates.accumulatedDroplets !== undefined ? paintCanUpdates.accumulatedDroplets : currentAccumulated;
+        if (newPaintAmount <= 0 && accumulatedAfterUpdate > 0) {
+            console.log(`Can ${canState.id} ran out while charging, bursting ${accumulatedAfterUpdate} droplets.`);
+            const burstData = createBurstDroplets(localClientId, canState, accumulatedAfterUpdate, now);
+            Object.assign(newDroplets, burstData); // Add burst droplets to the output
+            paintCanUpdates.accumulatedDroplets = 0; // Reset accumulation since it burst
+            triggeredBurstOnEmpty = true; // Mark that burst happened
+            // Note: We don't drop the can here, handleEmptyPaintCan will do that based on the final amount
+        }
+
+    } else if (!canState.isCharging && currentPaintAmount > 0 && !triggeredBurstOnEmpty) {
         // --- Auto-Dropping Logic ---
+        // Only auto-drop if not charging AND burst-on-empty didn't just happen
         timeSinceLastAutoDrop += deltaTime * 1000; // Accumulate time in ms
         const autoDropInterval = 1000 / config.paintCanAutoDropRate; // ms per drop
 
         let dropsThisFrame = 0;
-        // Use a temporary variable to track paint remaining *during this frame's auto-drop check*
         let paintAvailableForAutoDrop = currentPaintAmount;
 
         while (timeSinceLastAutoDrop >= autoDropInterval && paintAvailableForAutoDrop > 0) {
             timeSinceLastAutoDrop -= autoDropInterval;
             dropsThisFrame++;
-            paintAvailableForAutoDrop--; // Decrement the temp variable
+            paintAvailableForAutoDrop--;
 
             const dropletId = `${localClientId}-${now}-auto-${dropsThisFrame}`;
             newDroplets[dropletId] = {
                 id: dropletId,
                 ownerId: localClientId,
                 color: canState.paintColor,
-                // Use current physics state for position, assuming it's calculated before interactions
-                // TODO: Confirm canState.x/y are up-to-date from physics step before this interaction step
                 x: canState.x,
                 y: canState.y,
                 createdAt: now
@@ -153,19 +208,14 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
         }
 
         if (dropsThisFrame > 0) {
-            // Update paint amount based on actual drops this frame
             paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - dropsThisFrame);
         }
     } else {
-         // Not charging, no paint, or invalid state - reset timer
-         timeSinceLastAutoDrop = 0;
+         timeSinceLastAutoDrop = 0; // Reset timer if not charging, no paint, or burst just happened
     }
 
     return { paintCanUpdates, newDroplets };
 }
-
-
-// --- Keep existing helper functions private to this module ---
 
 /**
  * Checks if the player can pick up an available paint can and returns the updates.
@@ -209,19 +259,21 @@ function handlePaintCanPickup(playerBodyPos, localClientId, presence, availableP
 }
 
 /**
- * Checks for empty paint cans and returns updates to handle them.
+ * Checks for empty paint cans and returns updates to handle them (drop).
  * INTERNAL function called by handleLocalPlayerInteractions.
  * @param {string} localClientId - The ID of the local client.
- * @param {object} canState - The current state of the player's paint can.
+ * @param {object} canState - The current state of the player's paint can (potentially updated within frame).
  * @param {object} presence - The player's current presence data.
  * @returns {object} Update objects for roomState and presence.
  */
 function handleEmptyPaintCan(localClientId, canState, presence) {
     // Basic check, also ensure the presence matches the can owner for sanity
-    if (!canState || canState.ownerId !== localClientId || presence.currentCanId !== canState.id) {
+    // Skip if already lost
+    if (!canState || canState.ownerId !== localClientId || presence.currentCanId !== canState.id || presence.lost) {
         return { paintCanUpdates: {}, presenceUpdates: {} };
     }
 
+    // Use the paintAmount from the canState passed in, which might have been updated by charging/dropping
     if (canState.paintAmount <= 0) {
         console.log(`Can ${canState.id} is empty, dropping it`);
 
@@ -237,7 +289,6 @@ function handleEmptyPaintCan(localClientId, canState, presence) {
 
     return { paintCanUpdates: {}, presenceUpdates: {} };
 }
-
 
 /**
  * Finds the nearest available paint can within pickup distance.
