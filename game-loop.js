@@ -26,7 +26,7 @@ import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
 import { cleanupDisconnectedPeers } from './peer-manager.js';
 // Power-up Modules
-import { spawnPowerUps, checkPowerUpCollisions } from './power-ups/power-up-manager.js'; // Import power-up functions
+import { spawnPowerUps, checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js'; // Import power-up functions
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -135,13 +135,12 @@ function gameLoop(timestamp) {
         canvas.width,
         canvas.height
     );
-     // Apply respawn updates immediately to local cache
+    // Apply respawn updates immediately to local cache
     if (Object.keys(localPresenceUpdates).length > 0 && roomInstance.presence[localClientId]) {
         Object.assign(roomInstance.presence[localClientId], localPresenceUpdates);
-         // If respawn happened, re-fetch the presence for subsequent checks this frame
+        // If respawn happened, re-fetch the presence for subsequent checks this frame
         const updatedLocalPresence = roomInstance.presence[localClientId];
     }
-
 
     // --- Per-Player Updates (Physics & Interactions) ---
     let allPaintCanUpdates = {};
@@ -157,34 +156,33 @@ function gameLoop(timestamp) {
             allPaintCanUpdates = { ...allPaintCanUpdates, ...playerUpdates.paintCanUpdates };
             allDropletsToAdd = { ...allDropletsToAdd, ...playerUpdates.dropletsToAdd };
             allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...playerUpdates.availablePaintCanUpdates };
-             // Merge presence updates specifically for the local player
+            // Merge presence updates specifically for the local player
             if (clientId === localClientId) {
-                 localPresenceUpdates = { ...localPresenceUpdates, ...playerUpdates.presenceUpdates };
-             }
+                localPresenceUpdates = { ...localPresenceUpdates, ...playerUpdates.presenceUpdates };
+            }
         }
     });
 
     // --- Global Owned Can Physics Update (After Player Positions are Finalized) ---
     // Iterate through owned cans and update their physics based on their owner's final position
     Object.entries(roomInstance.roomState.paintCans || {}).forEach(([canId, canState]) => {
-         if (canState && canState.ownerId) {
-             const ownerPhysics = getPlayerPhysicsState(canState.ownerId);
-             const ownerPresence = roomInstance.presence[canState.ownerId];
-             // Only update if owner exists, has physics, and is NOT lost (cans drop on loss)
-             if (ownerPhysics && ownerPresence && !ownerPresence.lost) {
-                 updatePaintCanPhysics(canState, ownerPhysics.position, deltaTime);
-                 // Add physics updates to the batch, merging with potential interaction updates
-                 allPaintCanUpdates[canId] = {
-                     ...(allPaintCanUpdates[canId] || {}),
-                     x: canState.x,
-                     y: canState.y,
-                     vx: canState.vx,
-                     vy: canState.vy
-                 };
-             }
-         }
-     });
-
+        if (canState && canState.ownerId) {
+            const ownerPhysics = getPlayerPhysicsState(canState.ownerId);
+            const ownerPresence = roomInstance.presence[canState.ownerId];
+            // Only update if owner exists, has physics, and is NOT lost (cans drop on loss)
+            if (ownerPhysics && ownerPresence && !ownerPresence.lost) {
+                updatePaintCanPhysics(canState, ownerPhysics.position, deltaTime);
+                // Add physics updates to the batch, merging with potential interaction updates
+                allPaintCanUpdates[canId] = {
+                    ...(allPaintCanUpdates[canId] || {}),
+                    x: canState.x,
+                    y: canState.y,
+                    vx: canState.vx,
+                    vy: canState.vy
+                };
+            }
+        }
+    });
 
     // --- Global Updates & Checks (Local Client Authority) ---
     let allDropletRemovals = {};
@@ -197,7 +195,7 @@ function gameLoop(timestamp) {
     allPaintCanUpdates = { ...allPaintCanUpdates, ...stealCollisionResults.paintCanUpdates };
     localPresenceUpdates = { ...localPresenceUpdates, ...stealCollisionResults.localPresenceUpdates };
     presenceRequests = [...presenceRequests, ...stealCollisionResults.presenceRequests];
-     // Update local presence cache immediately for steal results
+    // Update local presence cache immediately for steal results
     if (stealCollisionResults.localPresenceUpdates.currentCanId && roomInstance.presence[localClientId]) {
         Object.assign(roomInstance.presence[localClientId], stealCollisionResults.localPresenceUpdates);
     }
@@ -210,15 +208,30 @@ function gameLoop(timestamp) {
     const newPowerUpSpawns = spawnPowerUps(deltaTime, now, roomInstance.roomState.powerUps || {}, canvas.width, canvas.height);
     allPowerUpUpdates = { ...allPowerUpUpdates, ...newPowerUpSpawns };
 
-    // Power-up Collision Check (Local Player)
+    // --- Local Player Specific Updates (Post-Interaction, Pre-Collision) ---
+    // Use presence potentially updated by interactions, respawn, or stealing
+    const currentLocalPresence = roomInstance.presence[localClientId];
     const localPlayerPhysics = getPlayerPhysicsState(localClientId);
-    const currentLocalPresence = roomInstance.presence[localClientId]; // Use potentially updated presence
-    if (localPlayerPhysics && currentLocalPresence && !currentLocalPresence.lost) {
+
+    // Process Expired Power-ups (Local Player)
+    if (currentLocalPresence) {
+        const expiredPowerUpUpdates = processActivePowerUps(localClientId, currentLocalPresence, now);
+        // Merge presence updates from expired power-ups
+        localPresenceUpdates = { ...localPresenceUpdates, ...expiredPowerUpUpdates };
+        // Update local presence cache immediately after processing expired power-ups
+        if (Object.keys(expiredPowerUpUpdates).length > 0) {
+            Object.assign(roomInstance.presence[localClientId], expiredPowerUpUpdates);
+        }
+    }
+
+    // Power-up Collision Check (Local Player) - Use presence potentially updated by expiration check
+    const presenceAfterExpirationCheck = roomInstance.presence[localClientId];
+    if (localPlayerPhysics && presenceAfterExpirationCheck && !presenceAfterExpirationCheck.lost) {
         const powerUpCollisionResults = checkPowerUpCollisions(
             localPlayerPhysics.position,
             localClientId,
             roomInstance.roomState.powerUps || {},
-            currentLocalPresence
+            presenceAfterExpirationCheck // Pass the most current presence state
         );
         // Merge power-up removals into the batch for room state update
         powerUpsToRemoveFromState = { ...powerUpsToRemoveFromState, ...powerUpCollisionResults.powerUpsToRemove };
@@ -226,12 +239,12 @@ function gameLoop(timestamp) {
         localPresenceUpdates = { ...localPresenceUpdates, ...powerUpCollisionResults.presenceUpdates };
         // Update local presence cache immediately after collecting power-ups
         if (Object.keys(powerUpCollisionResults.presenceUpdates).length > 0) {
-             Object.assign(roomInstance.presence[localClientId], powerUpCollisionResults.presenceUpdates);
+            Object.assign(roomInstance.presence[localClientId], powerUpCollisionResults.presenceUpdates);
         }
     }
 
     // Droplet Collision with Local Player
-    // Re-fetch physics and presence in case they changed due to respawn/powerups
+    // Re-fetch physics and presence in case they changed due to respawn/powerups/expiration
     const finalLocalPlayerPhysics = getPlayerPhysicsState(localClientId);
     const finalLocalPresence = roomInstance.presence[localClientId];
     if (finalLocalPlayerPhysics && finalLocalPresence && !finalLocalPresence.lost) {
@@ -296,12 +309,11 @@ function gameLoop(timestamp) {
         if (powerUpState) renderPowerUp(ctx, powerUpState, now);
     });
 
-
     const ownedCansToRender = roomInstance.roomState.paintCans || {}; // Needed for rendering held cans
     Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Ensure presence exists before rendering
-             renderPlayer(ctx, clientId, localClientId, presence, peer, ownedCansToRender);
+            renderPlayer(ctx, clientId, localClientId, presence, peer, ownedCansToRender);
         }
     });
 

@@ -125,49 +125,61 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
 }
 
 /**
- * Processes active power-ups on a player and returns updates
+ * Processes active power-ups on a player, checks for expiration, and returns updates.
  * @param {string} clientId - Client ID of the player
  * @param {object} presence - Current presence data for the player
  * @param {number} now - Current timestamp
  * @returns {object} Updates to apply to presence
  */
 export function processActivePowerUps(clientId, presence, now) {
+    // Ensure presence and the activePowerUps object exist
     if (!presence || !presence.activePowerUps) {
         return {};
     }
-    
-    const updates = {};
-    const activePowerUps = { ...presence.activePowerUps };
-    let changed = false;
-    
+
+    const updates = {}; // Store presence updates to return
+    const activePowerUps = { ...presence.activePowerUps }; // Work on a copy
+    let changed = false; // Track if any updates are needed
+
     // Check for expired power-ups
     Object.entries(activePowerUps).forEach(([powerUpId, powerUpState]) => {
-        if (powerUpState.endTime && now >= powerUpState.endTime) {
-            // Power-up has expired
-            console.log(`Power-up ${powerUpId} expired for player ${clientId}`);
-            delete activePowerUps[powerUpId];
-            changed = true;
-            
-            // Handle specific cleanup based on power-up type
-            switch (powerUpId) {
-                case 'shield':
-                    updates.shielded = false;
-                    break;
-                case 'spring':
-                    updates.springyBungee = false;
-                    break;
-                case 'megaCan':
-                    updates.megaCanPowerup = false;
-                    break;
-                // Add other cases as needed
+        // Ensure the power-up state is valid and has an endTime
+        if (powerUpState && typeof powerUpState.endTime === 'number') {
+            if (now >= powerUpState.endTime) {
+                // Power-up has expired
+                console.log(`Power-up ${powerUpId} expired for player ${clientId}`);
+                delete activePowerUps[powerUpId]; // Remove from the copied active list
+                changed = true; // Mark that state has changed
+
+                // Handle specific cleanup based on power-up type ID (which is the key)
+                switch (powerUpId) {
+                    case 'shield':
+                        updates.shielded = false;
+                        break;
+                    case 'spring':
+                        updates.springyBungee = false;
+                        break;
+                    case 'megaCan':
+                        // Note: megaCanPowerup might be consumed on pickup rather than timeout,
+                        // but having a timeout is a good backup. We'll refine this in 1.9.5.
+                        updates.megaCanPowerup = false;
+                        break;
+                    // Add cases for other timed power-ups here
+                }
             }
+        } else {
+             // Clean up invalid entries (optional, but good practice)
+             console.warn(`Invalid power-up state found for ${powerUpId} on player ${clientId}. Removing.`);
+             delete activePowerUps[powerUpId];
+             changed = true;
         }
     });
-    
-    // Only update if something changed
+
+    // If any power-ups expired or were cleaned up, update the activePowerUps map in presence
     if (changed) {
+        // If all powerups expired, send an empty object or null. Sending the modified copy ensures removals are synced.
         updates.activePowerUps = activePowerUps;
     }
-    
+
     return updates;
 }

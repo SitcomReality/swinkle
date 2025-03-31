@@ -2,12 +2,12 @@ export const notes = `
 ## Developer Notes - Multiplayer Painter
 
 **Design Goals & Considerations:**
-- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players must manage the paint in their can and find ways to replenish it by acquiring new cans. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
+- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their paint droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright. **(Rotation implemented, parameters tuned for stability)**.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
-- **Developer Notes:** Update this file outlining planned steps and key questions. Focus on small, testable increments. Remember to escape all backticks in these notes.
+- **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes.
 
 **Next Steps:**
 
@@ -17,19 +17,16 @@ export const notes = `
         - 1.9.1: *DONE* - Created basic power-up infrastructure with modules for definition, rendering, and management
         - 1.9.2: *DONE* - Integrated power-up system with game loop for spawning and rendering
         - 1.9.3: *DONE* - Implemented collision detection to collect power-ups
-            - Modified `game-loop.js` to call `checkPowerUpCollisions` from `power-up-manager.js`.
-            - Implemented `checkPowerUpCollisions` to detect proximity, generate room state updates (remove power-up) and presence updates (apply effect/add to active list).
-        - 1.9.4: Create active power-up processing system for timed effects
-            - Modify `game-loop.js` to call a new `processActivePowerUps` function from `power-up-manager.js` for the *local player* each frame.
-            - Implement `processActivePowerUps` in `power-up-manager.js`:
-                - Check `presence.activePowerUps` for any effects where `endTime` has passed.
-                - If expired, generate presence updates to remove the effect from `activePowerUps` and reset the specific effect flag (e.g., `shielded: false`).
-                - Send these presence updates.
+        - 1.9.4: *DONE* - Create active power-up processing system for timed effects
+            - Modified `game-loop.js` to call `processActivePowerUps` from `power-up-manager.js` for the local player each frame.
+            - Implemented `processActivePowerUps` in `power-up-manager.js` to check `presence.activePowerUps`, handle expiration, and generate presence updates to remove effects.
         - 1.9.5: Implement each power-up effect (shield, acetone, spring, mega can)
-            - Modify player physics (`playerPhysics.js`), collision handling (`collisionHandler.js`), interactions (`playerInteractions.js`) based on active power-up flags in presence data.
-            - Handle immediate effects (like Acetone) directly during collection in `checkPowerUpCollisions`.
+            - **Acetone:** Modify `power-ups/power-up-manager.js` (`checkPowerUpCollisions`) to directly update `presence.paintedData = {}` when acetone is collected (as it's instant).
+            - **Shield:** Modify `collisionHandler.js` (`checkCollisionsWithPlayer`) to check for `presence.shielded === true`. If true, skip applying paint (`paintedUpdates`) and droplet removal (`dropletsToRemove`) for incoming droplets. Consider adding a visual effect when a droplet hits the shield.
+            - **Spring:** Modify `playerPhysics.js` (`updatePlayerPhysics`) to check for `presence.springyBungee === true`. If true, temporarily modify `k` (spring constant) or `restLength` for the main bungee calculation using multipliers from `config.js`. Reset to normal values if false.
+            - **Mega Can:** Modify `playerInteractions.js` (`handlePaintCanPickup`). When a can is picked up, check if `presence.megaCanPowerup === true`. If true, set the picked-up can's `paintAmount` to `config.paintCanInitialAmount * config.megaCanCapacityMultiplier` and potentially flag the can visually (e.g., a `isMega` property?). Also, set `presence.megaCanPowerup = false` after the buff is applied. Handle the visual representation in `paintCan.js` (`renderPaintCan`) if a flag is added. Ensure the paint level UI (`ui-manager.js`) accounts for the potentially larger max capacity.
         - 1.9.6: Add visual effects to indicate active power-ups on players
-            - Modify `playerRenderer.js` to draw indicators (e.g., shield outline, springy bungee visual) based on active power-up flags.
+            - Modify `playerRenderer.js` to draw indicators (e.g., shield outline, springy bungee visual change, mega-can indicator on player?) based on active power-up flags in presence.
 
 - **2. Advanced Gameplay Mechanics:**
     - 2.1: Design more complex level structures (multiple levels?).
