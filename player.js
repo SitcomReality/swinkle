@@ -144,27 +144,105 @@ function updateLimbPhysics(limbState, bodyPos, deltaTime) {
 }
 
 /**
+ * Converts a hex color string to an RGB object.
+ * Handles 3-digit (#RGB) and 6-digit (#RRGGBB) formats.
+ * @param {string} hex - The hex color string (e.g., "#FFF", "#FF88AA").
+ * @returns {{r: number, g: number, b: number} | null} RGB object or null if invalid.
+ */
+function hexToRgb(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    let shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+        return r + r + g + g + b + b;
+    });
+
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+/**
+ * Blends colors based on percentages.
+ * @param {string} baseHex - The base color hex string.
+ * @param {object} paintedData - Object mapping paint hex colors to percentages (e.g., {'#FF0000': 10}).
+ * @returns {string} The resulting CSS color string (e.g., "rgb(r,g,b)").
+ */
+function calculateBlendedColor(baseHex, paintedData = {}) {
+    const baseRgb = hexToRgb(baseHex);
+    if (!baseRgb) return baseHex; // Return base if invalid
+
+    let totalPaintPercent = 0;
+    const paintRgbs = [];
+
+    for (const [colorHex, percent] of Object.entries(paintedData)) {
+        const paintRgb = hexToRgb(colorHex);
+        if (paintRgb && percent > 0) {
+            const clampedPercent = Math.max(0, percent); // Ensure percent is non-negative
+            paintRgbs.push({ ...paintRgb, percent: clampedPercent });
+            totalPaintPercent += clampedPercent;
+        }
+    }
+
+    // Clamp total paint percentage to a maximum of 100
+    totalPaintPercent = Math.min(100, totalPaintPercent);
+    const basePercent = 100 - totalPaintPercent;
+
+    let finalR = baseRgb.r * basePercent;
+    let finalG = baseRgb.g * basePercent;
+    let finalB = baseRgb.b * basePercent;
+
+    for (const paint of paintRgbs) {
+        // Ensure we don't exceed the calculated totalPaintPercent when summing up
+        // This handles cases where individual percentages might sum > 100 before clamping
+        const effectivePercent = Math.min(paint.percent, totalPaintPercent - (basePercent + paintRgbs.filter(p => p !== paint && p.added).reduce((sum, p) => sum + p.percent, 0)));
+        if (effectivePercent > 0) {
+            finalR += paint.r * effectivePercent;
+            finalG += paint.g * effectivePercent;
+            finalB += paint.b * effectivePercent;
+            paint.added = true; // Mark as added to avoid double counting in weird edge cases
+        }
+    }
+
+    // Average the colors by dividing by the total percentage (should be 100)
+    finalR = Math.round(finalR / 100);
+    finalG = Math.round(finalG / 100);
+    finalB = Math.round(finalB / 100);
+
+    // Clamp final values to 0-255
+    finalR = Math.max(0, Math.min(255, finalR));
+    finalG = Math.max(0, Math.min(255, finalG));
+    finalB = Math.max(0, Math.min(255, finalB));
+
+    return `rgb(${finalR}, ${finalG}, ${finalB})`;
+}
+
+/**
  * Renders a single player character, including anchor, body, bungee cord, and limbs.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
  * @param {string} localClientId - The ID of the current user's client.
- * @param {object} presence - The player's presence data (x, y anchor, color, etc.).
+ * @param {object} presence - The player's presence data (x, y anchor, color, paintedData, etc.).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  */
 export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
+    // ... existing checks and anchor rendering ...
     if (!presence || typeof presence.x !== 'number' || typeof presence.y !== 'number') {
         return; // Don't render if position data is missing
     }
 
     const anchorX = presence.x;
     const anchorY = presence.y;
-    const color = presence.color || config.defaultPlayerColor || '#FFF';
+    const color = presence.color || config.defaultPlayerColor || '#FFF'; // Base player color (unused for capsule now)
+    const paintedData = presence.paintedData || {}; // Get paint data
 
     // --- Render Anchor Point ---
     ctx.beginPath();
     ctx.arc(anchorX, anchorY, config.cursorSize || 8, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.fillStyle = color; // Anchor color can still be the base color
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 1;
     ctx.fill();
@@ -184,7 +262,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.stroke();
 
     // --- Render Limbs (Behind Body) ---
-    ctx.strokeStyle = config.limbColor;
+    ctx.strokeStyle = config.limbColor; // Use dedicated limb color
     ctx.lineWidth = config.limbWidth;
     ctx.lineCap = 'round'; // Make limb ends rounded
 
@@ -204,8 +282,12 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     const radius = bodyWidth / 2;
     const rectHeight = bodyHeight - bodyWidth; // Height of the rectangular part
 
-    ctx.fillStyle = config.playerBodyColor || '#FFAABB';
-    ctx.strokeStyle = config.playerBodyStrokeColor || '#FF88AA';
+    // Calculate blended stroke color based on paintedData
+    const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
+    const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData);
+
+    ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Body fill remains base color
+    ctx.strokeStyle = blendedStrokeColor; // Use the calculated blended color
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -217,9 +299,10 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.lineTo(bodyX - radius, bodyY - rectHeight / 2); // Left side of rect part
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
+    ctx.stroke(); // Stroke AFTER fill using the blended color
 
     // --- Render Eyes ---
+    // ... existing eye rendering code ...
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
     const eyeOffsetY = config.playerEyeOffsetY || -3; // Relative to body center (bodyY)
@@ -282,6 +365,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer) {
     ctx.fill();
 
     // --- Render Player Name ---
+    // ... existing name rendering code ...
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
