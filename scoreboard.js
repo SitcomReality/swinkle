@@ -58,6 +58,7 @@ function updateScoreboard() {
 
         return {
             username: peer.username,
+            avatarUrl: peer.avatarUrl,
             paintPercentage: paintPercentage,
             losses: losses,
             isLost: isLost,
@@ -90,12 +91,12 @@ function updateScoreboard() {
              row.classList.add('local-player'); // Add class for CSS styling
         }
 
-
         const nameCell = row.insertCell();
-        nameCell.textContent = player.username;
+        // Add avatar image and username in the name cell
+        const avatarHtml = player.avatarUrl ? 
+            `<img src="${player.avatarUrl}" alt="${player.username}" class="player-avatar">` : '';
+        nameCell.innerHTML = `${avatarHtml}<span>${player.username}</span>`;
         nameCell.classList.add('player-name');
-        // Removed direct style manipulation, handled by CSS class '.local-player .player-name' now
-
 
         const paintCell = row.insertCell();
         paintCell.textContent = `${player.paintPercentage.toFixed(0)}%`;

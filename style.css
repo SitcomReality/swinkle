@@ -113,6 +113,15 @@ body {
      color: #FFFF99; 
 }
 
+.player-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 1px solid #f0f;
+    box-shadow: 0 0 4px #f0f;
+}
 
 /* Paint Level Indicator */
 #paint-level-indicator {

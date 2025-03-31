@@ -17,7 +17,7 @@ export const notes = `
 
 **Next Steps:**
 
-- 1. Add player avatars to scoreboard.
+✅ 1. Add player avatars to scoreboard.
 - 2. Better Score Tracking: Reward players for painting other players. (Requires tracking who painted whom).
 - 3. Sound effects.
 - 4. More visual effects (e.g., player respawn animation).
