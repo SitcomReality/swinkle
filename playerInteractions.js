@@ -6,12 +6,6 @@ import config from 'config';
 // Need player state to get velocity for throwing
 import { getPlayerPhysicsState } from './playerState.js';
 
-// Maintain state for auto-dropping timer PER CAN - This needs to be managed carefully.
-// For simplicity, let's assume only one can is handled per client at a time,
-// so a single timer variable is sufficient for the local client.
-// If players could control multiple things simultaneously, this would need a map.
-let timeSinceLastAutoDrop = 0; // Milliseconds
-
 /**
  * Handles paint can charging and auto-dropping logic for the local client's owned can.
  * @param {string} localClientId - The ID of the local client.
@@ -32,67 +26,60 @@ export function handleCanInteractions(localClientId, canState, deltaTime, now) {
         const chargeRate = config.paintCanChargingSpeed; // Units per second
         const maxAccumulation = config.paintCanMaxAccumulatedDroplets;
 
-        // Calculate how much paint would be consumed and how many droplets accumulated this frame
         const paintToConsume = chargeRate * deltaTime;
-        const dropletsToAccumulate = chargeRate * deltaTime; // Assuming 1 unit paint = 1 droplet potential
+        const dropletsToAccumulate = chargeRate * deltaTime;
 
-        // Determine actual amounts considering remaining paint and max accumulation
         const actualPaintConsumed = Math.min(paintToConsume, currentPaintAmount);
         const actualDropletsAccumulated = Math.min(dropletsToAccumulate, maxAccumulation - currentAccumulated, actualPaintConsumed);
 
         if (actualDropletsAccumulated > 0 || actualPaintConsumed > 0) {
-             // Apply the changes to the update batch
              paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - actualPaintConsumed);
              paintCanUpdates.accumulatedDroplets = Math.min(maxAccumulation, currentAccumulated + actualDropletsAccumulated);
-            // console.log(`Charging: Consumed ${actualPaintConsumed.toFixed(2)}, Accumulated ${actualDropletsAccumulated.toFixed(2)}. New Amount: ${paintCanUpdates.paintAmount.toFixed(2)}, New Acc: ${paintCanUpdates.accumulatedDroplets.toFixed(2)}`);
         }
-        // Reset auto-drop timer while charging
-        timeSinceLastAutoDrop = 0;
+        // No auto-drop while charging
 
     } else if (!canState.isCharging && currentPaintAmount > 0) {
         // --- Auto-Dropping Logic ---
-        timeSinceLastAutoDrop += deltaTime * 1000; // Accumulate time in ms
-        const autoDropInterval = 1000 / config.paintCanAutoDropRate; // ms per drop
+        // Calculate expected drops this frame based on rate
+        const dropsExpectedThisFrame = config.paintCanAutoDropRate * deltaTime;
+        // Determine whole number of drops to actually perform
+        // This avoids complex timer state by averaging over time.
+        // Use Math.random() check to handle fractional drops probabilistically.
+        const wholeDrops = Math.floor(dropsExpectedThisFrame);
+        const fractionalDropChance = dropsExpectedThisFrame - wholeDrops;
+        let dropsThisFrame = wholeDrops + (Math.random() < fractionalDropChance ? 1 : 0);
 
-        let dropsThisFrame = 0;
-        while (timeSinceLastAutoDrop >= autoDropInterval && (currentPaintAmount - dropsThisFrame) > 0) {
-            timeSinceLastAutoDrop -= autoDropInterval;
-            dropsThisFrame++;
-
-            // Create the droplet object
-            const dropletId = `${localClientId}-${now}-auto-${dropsThisFrame}`; // Use 'now' for uniqueness
-            newDroplets[dropletId] = {
-                id: dropletId,
-                ownerId: localClientId,
-                color: canState.paintColor,
-                x: canState.x, // Use current (updated) can position
-                y: canState.y,
-                createdAt: now // Use consistent timestamp for frame
-            };
-            // console.log(`Auto-dropping droplet ${dropletId}`);
-        }
+        // Clamp drops to available paint
+        dropsThisFrame = Math.min(dropsThisFrame, Math.floor(currentPaintAmount)); // Ensure whole paint units
 
         if (dropsThisFrame > 0) {
-            // Update paint amount in the update batch
+            for (let i = 0; i < dropsThisFrame; i++) {
+                const dropletId = `${localClientId}-${now}-auto-${i}`;
+                newDroplets[dropletId] = {
+                    id: dropletId,
+                    ownerId: localClientId,
+                    color: canState.paintColor,
+                    x: canState.x,
+                    y: canState.y,
+                    createdAt: now
+                };
+            }
             paintCanUpdates.paintAmount = Math.max(0, currentPaintAmount - dropsThisFrame);
-            // console.log(`Dropped ${dropsThisFrame}. New Amount: ${paintCanUpdates.paintAmount}`);
         }
-    } else {
-         // Not charging, no paint, or invalid state - reset timer just in case
-         timeSinceLastAutoDrop = 0;
     }
+    // No timer state needed here anymore.
 
     return { paintCanUpdates, newDroplets };
 }
 
 /**
- * Checks if the player can pick up an available paint can and returns the updates.
- * Now also handles picking up thrown (moving) cans, resetting their velocity.
+ * Checks if the player can pick up an available paint can and returns the proposed updates.
+ * The presence update is only an *intent* and should be confirmed by game-loop.
  * @param {object} playerBodyPos - The player's body position {x, y}.
  * @param {string} localClientId - The ID of the local client.
  * @param {object} presence - The player's current presence data.
  * @param {object} availablePaintCans - The available paint cans from roomState.
- * @returns {object} Update objects for roomState and presence.
+ * @returns {object} Update objects for roomState (proposal) and presence (intent).
  */
 export function handlePaintCanPickup(playerBodyPos, localClientId, presence, availablePaintCans) {
     // Skip if player already has a can or has lost
@@ -102,27 +89,23 @@ export function handlePaintCanPickup(playerBodyPos, localClientId, presence, ava
     const nearestCan = findNearestAvailableCan(playerBodyPos, availablePaintCans, pickupDistance);
 
     if (nearestCan) {
-        console.log(`Player ${localClientId} picking up can ${nearestCan.id}`);
+        console.log(`Player ${localClientId} attempting to pick up can ${nearestCan.id}`);
 
-        // Updates to send
+        // Updates to send (Proposals for RoomState, Intent for Presence)
         return {
-            // Add to paintCans with player as owner
+            // Propose adding to paintCans with player as owner
             paintCanUpdates: {
                 [nearestCan.id]: {
                     ...nearestCan,
                     ownerId: localClientId,
-                    // Reset physics properties upon pickup
-                    vx: null, // Ensure velocity is nulled
-                    vy: null,
-                    isCharging: false,
-                    accumulatedDroplets: 0
+                    vx: null, vy: null, isCharging: false, accumulatedDroplets: 0
                 }
             },
-            // Remove from available cans
+            // Propose removing from available cans
             availablePaintCanUpdates: {
                 [nearestCan.id]: null
             },
-            // Update player presence
+            // Intent to update player presence (to be confirmed later)
             presenceUpdates: {
                 currentCanId: nearestCan.id
             }
@@ -145,65 +128,69 @@ export function handleThrowPaintCan(localClientId, presence, roomState, playerAn
     const canState = canId ? roomState?.paintCans?.[canId] : null;
     const playerPhysics = getPlayerPhysicsState(localClientId);
 
-    // Conditions to throw: holding a can, not lost, can exists, physics exists
-    if (!canId || !canState || presence.lost || !playerPhysics || !playerAnchorPos) {
+    // Conditions to throw: holding a can, not lost, can exists, physics exists, anchor exists
+    if (!canId || !canState || presence.lost || !playerPhysics || !playerAnchorPos || typeof playerAnchorPos.x !== 'number') {
         return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
     }
+
+    // Ensure the can actually belongs to the player throwing it (prevent race condition throws)
+    if (canState.ownerId !== localClientId) {
+         console.warn(`Player ${localClientId} tried to throw can ${canId} but owner is ${canState.ownerId}`);
+         return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+    }
+
 
     console.log(`Player ${localClientId} throwing can ${canId}`);
 
     // Calculate throw velocity
-    // 1. Get player's current velocity (optional inheritance)
     const inheritFactor = config.paintCanThrowInheritVelocityFactor;
     const playerVx = playerPhysics.velocity.x * inheritFactor;
     const playerVy = playerPhysics.velocity.y * inheritFactor;
 
-    // 2. Calculate direction from player body to anchor (cursor)
     const dirX = playerAnchorPos.x - playerPhysics.position.x;
     const dirY = playerAnchorPos.y - playerPhysics.position.y;
     const dist = Math.sqrt(dirX * dirX + dirY * dirY);
     let throwVx = 0;
     let throwVy = 0;
+
+    // Use a base throw speed plus potential distance multiplier
+    const baseThrowSpeed = config.paintCanThrowBaseSpeed || 500;
+    const distanceMultiplier = config.paintCanThrowDistanceMultiplier || 0; // Set > 0 to throw harder based on cursor distance
+    const throwSpeed = baseThrowSpeed + (dist * distanceMultiplier);
+
     if (dist > 1) {
         const normX = dirX / dist;
         const normY = dirY / dist;
-        const throwSpeed = config.paintCanThrowVelocityMultiplier * dist; // More force if further away? Or just fixed? Let's try fixed for now.
-        // const throwSpeed = config.paintCanThrowVelocityMultiplier * 10; // Fixed speed multiplier
         throwVx = normX * throwSpeed;
         throwVy = normY * throwSpeed;
     } else {
-         // If cursor is on top of player, maybe throw straight up or based on last movement?
-         // For now, just small velocity if dist is small.
-         const fallbackSpeed = config.paintCanThrowVelocityMultiplier * 5;
-         throwVy = -fallbackSpeed; // Default to throwing slightly up
+         // Default throw direction if cursor is too close (e.g., upwards)
+         throwVy = -baseThrowSpeed; // Throw up
     }
 
-
-    // Combine inherited velocity and throw velocity
     const initialVx = playerVx + throwVx;
     const initialVy = playerVy + throwVy;
 
     // Prepare updates
     return {
-        // Remove from owned cans
+        // Propose removing from owned cans
         paintCanUpdates: {
             [canId]: null
         },
-        // Add to available cans with velocity
+        // Propose adding to available cans with velocity
         availablePaintCanUpdates: {
             [canId]: {
-                ...canState, // Keep paint amount, color etc.
-                ownerId: null, // No owner
-                x: canState.x, // Start at current position
+                ...canState,
+                ownerId: null,
+                x: canState.x,
                 y: canState.y,
-                vx: initialVx, // Set initial velocity
+                vx: initialVx,
                 vy: initialVy,
-                // Clear interaction state
                 isCharging: false,
                 accumulatedDroplets: 0,
             }
         },
-        // Update player presence to drop the can
+        // Update player presence immediately to drop the can
         presenceUpdates: {
             currentCanId: null
         }
@@ -211,32 +198,48 @@ export function handleThrowPaintCan(localClientId, presence, roomState, playerAn
 }
 
 /**
- * Checks for empty paint cans and returns updates to handle them.
+ * Checks for empty paint cans and returns updates to handle them (making them available).
  * @param {string} localClientId - The ID of the local client.
  * @param {object} canState - The current state of the player's paint can.
  * @param {object} presence - The player's current presence data.
  * @returns {object} Update objects for roomState and presence.
  */
 export function handleEmptyPaintCan(localClientId, canState, presence) {
-    if (!canState || canState.ownerId !== localClientId) return { paintCanUpdates: {}, presenceUpdates: {} };
-    
-    // If can is empty, handle dropping it
+    if (!canState || canState.ownerId !== localClientId) return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+
+    // If can is empty, handle dropping it and making it available (briefly)
     if (canState.paintAmount <= 0) {
         console.log(`Can ${canState.id} is empty, dropping it`);
-        
+
         return {
-            // Simply remove the can when empty
+            // Remove from owned cans
             paintCanUpdates: {
                 [canState.id]: null
             },
-            // Update player presence to no longer hold this can
+            // Make it available (will likely get cleaned up quickly if not configured otherwise)
+            // Setting position slightly offset might be visually better than at player feet.
+             availablePaintCanUpdates: {
+                 [canState.id]: {
+                     ...canState, // Keep color, id etc.
+                     ownerId: null,
+                     paintAmount: 0, // Explicitly 0
+                     vx: null, // No velocity
+                     vy: null,
+                     isCharging: false,
+                     accumulatedDroplets: 0,
+                     // Position it at the current location
+                     x: canState.x,
+                     y: canState.y
+                 }
+             },
+            // Update player presence to no longer hold this can (immediate)
             presenceUpdates: {
                 currentCanId: null
             }
         };
     }
-    
-    return { paintCanUpdates: {}, presenceUpdates: {} };
+
+    return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
 }
 
 /**
@@ -249,20 +252,20 @@ export function handleEmptyPaintCan(localClientId, canState, presence) {
  */
 function findNearestAvailableCan(playerPos, availableCans, maxDistance) {
     let nearestCan = null;
-    let nearestDistance = maxDistance;
-    
+    let minDistanceSq = maxDistance * maxDistance; // Use squared distance
+
     Object.values(availableCans).forEach(canState => {
-        if (!canState) return;
-        
+        if (!canState) return; // Skip null entries
+
         const dx = canState.x - playerPos.x;
         const dy = canState.y - playerPos.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < nearestDistance) {
-            nearestDistance = distance;
+        const distanceSq = dx * dx + dy * dy;
+
+        if (distanceSq < minDistanceSq) {
+            minDistanceSq = distanceSq;
             nearestCan = canState;
         }
     });
-    
+
     return nearestCan;
 }
