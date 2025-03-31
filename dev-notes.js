@@ -39,6 +39,13 @@ export const notes = `
     - 3.3: Optimize rendering and physics.
     - 3.4: Add player avatars to scoreboard/game.
     - 3.5: Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
+    - 3.6: Implement notification system to show transient messages during gameplay events:
+        - Power-up collection ("Shield activated!" or "Acetone cleansed your paint!")
+        - Player status changes ("Player X got painted out!" or "Player Y respawned!")
+        - Player join/leave events ("Player Z joined the game!")
+        - Gameplay tips or whimsical messages based on game state
+        - This system should support different message priorities, durations, and visual styling
+        - Implementation should avoid interfering with other gameplay systems by using a separate rendering layer and state management
 
 **Error Fixes:**
 - *DONE* - Fixed error in 'effectsRenderer.js' ('renderStealSpark') where radius could become negative by clamping progress calculation between 0 and 1 and adding checks for non-positive radius/linewidth.
