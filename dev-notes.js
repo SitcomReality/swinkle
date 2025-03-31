@@ -16,35 +16,25 @@ export const notes = `
 
 **Next Steps:**
 
-- **1. Environment/Level Generation:**
-    *1.1-1.9.6: Done.*
-
-- **2. Advanced Gameplay Mechanics:**
-    - 2.1: Design more complex level structures (multiple levels?).
-        - *DONE* - Added multiple level definitions (level-data.js).
-        - *DONE* - Updated level-manager.js to load levels.
-        - *DONE* - Updated level-renderer.js and level-collision.js to handle basic rotation for rectangular obstacles defined in levels.
-        - *DONE* - Implement time-based level cycling (every 90s). Level ID and change time stored in roomState, managed by a designated 'host' client. Clients react to roomState changes to load the new level.
-        - *SKIPPED (for now)* - Add support for polygon obstacles. Sticking with rectangles for simplicity.
-        - *NEXT* - Environmental hazards? (Moving platforms, laser grids?).
-    - 2.2: Better score tracking: reward players for painting other players.
-
-- **3. Polish & Refinement:**
-    - 3.1: Sound effects.
-    - 3.2: More visual effects (e.g., player respawn animation).
-    - 3.3: Optimize rendering and physics.
-    - 3.4: Add player avatars to scoreboard/game.
-    - 3.5: Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
-    - 3.6: Implement notification system to show transient messages during gameplay events:
+        - *NEXT* - 
+    - 1: Implement notification system to show transient messages during gameplay events:
         - Power-up collection ("Shield activated!" or "Acetone cleansed your paint!")
         - Player status changes ("Player X got painted out!" or "Player Y respawned!")
         - Player join/leave events ("Player Z joined the game!")
         - Gameplay tips or whimsical messages based on game state
         - This system should support different message priorities, durations, and visual styling
         - Implementation should avoid interfering with other gameplay systems by using a separate rendering layer and state management
+    - 2: Better score tracking: reward players for painting other players.
 
-**Error Fixes:**
-- *DONE* - Fixed error in 'effectsRenderer.js' ('renderStealSpark') where radius could become negative by clamping progress calculation between 0 and 1 and adding checks for non-positive radius/linewidth.
+- **3. Polish & Refinement:**
+    - 3.1: Sound effects.
+    - 3.2: More visual effects (e.g., player respawn animation).
+    - 3.3: Add player avatars to scoreboard/game.
+    - 3.4: Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
+    
+- **4. Future Ideas/Stretch Goals:**
+    - Environmental hazards? (Moving platforms, laser grids?). Support for polygon obstacles. 
+    - Optimize rendering and physics.
 `;
 
 export function loadDevNotes() {
