@@ -21,27 +21,27 @@ export const notes = `
 **Completed Steps:**
 
 1.  **Refactor Burst Logic:**
-    1.1. Moved burst-on-empty logic from \`playerInteractions.js\` to \`burst-handler.js\`. *(DONE)*
-    1.2. Moved manual burst logic (on mouseup) from \`main.js\` to \`burst-handler.js\`. *(DONE)*
+    *   Moved burst logic to \`burst-handler.js\`. *(DONE)*
+    *   Updated \`playerInteractions.js\` and \`main.js\` to use the handler. *(DONE)*
 
 2.  **Implement Big Burst Trigger Logic:**
-    2.1. Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE)*
-    2.2. Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE)*
-    2.3. Consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE)*
+    *   Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE)*
+    *   Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE)*
+    *   Consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE)*
+
+3.  **Add Power-Up Icons:**
+    *   Created rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`. *(DONE)*
+    *   Updated the \`switch\` statement in \`renderPowerUp\` to call the new functions. *(DONE)*
 
 **Remaining Steps:**
 
-3.  **Add Power-Up Icons:**
-    *   Create rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`.
-    *   Update the \`switch\` statement in \`renderPowerUp\` to call the new functions.
-
 4.  **Add Player Visual Effects (Optional/Stretch):**
-    *   Consider refactoring power-up effect rendering from \`playerRenderer.js\`.
-    *   Add visual cues in the player renderer for active 'shortRope' and 'bigBurst'.
+    *   Consider refactoring power-up effect rendering from \`playerRenderer.js\` (This file is large).
+    *   Add visual cues in the player renderer (or refactored module) for active 'shortRope' and 'bigBurst'.
 
 **Next Steps:**
 
-Step 3: Implement **Power-Up Icons** in \`power-ups/power-up-renderer.js\`.
+Step 4: Implement **Player Visual Effects** (considering refactoring \`playerRenderer.js\`).
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects.
