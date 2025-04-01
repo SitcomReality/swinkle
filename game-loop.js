@@ -13,7 +13,6 @@ import { checkCollisionsWithPlayer } from './collisionHandler.js';
 import { handlePlayerCollisions } from './collision-system.js';
 import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
-import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator, updateScoreboardStyle } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js';
 import { addNotification, updateNotifications } from './notification-manager.js';
