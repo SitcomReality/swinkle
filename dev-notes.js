@@ -21,66 +21,66 @@ export const notes = `
 We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang from the ceiling, are semi-transparent, have no collision, and can click to respawn/rejoin.
 
   - 1. **Add State Flag & Initial Activation:**
-      - Add an `isSpectating` boolean flag to the player presence data structure.
-      - Modify `main.js` so that when a player initially joins (`room.updatePresence` call in `initGame`), they start with `isSpectating: true`.
-      - Modify `respawn-manager.js` so that when a player respawns (after loss or manual rejoin), `isSpectating` is set to `false`.
+      - Add an \`isSpectating\` boolean flag to the player presence data structure.
+      - Modify \`main.js\` so that when a player initially joins (\`room.updatePresence\` call in \`initGame\`), they start with \`isSpectating: true\`.
+      - Modify \`respawn-manager.js\` so that when a player respawns (after loss or manual rejoin), \`isSpectating\` is set to \`false\`.
 
   - 2. **Create Spectate Module & Anchor Logic:**
-      - Create a new file `spectate-mode.js`.
-      - Inside `spectate-mode.js`, create a function `getSpectatorAnchorPosition(clientId, deltaTime)` that:
+      - Create a new file \`spectate-mode.js\`.
+      - Inside \`spectate-mode.js\`, create a function \`getSpectatorAnchorPosition(clientId, deltaTime)\` that:
           - Takes the client ID and delta time.
           - Stores a simple state for each spectator's current horizontal position and velocity along the ceiling.
           - Calculates a new anchor position:
-              - Y coordinate fixed at the top boundary (e.g., `y = 0` or a small margin).
+              - Y coordinate fixed at the top boundary (e.g., \`y = 0\` or a small margin).
               - X coordinate moves randomly side-to-side within the game boundaries (e.g., apply small random force, update velocity, update position, clamp to edges).
-          - Returns the calculated `{ x, y }` anchor position.
-      - Modify `playerPhysics.js` (`updatePlayerPhysics` function):
-          - Check the player's `presence.isSpectating` flag.
-          - If `true`, call `getSpectatorAnchorPosition` from `spectate-mode.js` to get the anchor position *instead* of using `presence.x` and `presence.y`.
-          - If `false`, use the existing logic (`presence.x`, `presence.y`).
-      - Add cleanup for spectator state in `peer-manager.js` and `respawn-manager.js`.
+          - Returns the calculated \`{ x, y }\` anchor position.
+      - Modify \`playerPhysics.js\` (\`updatePlayerPhysics\` function):
+          - Check the player's \`presence.isSpectating\` flag.
+          - If \`true\`, call \`getSpectatorAnchorPosition\` from \`spectate-mode.js\` to get the anchor position *instead* of using \`presence.x\` and \`presence.y\`.
+          - If \`false\`, use the existing logic (\`presence.x\`, \`presence.y\`).
+      - Add cleanup for spectator state in \`peer-manager.js\` and \`respawn-manager.js\`.
 
   - 3. **ESC Key Toggle:**
-      - In `main.js`, add a global keydown listener for the 'Escape' key.
-      - When ESC is pressed, check the current `isSpectating` state of the local player.
-      - If currently spectating, call the "rejoin/respawn" logic using a helper function in `respawn-manager.js`.
-      - If *not* currently spectating, update the local player's presence to set `isSpectating: true` and drop their current can (if any).
+      - In \`main.js\`, add a global keydown listener for the 'Escape' key.
+      - When ESC is pressed, check the current \`isSpectating\` state of the local player.
+      - If currently spectating, call the "rejoin/respawn" logic using a helper function in \`respawn-manager.js\`.
+      - If *not* currently spectating, update the local player's presence to set \`isSpectating: true\` and drop their current can (if any).
 
   - 4. **Idle Timer Activation:**
-      - In `main.js` or `game-loop.js`, track the last time the local player's cursor position (`presence.x`, `presence.y`) changed *significantly* (add a small threshold to ignore minor jitter).
+      - In \`main.js\` or \`game-loop.js\`, track the last time the local player's cursor position (\`presence.x\`, \`presence.y\`) changed *significantly* (add a small threshold to ignore minor jitter).
       - In the game loop, check if the time since the last significant change exceeds the idle threshold (e.g., 20 seconds).
-      - If the player is idle and *not* already spectating, update their presence to set `isSpectating: true`.
+      - If the player is idle and *not* already spectating, update their presence to set \`isSpectating: true\`.
 
   - 5. **Click to Rejoin/Respawn:**
-      - In `main.js`, modify the existing canvas click listener (`mousedown` might be better).
-      - Inside the listener, first check if the local player's `presence.isSpectating` is `true`.
+      - In \`main.js\`, modify the existing canvas click listener (\`mousedown\` might be better).
+      - Inside the listener, first check if the local player's \`presence.isSpectating\` is \`true\`.
       - If it is, trigger the respawn logic:
-          - Update local presence using the helper from Step 3 (`triggerManualRespawn`).
+          - Update local presence using the helper from Step 3 (\`triggerManualRespawn\`).
           - Let the normal mousemove listener take over updating the anchor point from the next frame.
-      - If `isSpectating` is `false`, perform the normal click actions (charging etc.).
+      - If \`isSpectating\` is \`false\`, perform the normal click actions (charging etc.).
 
   - 6. **Visual Transparency:**
-      - Modify `playerRenderer.js` (`renderPlayer` function):
-          - Check the player's `presence.isSpectating` flag.
-          - If `true`, set `ctx.globalAlpha = 0.5;` before drawing the player body/limbs/eyes/name.
-          - Make sure to restore alpha with `ctx.restore()` or set it back to 1.0 afterwards so other elements aren't affected.
+      - Modify \`playerRenderer.js\` (\`renderPlayer\` function):
+          - Check the player's \`presence.isSpectating\` flag.
+          - If \`true\`, set \`ctx.globalAlpha = 0.5;\` before drawing the player body/limbs/eyes/name.
+          - Make sure to restore alpha with \`ctx.restore()\` or set it back to 1.0 afterwards so other elements aren't affected.
 
   - 7. **UI Reminder Text:**
-      - Modify `ui-manager.js` or create a function in `spectate-mode.js`.
-      - Add a function `renderSpectateUI(ctx, isSpectating)` or similar.
-      - If `isSpectating` is true:
+      - Modify \`ui-manager.js\` or create a function in \`spectate-mode.js\`.
+      - Add a function \`renderSpectateUI(ctx, isSpectating)\` or similar.
+      - If \`isSpectating\` is true:
           - Render text like "Spectating - Click to Respawn" on the canvas.
-          - Apply a simple pulsating effect (e.g., changing alpha or size slightly over time using `Math.sin(Date.now() * speed)`).
-      - Call this function from the main `renderScene` in `renderer.js`.
+          - Apply a simple pulsating effect (e.g., changing alpha or size slightly over time using \`Math.sin(Date.now() * speed)\`).
+      - Call this function from the main \`renderScene\` in \`renderer.js\`.
 
   - 8. **Disable Collisions for Spectators:**
-      - Modify `collisionHandler.js` (`checkCollisionsWithPlayer`): Add a check at the start to return immediately if `currentPresence.isSpectating` is true.
-      - Modify `collision-system.js` (`handlePlayerCollisions`): Add checks to ensure neither the local player nor the other player is spectating before attempting a steal collision.
-      - Modify `power-ups/power-up-manager.js` (`checkPowerUpCollisions`): Add a check at the start to return immediately if `currentPresence.isSpectating` is true.
-      - Modify `level-collision.js` (`handlePlayerLevelCollision`): Add a check to return immediately if `playerState.isSpectating` is true (we might need to pass presence or add the flag to the physics state temporarily).
+      - Modify \`collisionHandler.js\` (\`checkCollisionsWithPlayer\`): Add a check at the start to return immediately if \`currentPresence.isSpectating\` is true.
+      - Modify \`collision-system.js\` (\`handlePlayerCollisions\`): Add checks to ensure neither the local player nor the other player is spectating before attempting a steal collision.
+      - Modify \`power-ups/power-up-manager.js\` (\`checkPowerUpCollisions\`): Add a check at the start to return immediately if \`currentPresence.isSpectating\` is true.
+      - Modify \`level-collision.js\` (\`handlePlayerLevelCollision\`): Add a check to return immediately if \`playerState.isSpectating\` is true (we might need to pass presence or add the flag to the physics state temporarily).
 
   - 9. **Disable Interactions for Spectators:**
-      - Modify `playerInteractions.js` (`handleLocalPlayerInteractions`): Add a check at the beginning. If `presence.isSpectating` is true, return empty update objects immediately, preventing pickup/charging/dropping actions. (Consider refactoring parts of this logic into smaller functions if needed due to file length).
+      - Modify \`playerInteractions.js\` (\`handleLocalPlayerInteractions\`): Add a check at the beginning. If \`presence.isSpectating\` is true, return empty update objects immediately, preventing pickup/charging/dropping actions. (Consider refactoring parts of this logic into smaller functions if needed due to file length).
 
 
 **Other Planned Features:**
@@ -106,7 +106,7 @@ export function loadDevNotes() {
     if (container) {
         // Use textContent to avoid HTML injection issues
         // Replace escaped backticks with single quotes for display
-        container.textContent = notes.replace(/\\`/g, "'");
+        container.textContent = notes.replace(/\\\`/g, "'");
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");
