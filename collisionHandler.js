@@ -22,16 +22,17 @@ import { createPaintBurst } from './paint-burst.js'; // Import new paint burst c
  * @param {string} localClientId - The ID of the local client.
  * @param {object} currentPresence - The player's current presence data (including paintedData, lost, shielded, isSpectating).
  * @param {number} now - The current timestamp (Date.now()).
- * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
+ * @returns {{ dropletsToRemove: object, collisionPoints: Array<object>, newDroplets: object }} - Droplets to remove, collision points, and new droplets from paint burst.
  */
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
-    let newDroplets = {};
+    let newDroplets = {}; // Initialize newDroplets object to store burst droplets
     
     // --- Skip checks if presence is missing, player is already lost, or spectating ---
     if (!currentPresence || currentPresence.lost || currentPresence.isSpectating) {
-        return { dropletsToRemove, collisionPoints };
+        // Still need to return the (empty) newDroplets object
+        return { dropletsToRemove, collisionPoints, newDroplets };
     }
     
     let paintedUpdates = {};
@@ -130,8 +131,8 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             justLost = true; // Flag that the loss occurred this frame
 
             // Create paint burst effect when painted out
-            const burstData = createPaintBurst(localClientId, playerBodyPos, currentPaintedData, now);
-            Object.assign(newDroplets, burstData);
+            const burstData = createPaintBurst(localClientId, playerBodyPos, updatedPaintedData, now); // Use updatedPaintedData for accurate color
+            Object.assign(newDroplets, burstData); // Merge burst droplets into newDroplets
 
             // Record the loss in the database
             const username = room.peers[localClientId]?.username;
@@ -157,9 +158,6 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                     // Send room state updates to make the can available
                     // This might be better handled in game-loop or playerInteractions on presence change detection
                     // For now, let's just update presence to drop it.
-                    // The disconnect logic in main.js might handle the roomState update implicitly,
-                    // OR we need dedicated logic here or elsewhere.
-                    // Simplest: Update presence. Game loop will eventually see player has no can.
                     // We need to ensure the can itself becomes available though.
                      room.updateRoomState({
                          paintCans: { [canId]: null }, // Remove from owned cans
@@ -209,6 +207,6 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             });
         }
     }
-
+    // Return the droplets to remove, collision points, AND the new droplets from any paint burst
     return { dropletsToRemove, collisionPoints, newDroplets };
 }

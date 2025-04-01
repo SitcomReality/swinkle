@@ -171,7 +171,7 @@ function handleGlobalUpdates(deltaTime, now, localClientId) {
 
 function handleLocalCollisionsAndCleanup(now, localClientId) {
     let powerUpCollisionResults = { powerUpsToRemove: {}, presenceUpdates: {} };
-    let dropletCollisionResults = { dropletsToRemove: {}, collisionPoints: [] };
+    let dropletCollisionResults = { dropletsToRemove: {}, collisionPoints: [], newDroplets: {} }; 
     let expiredDroplets = {};
 
     const finalLocalPresence = roomInstance.presence[localClientId];
@@ -190,8 +190,8 @@ function handleLocalCollisionsAndCleanup(now, localClientId) {
 
     const presenceForDropletCheck = roomInstance.presence[localClientId];
     const physicsForDropletCheck = getPlayerPhysicsState(localClientId);
-    if (physicsForDropletCheck && presenceForDropletCheck && !presenceForDropletCheck.lost && !presenceForDropletCheck.isSpectating) {
-        const { dropletsToRemove: collidedDroplets, collisionPoints } = checkCollisionsWithPlayer(
+    if (physicsForDropletCheck && presenceForDropletCheck && !presenceForDropletCheck.isSpectating) { 
+        const { dropletsToRemove: collidedDroplets, collisionPoints, newDroplets: burstDroplets } = checkCollisionsWithPlayer(
             physicsForDropletCheck.position,
             roomInstance.roomState.droplets || {},
             localClientId,
@@ -199,6 +199,7 @@ function handleLocalCollisionsAndCleanup(now, localClientId) {
             now
         );
         dropletCollisionResults.dropletsToRemove = collidedDroplets;
+        dropletCollisionResults.newDroplets = burstDroplets; 
         collisionPoints.forEach(point => addEffect('splat', { x: point.x, y: point.y, color: point.color }));
     }
 
@@ -215,15 +216,16 @@ function sendBatchedUpdates(updates) {
     const {
         paintCanUpdates, availablePaintCanUpdates, dropletsToAdd,
         localPresenceUpdates, presenceRequests, dropletRemovals,
-        powerUpUpdates, powerUpsToRemoveFromState, levelUpdates
+        powerUpUpdates, powerUpsToRemoveFromState, levelUpdates,
+        burstDropletsToAdd 
     } = updates;
 
     const roomStateUpdates = {};
     if (Object.keys(paintCanUpdates).length > 0) roomStateUpdates.paintCans = paintCanUpdates;
     if (Object.keys(availablePaintCanUpdates).length > 0) roomStateUpdates.availablePaintCans = availablePaintCanUpdates;
-    if (Object.keys(dropletsToAdd).length > 0) roomStateUpdates.droplets = dropletsToAdd;
-    if (Object.keys(dropletRemovals).length > 0) {
-        roomStateUpdates.droplets = { ...(roomStateUpdates.droplets || {}), ...dropletRemovals };
+    const allDropletUpdates = { ...dropletsToAdd, ...burstDropletsToAdd, ...dropletRemovals };
+    if (Object.keys(allDropletUpdates).length > 0) {
+        roomStateUpdates.droplets = allDropletUpdates;
     }
     const finalPowerUpUpdates = { ...powerUpUpdates, ...powerUpsToRemoveFromState };
     if (Object.keys(finalPowerUpUpdates).length > 0) {
@@ -276,7 +278,8 @@ function gameLoop(timestamp) {
         presenceRequests: [...globalUpdateResults.stealCollisions.presenceRequests],
         powerUpUpdates: { ...globalUpdateResults.hostTasks.powerUpUpdates },
         powerUpsToRemoveFromState: { ...collisionCleanupResults.powerUpCollisions.powerUpsToRemove },
-        levelUpdates: { ...globalUpdateResults.hostTasks.levelUpdates }
+        levelUpdates: { ...globalUpdateResults.hostTasks.levelUpdates },
+        burstDropletsToAdd: { ...collisionCleanupResults.dropletCollisions.newDroplets } 
     };
 
     sendBatchedUpdates(batchedUpdates);
