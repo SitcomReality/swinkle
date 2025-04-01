@@ -175,8 +175,90 @@ export const level3 = {
     ]
 };
 
+export const level4 = {
+    id: 'level-04',
+    name: 'Hurricane Stadium',
+    // Design: Curved outer walls, open center, some angled platforms
+    obstacles: [
+        // Bottom Floor
+        {
+            id: 'floor-stadium',
+            type: 'rectangle',
+            x: 800,
+            y: 850, // Lower floor
+            width: 1200,
+            height: 40,
+            properties: { friction: 0.85, restitution: 0.15 }
+        },
+        // Curved Top Walls (approximated with angled rectangles)
+        {
+            id: 'wall-top-left',
+            type: 'rectangle',
+            x: 400, // Start further left
+            y: 150, // High wall
+            width: 400,
+            height: 40,
+            angle: 0.2, // Slight downward angle towards center
+            properties: { friction: 0.6, restitution: 0.4 }
+        },
+        {
+            id: 'wall-top-right',
+            type: 'rectangle',
+            x: 1200, // Start further right
+            y: 150, // High wall
+            width: 400,
+            height: 40,
+            angle: -0.2, // Slight downward angle towards center
+            properties: { friction: 0.6, restitution: 0.4 }
+        },
+        // Side Walls (angled inwards)
+        {
+            id: 'wall-side-left',
+            type: 'rectangle',
+            x: 150, // Left edge
+            y: 500, // Mid height
+            width: 40,
+            height: 450,
+            angle: -0.1, // Angle slightly inwards
+            properties: { friction: 0.7, restitution: 0.3 }
+        },
+        {
+            id: 'wall-side-right',
+            type: 'rectangle',
+            x: 1450, // Right edge
+            y: 500, // Mid height
+            width: 40,
+            height: 450,
+            angle: 0.1, // Angle slightly inwards
+            properties: { friction: 0.7, restitution: 0.3 }
+        },
+        // Inner Angled Platforms
+        {
+            id: 'platform-inner-left',
+            type: 'rectangle',
+            x: 550, // Inside side wall
+            y: 550, // Below center
+            width: 180,
+            height: 30,
+            angle: -0.5, // Steeper angle
+            properties: { friction: 0.8, restitution: 0.2 }
+        },
+        {
+            id: 'platform-inner-right',
+            type: 'rectangle',
+            x: 1050, // Inside side wall
+            y: 550, // Below center
+            width: 180,
+            height: 30,
+            angle: 0.5, // Steeper angle
+            properties: { friction: 0.8, restitution: 0.2 }
+        }
+    ]
+};
+
+
 // Combine levels into an array or object for easy selection
-export const allLevels = [level1, level2, level3];
+export const allLevels = [level1, level2, level3, level4]; // Add level4
 
 // Keep defaultLevel pointing to level1 for backward compatibility if needed elsewhere
 export const defaultLevel = level1;

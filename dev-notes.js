@@ -15,20 +15,10 @@ export const notes = `
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes!
 
-**Task: Dynamic Level Color Palettes**
+**Completed Tasks:**
 
-Goal: Implement a system where each level uses a distinct color palette consisting of two paint colors (that mix well) and a background/geometry base color.
-
-**Implementation Plan:**
-
-1.  **[DONE] Palette Definition:** Created \`paletteData.js\`, defined palettes, added to import map.
-2.  **[DONE] Palette Selection Logic:** Added state and logic in \`level-manager.js\` and \`level-transition.js\` to select and manage palettes based on level index. Added getters.
-3.  **[DONE] Apply Background/Geometry Colors:** Updated \`level-renderer.js\` and \`level-transition.js\` to use palette \`backgroundBase\`. Removed static colors from \`levels/level-data.js\`.
-4.  **[DONE] Apply Paint Colors:** Updated \`can-manager.js\` to use palette \`paint1\`/\`paint2\` for spawning cans. Removed static colors from \`config.js\`.
-5.  **[DONE] Testing & Refinement:** Reviewed implementation across files. Background colors blend during transitions. Obstacle colors use the background base. Cans spawn using palette paint colors. Paint blending uses these colors. System appears correctly implemented.
-
-**Previous Completed Tasks:**
-
+*   Added "Hurricane Stadium" level (level-04).
+*   Adjusted level geometry color for better visibility.
 *   Dynamic Level Color Palettes
 *   Spectacular Paint-Out Burst
 *   Player Invisibility During Paint-Out
