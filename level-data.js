@@ -1,3 +1,11 @@
+/**
+ * level-data.js
+ * Replaces hardcoded levels with generated ones, using the new generator
+ */
+import { levelGenerate } from './level-generator.js';
+import { generateLevelName } from './level-namer.js';
+
+// levelGenConfig is moved here as per the current code
 export const levelGenConfig = {
     gameArea: { width: 1200, height: 900 },
     symmetry: true,
@@ -16,8 +24,17 @@ export const levelGenConfig = {
     ]
 };
 
-/**
- * Adds getLevel function that can be called to generate new levels
- * @param {string} [optional] Specific level type to generate (can import into level-manager.js)
- */
-export { levelGenConfig, addRandomLevel } from './level-data.js';
+// Generate 10 levels at startup
+const generateRandomLevels = (count) => {
+    const levels = [];
+    for (let i = 0; i < count; i++) {
+        const level = levelGenerate(levelGenConfig);
+        level.name = generateLevelName(); // Uses level-namer
+        levels.push(level);
+    }
+    return levels;
+}      
+
+// Now our default levels are randomly gen!
+export const defaultLevel = null; // Will be set in getInitialLevels()
+export let allLevels = generateRandomLevels(10);

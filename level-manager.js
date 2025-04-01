@@ -2,6 +2,7 @@
  * level-manager.js
  * Handles loading and providing access to level data, synchronizing with room state.
  */
+import { levelGenerate } from './level-generator.js';
 import { allLevels } from './levels/level-data.js'; // Import all levels
 import { startLevelTransition, isTransitionActive } from './level-transition.js'; // Import transition functions
 // Import palettes and random palette getter
@@ -13,7 +14,8 @@ let currentPalette = null; // Track the currently active palette
 let nextPalette = null; // Store palette for the level being transitioned TO
 let levelRoom = null; // Store the room instance
 let unsubscribeRoomState = () => {};
-
+let genConfig = {}; // Assuming this is defined somewhere, it's not in the provided plan
+let generata = {}; // Assuming this is defined somewhere, it's not in the provided plan
 
 /**
  * Selects a random palette that is different from the current one, if possible.
@@ -51,7 +53,6 @@ function selectNextRandomPalette(current) {
 
     return potentialNext;
 }
-
 
 /**
  * Sets the current level data. Called internally or by level-transition.js.
@@ -116,9 +117,9 @@ export function initializeLevelManager(room) {
     currentPalette = selectNextRandomPalette(null); // Select the very first palette randomly
     console.log(`Initial palette selected randomly. Paint1: ${currentPalette?.paint1}`);
 
-    // Then determine initial level based on room state
+    const initialLevels = getInitialLevels();
     const initialLevelId = room.roomState?.currentLevelId;
-    const initialLevelObject = allLevels.find(level => level.id === initialLevelId) || allLevels[0];
+    const initialLevelObject = initialLevels.find(level => level.id === initialLevelId) || initialLevels[0];
 
     if (!initialLevelId) {
         console.warn("No initial level ID found in room state, loading default level.");
@@ -162,6 +163,43 @@ export function initializeLevelManager(room) {
             nextPalette = null; // Clear nextPalette if state is invalid
         }
     });
+}
+
+/**
+ * Now uses generated levels instead of  
+ */
+export function getInitialLevels() {
+    // Gen 10 random levels on first run   
+    if (!allLevels || allLevels.length === 0) {
+        allLevels = generateRandomLs(10);   
+    }
+    
+    return allLevels;
+}
+
+/**
+ * Generates random levels
+ * @param {number} count - The number of levels to generate
+ * @returns {object[]} The generated levels
+ */
+function generateRandomLs(count) {
+    const levels = [];
+    for (let i = 0; i < count; i++) {
+        const level = levelGenerate(genConfig);
+        level.name = generata.generateLevelName();  
+        levels.push(level);
+    }
+    return levels;
+}
+
+/**
+ * Adds a new random level to the list of levels
+ */
+export function addRandomLevel() {
+    const level = levelGenerate(genConfig);
+    level.name = generata.generateLevelName();  
+    allLevels.push(level);
+    return level;
 }
 
 /**

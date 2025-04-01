@@ -1,27 +1,33 @@
 /**
- * level-namer.js
- * Generates creative names for procedurally generated levels using prefix/generic/suffix combinations
+ * level-naer.js
+ * Generates creative   for proced      genrated levels
  */
- 
+
+// Moved the words arrays here from other file where they were taking up space
+// (see old version)
+
 const wordPrefix = [
     "Blissful", "Hollow", "Toxic", "Silent", "Electric", 
     "Neon", "Cyber", "Forgotten", "Chaotic", "Frozen",
     "Glowing", "Pixel", "Digital", "Abandoned", "Ruined",
-    "Blazing", "Crimson", "Void", "Laser", "Plasma"
+    "Blazing", "Crimson", "Void", "Laser", "Plasma",
+    "Aurora", "Nemesis", "Oblivion", "Paradox", "Rampage"
 ];
 
 const wordGeneric = [
     "Hurricane", "Tenacity", "Requiem", "Romance", "Stadium",
     "Factory", "Asylum", "Sanctuary", "Circuit", "Vortex",
     "Machine", "Dimension", "Core", "Outpost", "Terminus",
-    "Citadel", "Fortress", "Relic", "Monument", "Pinnacle"
+    "Citadel", "Fortress", "Relic", "Monument", "Pinnacle",
+    "Odyssey", "Maelstrom", "Apocalypse", "Elysium", "Nexus"
 ];
 
 const wordSuffix = [
     "Arena", "Cacophony", "of Doom", "Bay", "of Shadows",
     "of Ruin", "Coliseum", "Battleground", "Showdown", "of Chaos",
     "of Fury", "of Fate", "of Legends", "Gardens", "Laboratory",
-    "Caverns", "Shrine", "Nexus", "Crash Site", "Warzone"
+    "Caverns", "Shrine", "Nexus", "Crash Site", "Warzone",
+    "Stronghold", "Frontier", "Wasteland", "Metropolis", "Utopia"
 ];
 
 /**
