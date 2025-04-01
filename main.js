@@ -12,6 +12,8 @@ import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializ
 import { initializeLevelManager, getLowestClientId, allLevels } from './level-manager.js'; // Import level manager initializer + helper + level data
 // Import the burst droplet helper
 import { createBurstDroplets } from './playerInteractions.js';
+// Import debug utilities
+import { exposeDebugUtils } from './debug-utils.js';
 
 export const room = new WebsimSocket();
 
@@ -294,6 +296,9 @@ async function initGame() {
 
     // Initialize the scoreboard AFTER the room is ready and loop is starting
     initScoreboard(room);
+
+    // Expose debug utilities to the console
+    exposeDebugUtils();
 }
 
 // Initialize the app
