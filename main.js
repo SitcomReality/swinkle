@@ -12,7 +12,7 @@ import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializ
 // Import level manager initializer + helper + level data + palette getter
 import { initializeLevelManager, getLowestClientId, allLevels, getCurrentPalette } from './level-manager.js';
 // Import the burst droplet helper
-import { createBurstDroplets } from './playerInteractions.js';
+import { createBurstDroplets } from './paint-burst.js'; // Corrected import path
 // Import respawn helper for manual rejoin
 import { triggerManualRespawn } from './respawn-manager.js';
 // Import spectate helper for entering mode
