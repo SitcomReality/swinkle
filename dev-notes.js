@@ -33,6 +33,32 @@ export const notes = `
 *   Decoupled Palettes from Levels (Random Palette Selection)
 *   Cleared available paint cans on level change.
 
+**Next Steps: Implementing New Power-Ups (Incremental Plan)**
+
+*Goal: Add 'Short Rope' and 'Big Burst' power-ups incrementally.*
+
+1.  **(This Step)** **Define Power-Up Data:** Add 'shortRope' and 'bigBurst' definitions to `power-ups/power-up-data.js`. Include ID, name, description, duration, visual properties (color, icon ID), rarity, and *placeholder* `effect` functions.
+2.  **Implement Short Rope Physics:**
+    *   Add new config values to `config.js` for `shortRopeMultiplier` (e.g., 0.2) and `shortRopeDuration`.
+    *   Modify `playerPhysics.js` (`updatePlayerPhysics`) to check for a new presence flag (e.g., `shortRopeActive`) and apply the multiplier to bungee `restLength` and `maxLength`.
+    *   Update the 'shortRope' `effect` function in `power-ups/power-up-data.js` to set `shortRopeActive: true` in presence and add the duration to `activePowerUps`.
+    *   Update `power-ups/power-up-manager.js` (`processActivePowerUps`) to handle the expiration of 'shortRope', setting `shortRopeActive: false`.
+3.  **Refactor Burst Logic:**
+    *   Move the `createBurstDroplets` function from `playerInteractions.js` into its own file (e.g., `paint-burst.js` or similar).
+    *   Update imports and function calls in `playerInteractions.js` and potentially `collisionHandler.js` (if it uses burst on paint-out) to use the new file.
+4.  **Implement Big Burst Logic:**
+    *   Add new config values to `config.js` for `bigBurstDropletMultiplier` (e.g., 1.5), `bigBurstRangeMultiplier` (e.g., 1.5), and `bigBurstDuration`.
+    *   Modify the burst creation function (now in its own file) to accept droplet and range multipliers as arguments.
+    *   Modify the relevant function in `playerInteractions.js` (likely `handleCanChargingAndDropping` or its caller) to check for a new presence flag (e.g., `bigBurstActive`) and pass the appropriate multipliers (or 1.0) to the burst creation function.
+    *   Update the 'bigBurst' `effect` function in `power-ups/power-up-data.js` to set `bigBurstActive: true` in presence and add the duration to `activePowerUps`.
+    *   Update `power-ups/power-up-manager.js` (`processActivePowerUps`) to handle the expiration of 'bigBurst', setting `bigBurstActive: false`.
+5.  **Add Power-Up Icons:**
+    *   Create new icon rendering functions (e.g., `drawRopeIcon`, `drawBurstIcon`) in `power-ups/power-up-renderer.js`.
+    *   Update the `switch` statement in `renderPowerUp` to call the new functions based on the icon IDs defined in step 1.
+6.  **Add Player Visual Effects (Optional/Stretch):**
+    *   Consider refactoring power-up effect rendering from `playerRenderer.js` into a separate module/function.
+    *   Add visual cues in the player renderer for active 'shortRope' (visually shorter bungee?) and 'bigBurst' (sparkling can? glowing effect?).
+
 **Future Ideas/Stretch Goals:**
 *   Sound effects. (Requires audio capabilities)
 *   More visual effects (improved pickup/steal, etc.).
