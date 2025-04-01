@@ -2,6 +2,7 @@
  * colorUtils.js
  * Utility functions for color manipulation.
  */
+import config from 'config';
 
 /**
  * Converts a hex color string to an RGB object.
@@ -158,4 +159,21 @@ export function calculateTotalPaintPercentage(paintedData = {}, cap = 100) {
     }
     // Cap percentage at the specified value (defaults to 100)
     return Math.min(totalPercentage, cap);
+}
+
+/**
+ * Adjusts the lightness of a hex color.
+ * @param {string} hex - The hex color string.
+ * @param {number} amount - The amount to adjust lightness by (positive for lighter, negative for darker).
+ * @returns {string} The resulting CSS color string (e.g., "rgb(r,g,b)").
+ */
+export function adjustHexColor(hex, amount) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex; // Return original if invalid
+
+    const r = Math.max(0, Math.min(255, rgb.r + amount));
+    const g = Math.max(0, Math.min(255, rgb.g + amount));
+    const b = Math.max(0, Math.min(255, rgb.b + amount));
+
+    return `rgb(${r}, ${g}, ${b})`;
 }

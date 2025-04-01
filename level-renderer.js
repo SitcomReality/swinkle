@@ -5,6 +5,8 @@
 import { getCurrentLevel, getCurrentPalette } from './level-manager.js';
 // Import transition state checkers and getters
 import { isTransitionActive, getTransitionPhase, getOldLevelData, getNewLevelData, getProgress, getOldPalette, getNewPalette } from './level-transition.js';
+// Import color utility for adjusting geometry color
+import { adjustHexColor } from './colorUtils.js';
 
 /**
  * Renders the current level's obstacles onto the canvas, handling transitions.
@@ -101,10 +103,10 @@ function renderStableObstacles(ctx, levelData, palette) {
     ctx.restore(); // Restore context state
 }
 
-
 /**
  * Renders a single rectangular obstacle, handling optional rotation and scaling.
  * Color is now passed in, derived from the current/transitioning palette's backgroundBase.
+ * The fill color is adjusted to be slightly lighter than the baseColor for visibility.
  * @private
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {object} obstacle - The obstacle data object { x, y, width, height, angle }.
@@ -131,14 +133,16 @@ function renderRectangleObstacle(ctx, obstacle, baseColor, scale = 1.0) {
     // Apply scaling (relative to the center)
     ctx.scale(scale, scale);
 
-    // Use the provided baseColor for the fill
-    // TODO: Consider using colorUtils to make variations if needed (e.g., slightly darker/lighter)
-    ctx.fillStyle = baseColor;
+    // Adjust the base color to be slightly lighter for the fill
+    const fillColor = adjustHexColor(baseColor, 15); // Make it slightly lighter
+    ctx.fillStyle = fillColor;
+
     // Draw centered rectangle (relative to the translated, rotated, and scaled origin)
     ctx.fillRect(-width / 2, -height / 2, width, height);
 
     // Optional: Add a subtle stroke for definition (scale linewidth?)
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    // Use an even lighter version for the stroke for a subtle inner bevel effect
+    ctx.strokeStyle = adjustHexColor(baseColor, 30); // Lighter stroke
     // Prevent stroke width from becoming infinite when scale is near zero
     ctx.lineWidth = scale > 0.01 ? 1 / scale : 100; // Keep stroke visually consistent, large value if scale is tiny
     ctx.strokeRect(-width / 2, -height / 2, width, height);
