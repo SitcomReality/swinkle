@@ -9,7 +9,8 @@ import config from 'config';
 // Import player state function directly if needed
 import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
-import { initializeLevelManager, getLowestClientId, allLevels } from './level-manager.js'; // Import level manager initializer + helper + level data
+// Import level manager initializer + helper + level data + palette getter
+import { initializeLevelManager, getLowestClientId, allLevels, getCurrentPalette } from './level-manager.js';
 // Import the burst droplet helper
 import { createBurstDroplets } from './playerInteractions.js';
 // Import respawn helper for manual rejoin
@@ -54,20 +55,28 @@ async function initGame() {
     if (room.roomState.availablePaintCans === undefined) {
         // Initialize with a couple of cans perhaps?
         const initialCans = {};
-        for (let i = 0; i < (config.initialAvailableCans || 2); i++) {
-            const canId = `can-initial-${i}-${Date.now()}`;
-            const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
-            const margin = 150; // Avoid edges
-            // Spawn within defined game area
-            const x = margin + Math.random() * (config.gameAreaWidth - margin * 2);
-            const y = margin + Math.random() * (config.gameAreaHeight - margin * 2);
-            // Note: Can physics (vx, vy) are not set here, as they are only relevant when held
-            initialCans[canId] = {
-                id: canId, ownerId: null,
-                paintColor: config.paintCanColors[colorIndex],
-                paintAmount: config.paintCanInitialAmount,
-                x: x, y: y, isMega: false // Ensure isMega defaults to false
-            };
+        // Get the palette set during level manager initialization
+        const currentPalette = getCurrentPalette(); // Get the current palette
+
+        if (currentPalette && currentPalette.paint1 && currentPalette.paint2) {
+            for (let i = 0; i < (config.initialAvailableCans || 2); i++) {
+                const canId = `can-initial-${i}-${Date.now()}`;
+                // Randomly choose one of the two paint colors from the current palette
+                const paintColor = Math.random() < 0.5 ? currentPalette.paint1 : currentPalette.paint2;
+                const margin = 150; // Avoid edges
+                // Spawn within defined game area
+                const x = margin + Math.random() * (config.gameAreaWidth - margin * 2);
+                const y = margin + Math.random() * (config.gameAreaHeight - margin * 2);
+                initialCans[canId] = {
+                    id: canId, ownerId: null,
+                    paintColor: paintColor, // Use selected palette color
+                    paintAmount: config.paintCanInitialAmount,
+                    x: x, y: y, isMega: false // Ensure isMega defaults to false
+                };
+            }
+        } else {
+            console.warn("Cannot initialize cans: Current palette or paint colors are missing.");
+            // Don't add initial cans if palette isn't ready
         }
         initialRoomStateUpdates.availablePaintCans = initialCans;
     }
