@@ -49,15 +49,6 @@ export default {
     burstSpreadRadius: 30, // How far droplets spread when bursting from charge (Increased from 15)
 
     // Paint Can settings
-    paintCanColors: [ // Predefined list of possible paint colors
-        '#FF00FF', // Magenta
-        '#00FFFF', // Cyan
-        '#FFFF00', // Yellow
-        '#FF6600', // Orange
-        '#00FF00', // Lime Green
-        '#FF0000', // Red
-        '#9D00FF', // Purple
-    ],
     paintCanWidth: 18,      // Visual width
     paintCanHeight: 25,     // Visual height
     paintCanInitialAmount: 100, // Starting paint amount in a new can

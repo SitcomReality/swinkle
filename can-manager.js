@@ -3,6 +3,7 @@
  * Manages paint can spawning and updates
  */
 import config from 'config';
+import { getCurrentPalette } from './level-manager.js'; // Import palette getter
 
 /**
  * Checks if a new paint can should spawn and generates it if needed
@@ -20,7 +21,17 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
     if (Math.random() < (0.005 * deltaTime * 60)) { // ~0.5% chance per second
         if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < config.maxAvailableCans) {
             const canId = `can-${Math.random().toString(36).substring(2, 9)}-${now}`;
-            const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
+            
+            // Get the current level's palette
+            const currentPalette = getCurrentPalette();
+            if (!currentPalette || !currentPalette.paint1 || !currentPalette.paint2) {
+                console.warn("Cannot spawn can: Current palette or paint colors are missing.");
+                return updates; // Don't spawn if palette is invalid
+            }
+
+            // Randomly choose one of the two paint colors from the current palette
+            const paintColor = Math.random() < 0.5 ? currentPalette.paint1 : currentPalette.paint2;
+
             const margin = 100;
             // Use gameAreaWidth and gameAreaHeight for spawning boundaries
             const x = margin + Math.random() * (gameAreaWidth - margin * 2);
@@ -29,11 +40,13 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
             updates[canId] = {
                 id: canId,
                 ownerId: null,
-                paintColor: config.paintCanColors[colorIndex],
+                paintColor: paintColor, // Use the selected palette color
                 paintAmount: config.paintCanInitialAmount,
                 x: x,
-                y: y
+                y: y,
+                isMega: false // Ensure new cans aren't mega by default
             };
+            console.log(`Spawned can ${canId} with color ${paintColor}`);
         }
     }
 
