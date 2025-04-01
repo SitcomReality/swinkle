@@ -10,6 +10,7 @@ import { removeSpectatorState } from './spectate-mode.js'; // Import spectator s
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 // Import utility to calculate paint percentage
 import { calculateTotalPaintPercentage } from './colorUtils.js';
+import { broadcastNotification } from './notification-broadcaster.js'; // Add import
 
 // Duration for the respawn fade-in animation
 const RESPAWN_ANIM_DURATION = 500; // milliseconds
@@ -31,7 +32,9 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
 
         // Get username for notification
         const username = room.peers[localClientId]?.username || 'Player';
-        addNotification(`${username} respawned!`, 'info', 3000);
+        // Replace with broadcast
+        // addNotification(`${username} respawned!`, 'info', 3000);
+        broadcastNotification(`${username} respawned!`, 'info', 3000);
 
         // Generate and return the respawn presence update object
         // triggerManualRespawn handles the effect and spectator cleanup

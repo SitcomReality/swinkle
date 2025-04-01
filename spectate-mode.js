@@ -7,6 +7,7 @@ import config from 'config';
 import { room } from './main.js';
 // Import notification manager
 import { addNotification } from './notification-manager.js';
+import { broadcastNotification } from './notification-broadcaster.js'; // Add import
 
 // Stores state for each spectator: { x: number, vx: number }
 const spectatorStates = new Map();
@@ -87,7 +88,8 @@ export function enterSpectateMode(clientId, roomInstance) {
 
     const username = roomInstance.peers[clientId]?.username || 'Player';
     console.log(`Player ${username} (${clientId}) entering spectate mode.`);
-    addNotification(`${username} is now spectating.`, 'info', 3000); // Add notification
+    // Replace with broadcast
+    broadcastNotification(`${username} is now spectating.`, 'info', 3000);
 
     const presenceUpdate = { isSpectating: true };
     let roomStateUpdate = {};

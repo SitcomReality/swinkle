@@ -6,8 +6,7 @@ import { getRandomPowerUpDefinition, powerUpDefinitions } from './power-up-data.
 import config from '../config.js';
 import { addEffect } from '../effectsRenderer.js'; // Import for visual feedback
 import { room } from '../main.js'; // Import room to access peers
-// Import global broadcast function
-import { broadcastNotification } from '../global-notifier.js';
+import { broadcastNotification } from '../notification-broadcaster.js'; // Add import
 
 /**
  * Checks if a new power-up should spawn and generates it if needed
@@ -57,7 +56,6 @@ export function spawnPowerUps(deltaTime, now, activePowerUps, gameAreaWidth, gam
  * Checks for collisions between a player and power-ups.
  * This function is typically called by the local client for itself.
  * Skips checks if player is spectating.
- * Broadcasts a notification upon successful collection.
  * @param {object} playerBodyPos - Player's body position {x, y}
  * @param {string} clientId - Client ID of the player collecting the power-up
  * @param {object} activePowerUps - Active power-ups from roomState.powerUps
@@ -119,17 +117,13 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
                 // Add a visual effect at the power-up location upon collection
                 addEffect('stealSpark', { x: powerUp.x, y: powerUp.y }); // Reuse steal spark for now
 
-                // *** CHANGE: Broadcast notification instead of local add ***
-                // Get player username if possible
-                const username = room?.peers?.[clientId]?.username || 'Player';
-                // Remove local notification call
-                // addNotification(`${username} collected ${powerUpDef.name}!`, 'pickup', 3000);
-                // Broadcast the event
-                broadcastNotification('POWERUP_COLLECT', {
-                    collectorUsername: username,
-                    powerupName: powerUpDef.name
-                });
-
+                // Add notification about power-up collection
+                import('../notification-manager.js').then(({ addNotification }) => {
+                    // Get player username if possible
+                    const username = room?.peers?.[clientId]?.username || 'Player';
+                    // Broadcast to all players instead
+                    broadcastNotification(`${username} collected ${powerUpDef.name}!`, 'pickup', 3000);
+                }).catch(err => console.error('Error importing notification manager:', err));
 
             } else {
                 console.warn(`No definition or effect function found for power-up type: ${powerUp.typeId}`);

@@ -18,9 +18,9 @@ import { triggerManualRespawn } from './respawn-manager.js';
 import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
-// Import notification manager and the new global notifier
-import { addNotification } from './notification-manager.js';
-import { initializeGlobalNotifier } from './global-notifier.js'; // Import the initializer
+// Import notification manager
+import { addNotification, broadcastNotification } from './notification-manager.js';
+import { handleNotificationRequest } from './notification-broadcaster.js'; // Add import
 
 export const room = new WebsimSocket();
 
@@ -38,7 +38,6 @@ export function getLastSignificantMoveTime() {
 async function initGame() {
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
-    initializeGlobalNotifier(); // Initialize the global notification system
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -201,7 +200,7 @@ async function initGame() {
 
             // Send notification
             const username = room.peers[localClientId]?.username || 'Player';
-            addNotification(`${username} respawned!`, 'info', 3000);
+            broadcastNotification(`${username} respawned!`, 'info', 3000);
 
             // Reset idle timer state immediately upon rejoining
             lastSignificantMoveTime = Date.now();
@@ -295,7 +294,7 @@ async function initGame() {
 
                 // Send notification
                 const username = room.peers[localClientId]?.username || 'Player';
-                addNotification(`${username} respawned!`, 'info', 3000);
+                broadcastNotification(`${username} respawned!`, 'info', 3000);
 
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
@@ -346,6 +345,9 @@ async function initGame() {
             room.updatePresence({
                 score: currentScore + amount
             });
+        } else if (updateRequest.type === 'showNotification') {
+            // Handle broadcast notifications
+            handleNotificationRequest(updateRequest);
         }
     });
 

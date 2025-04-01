@@ -15,73 +15,56 @@ export const notes = `
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
 - **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes.
 
-**Current Plan: Global Notifications (Incremental)**
-Goal: Make key game event notifications visible to all players, not just the client where the event originates. We'll use a database record approach (\`global_notification_event\`) for broadcasting.
+**Next Steps:**
 
-  - **1. [DONE] Setup Global Notifier Module:**
-    - Created \`global-notifier.js\`.
-    - Defined constants for notification types (e.g., \`PLAYER_LOSS\`, \`POWERUP_COLLECT\`, etc.).
-    - Implemented \`broadcastNotification(eventType, payload)\`: Creates a \`global_notification_event_v1\` record in the database. Includes a timestamp.
-    - Implemented subscription logic: Subscribe to \`global_notification_event_v1\`. When a *new* record *from another client* is received, parse its \`eventType\` and \`payload\`. Call the local \`addNotification\` function (from \`notification-manager.js\`) with the appropriate message and type.
-    - Imported and initialized this module in \`main.js\`.
-    - Added basic cleanup for old records (e.g., delete records older than 1 minute? Or maybe just filter in the subscription).
-    - **[Refinement]** Modified \`handleNotificationRecords\` in \`global-notifier.js\` to *immediately* process notifications broadcast by the *local* client, ensuring the user who triggered the event sees it instantly. Notifications from other clients are still processed normally via the subscription. This addresses the issue where removing direct \`addNotification\` calls prevented the originating user from seeing their own event notification.
-    - *Files Created/Modified: \`global-notifier.js\` (new), \`main.js\`, \`index.html\`*
+**Enhanced Respawn Animation (Incremental Plan):**
+Goal: Create a more visually appealing respawn sequence beyond the current basic sparkle. We'll implement this in stages to minimize errors. *Note: This should NOT involve \`level-transition.js\`.*
 
-  - **2. [DONE] Integrate Player Loss Notifications:**
-    - Modified \`collisionHandler.js\`: When a player loss is detected (\`totalPercentage >= config.lossThreshold\`), *removed* the direct call to \`addNotification\`.
-    - Instead, called \`broadcastNotification('PLAYER_LOSS', { loserUsername: username })\`.
-    - Updated \`global-notifier.js\` subscription logic to handle the \`'PLAYER_LOSS'\` event type and format the message for \`addNotification\`.
-    - *Files Modified: \`collisionHandler.js\`, \`global-notifier.js\`*
+  - **1. [DONE] Refine Existing Effect:**
+    - Enhanced the current 'respawnSparkle' effect in \`effectsRenderer.js\`. Made it a brighter, quicker burst of particles using the player's base color.
+    - Updated \`respawn-manager.js\` to pass the player's color when calling \`addEffect\`.
+    - *Files Modified: \`effectsRenderer.js\`, \`respawn-manager.js\`*
 
-  - **3. [DONE] Integrate Power-up Collection Notifications:**
-    - Modified \`power-up-manager.js\` (\`checkPowerUpCollisions\`): *Removed* the direct call to \`addNotification\` upon successful collection.
-    - Instead, called \`broadcastNotification('POWERUP_COLLECT', { collectorUsername: username, powerupName: powerUpDef.name })\`.
-    - Updated \`global-notifier.js\` subscription logic to handle the \`'POWERUP_COLLECT'\` event type.
-    - *Files Modified: \`power-up-manager.js\`, \`global-notifier.js\`*
+  - **2. Player Fade-In:**
+    - Add a temporary state to player presence indicating they are in the 'respawning animation' phase.
+        - **2a. [DONE] Add Presence State (\`respawnAnimEndTime\`):**
+            - Updated \`respawn-manager.js\` (\`triggerManualRespawn\`) to set \`respawnAnimEndTime = now + DURATION\`.
+            - Updated \`main.js\` to initialize \`respawnAnimEndTime: null\` in presence and pass \`now\` to \`triggerManualRespawn\` on click/escape respawns.
+            - Updated \`game-loop.js\` to check if \`respawnAnimEndTime\` exists and \`now >= respawnAnimEndTime\`, setting it to \`null\` in presence updates if true.
+            - *Files Modified: \`respawn-manager.js\`, \`main.js\`, \`game-loop.js\`*
+        - **2b. [DONE] Update Renderer:**
+            - Modified \`playerRenderer.js\` to check for \`respawnAnimEndTime\`. If present, calculate the remaining animation time and progress (0 to 1, where 1 is start and 0 is end). Render the player capsule, limbs, name, and held can/bungee with opacity based on this progress (fade from 0 to 1).
+            - The opacity is combined with the spectator mode opacity. Anchor point is unaffected.
+            - *Files Modified: \`playerRenderer.js\`*
 
-  - **4. [DONE] Integrate Score Update Notifications:**
-    - Modified \`collisionHandler.js\`: When points are awarded (\`painterId\` gets points), *removed* the direct call(s) to \`addNotification\` related to scoring.
-    - Instead, called \`broadcastNotification('SCORE_UPDATE', { scorerUsername: painterUsername, victimUsername: localUsername, points: incrementAmount, isLoss: justLost })\`.
-    - Updated \`global-notifier.js\` subscription logic to handle \`'SCORE_UPDATE'\`. Replicated the logic to only show loss-related scores or occasional regular hits to avoid spam.
-    - *Files Modified: \`collisionHandler.js\`, \`global-notifier.js\`*
+  - **3. [DONE] Hide Player During Initial Burst:**
+    - Modified \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (first \`RESPAWN_INITIAL_HIDE_DURATION\` = 150ms), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b starts *after* this initial particle burst window.
+    - Defined constants (\`RESPAWN_ANIM_DURATION\`, \`RESPAWN_INITIAL_HIDE_DURATION\`, \`RESPAWN_FADE_IN_DURATION\`) and updated opacity calculation logic.
+    - *Files Modified: \`playerRenderer.js\`*
 
-  - **5. Integrate Respawn Notifications:**
-    - Modify \`respawn-manager.js\` (\`checkPlayerRespawn\`): *Remove* the direct call to \`addNotification\`.
-    - Modify \`main.js\` (click/escape listeners): *Remove* the direct call to \`addNotification\`.
-    - In *both* places where the respawn is confirmed (i.e., where \`triggerManualRespawn\` is called and its result used), call \`broadcastNotification('PLAYER_RESPAWN', { username: username })\`.
-    - Update \`global-notifier.js\` subscription logic to handle \`'PLAYER_RESPAWN'\`.
-    - *Files to Modify: \`respawn-manager.js\`, \`main.js\`, \`global-notifier.js\`*
+  - **4. (Optional) Sound Effect:**
+    - Once audio is available, trigger a respawn sound effect in \`respawn-manager.js\` when the respawn occurs.
 
-  - **6. Integrate Spectate Mode Notifications:**
-    - Modify \`spectate-mode.js\` (\`enterSpectateMode\`): *Remove* the direct call to \`addNotification\`.
-    - Instead, call \`broadcastNotification('SPECTATE_ENTER', { username: username })\`.
-    - Update \`global-notifier.js\` subscription logic to handle \`'SPECTATE_ENTER'\`. (Leaving spectate mode is covered by PLAYER_RESPAWN).
-    - *Files to Modify: \`spectate-mode.js\`, \`global-notifier.js\`*
+**Other Planned Features:**
 
-  - **7. Integrate Level Change Notifications:**
-    - Modify \`host-logic.js\`: When the host triggers a level change, *remove* the direct call to \`addNotification\`.
-    - Instead, call \`broadcastNotification('LEVEL_CHANGE', { levelName: nextLevel.name })\`.
-    - Update \`global-notifier.js\` subscription logic to handle \`'LEVEL_CHANGE'\`.
-    - *Files to Modify: \`host-logic.js\`, \`global-notifier.js\`*
+- **[DONE] Spectate Mode Implementation:** (Details omitted for brevity)
+- **[DONE] Better Score Tracking:** (Details omitted for brevity)
+- **[DONE] Respawn Paint Persistence:** Painted % persists unless respawning from 100%.
 
-  - **8. Review & Refine:**
-    - Test thoroughly. Ensure notifications appear correctly for all players and aren't duplicated excessively. Check if the self-notification fix works as expected.
-    - Verify join/leave notifications in \`peer-manager.js\` are working globally as expected.
-    - Adjust notification messages/types/durations as needed in \`global-notifier.js\`.
+- **Sound effects.** (Requires audio capabilities)
 
-**Future Ideas/Stretch Goals:**
-    - Sound effects.
-    - Player loss/paint-out effect.
-    - More visual effects.
-    - Environmental hazards? Polygon obstacles?
-    - Optimization.
-    - Tip messages.
-    - Social features (chat?).
+- **More visual effects:**
+   - Player loss/paint-out effect.
+   - Can pickup/steal effect improvement.
+
+- **Future Ideas/Stretch Goals:**
+    - Environmental hazards? (Moving platforms, laser grids?). Support for polygon obstacles.
+    - Optimize rendering and physics. Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
+    - Add logic for occasional whimsical/tip messages (maybe triggered randomly in the game loop or based on simple conditions like low paint)
+    - More social features, like chat messages?
 
 `;
 
-// Function to load notes remains the same
 export function loadDevNotes() {
     const container = document.getElementById('dev-notes-container');
     if (container) {
