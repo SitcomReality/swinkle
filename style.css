@@ -1,32 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Press+Start+2P&display=swap');
 
 body {
-    font-family: 'Lucida Console', Monaco, monospace; 
+    font-family: 'Lucida Console', Monaco, monospace;
     margin: 0;
     padding: 0;
-    background-color: #0a0a1e; 
-    color: #e0e0e0; 
-    overflow: hidden; 
+    background-color: #0a0a1e;
+    color: #e0e0e0;
+    overflow: hidden;
 }
 
 #dev-notes-container {
+    display: none;
     position: fixed;
     top: 10px;
     right: 10px;
     width: 300px;
-    background-color: rgba(20, 20, 50, 0.85); 
-    color: #c0c0f0; 
+    background-color: rgba(20, 20, 50, 0.85);
+    color: #c0c0f0;
     z-index: 1000;
-    opacity: 0.4; 
+    opacity: 0.4;
     transition: opacity 0.3s ease-in-out;
     padding: 15px;
-    border: 2px solid #66f; 
-    box-shadow: 0 0 10px #66f; 
+    border: 2px solid #66f;
+    box-shadow: 0 0 10px #66f;
     border-radius: 5px;
     max-height: 300px;
     overflow-y: auto;
-    white-space: pre-wrap; 
+    white-space: pre-wrap;
     font-size: 0.8em;
+    pointer-events: none;
 }
 
 #dev-notes-container:hover {
@@ -39,33 +41,35 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    z-index: 1;
 }
 
 #scoreboard {
     position: fixed;
     top: 10px;
     left: 10px;
-    background-color: rgba(20, 20, 50, 0.8); 
+    background-color: rgba(20, 20, 50, 0.8);
     color: #e0e0e0;
-    z-index: 900; 
+    z-index: 900;
     padding: 10px 15px;
-    border: 2px solid #f0f; 
-    box-shadow: 0 0 8px #f0f; 
+    border: 2px solid #f0f;
+    box-shadow: 0 0 8px #f0f;
     border-radius: 5px;
     font-size: 0.9em;
-    min-width: 220px; 
+    min-width: 220px;
+    pointer-events: none;
 }
 
 #scoreboard h2 {
-    font-family: 'Orbitron', sans-serif; 
+    font-family: 'Orbitron', sans-serif;
     margin: 0 0 10px 0;
-    font-size: 1.2em; 
+    font-size: 1.2em;
     text-align: center;
-    border-bottom: 1px solid #f0f; 
+    border-bottom: 1px solid #f0f;
     padding-bottom: 5px;
-    color: #fff; 
-    text-shadow: 0 0 5px #f0f; 
-    text-transform: uppercase; 
+    color: #fff;
+    text-shadow: 0 0 5px #f0f;
+    text-transform: uppercase;
     letter-spacing: 1px;
 }
 
@@ -76,14 +80,14 @@ body {
 
 #scoreboard-table th,
 #scoreboard-table td {
-    padding: 5px 10px; 
+    padding: 5px 10px;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 0, 255, 0.3); 
+    border-bottom: 1px solid rgba(255, 0, 255, 0.3);
 }
 
 #scoreboard-table th {
     font-weight: bold;
-    color: #ff99ff; 
+    color: #ff99ff;
     text-transform: uppercase;
     font-size: 0.9em;
 }
@@ -98,25 +102,25 @@ body {
 
 #scoreboard-table .paint-percentage {
     text-align: right;
-    color: #f9f966; 
+    color: #f9f966;
 }
 
 #scoreboard-table .loss-count {
     text-align: right;
-    color: #ff6666; 
+    color: #ff6666;
 }
 
 #scoreboard-table .player-score {
     text-align: right;
-    color: #88FFAA; 
+    color: #88FFAA;
     font-weight: bold;
 }
 
 #scoreboard-table .local-player td {
-    background-color: rgba(255, 255, 100, 0.1); 
+    background-color: rgba(255, 255, 100, 0.1);
 }
 #scoreboard-table .local-player .player-name {
-     color: #FFFF99; 
+     color: #FFFF99;
 }
 
 .player-avatar {
@@ -135,22 +139,23 @@ body {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(20, 20, 50, 0.85); 
+    background-color: rgba(20, 20, 50, 0.85);
     color: #e0e0e0;
-    z-index: 950; 
+    z-index: 950;
     padding: 10px 20px;
-    border: 2px solid #0ff; 
-    box-shadow: 0 0 10px #0ff; 
+    border: 2px solid #0ff;
+    box-shadow: 0 0 10px #0ff;
     border-radius: 5px;
     font-size: 0.9em;
-    width: 220px; 
+    width: 220px;
     text-align: center;
-    display: none; 
+    display: none;
+    pointer-events: none;
 }
 
 #paint-level-indicator .indicator-label {
     font-size: 0.8em;
-    color: #8ff; 
+    color: #8ff;
     margin-bottom: 5px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -158,26 +163,35 @@ body {
 }
 
 #paint-level-indicator .indicator-bar-background {
-    background-color: rgba(0, 0, 0, 0.5); 
-    height: 12px; 
+    background-color: rgba(0, 0, 0, 0.5);
+    height: 12px;
     border-radius: 4px;
     margin-bottom: 6px;
-    overflow: hidden; 
-    border: 1px solid #088; 
+    overflow: hidden;
+    border: 1px solid #088;
 }
 
 #paint-level-indicator .indicator-bar-fill {
-    background-color: #00FFFF; 
+    background-color: #00FFFF;
     height: 100%;
-    width: 100%; 
-    border-radius: 3px; 
-    transition: width 0.1s linear, background-color 0.2s linear; 
-    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5); 
+    width: 100%;
+    border-radius: 3px;
+    transition: width 0.1s linear, background-color 0.2s linear;
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 #paint-level-indicator .indicator-text {
     font-weight: bold;
-    color: #fff; 
-    text-shadow: 0 0 5px #0ff; 
+    color: #fff;
+    text-shadow: 0 0 5px #0ff;
     font-size: 1.1em;
+}
+
+/* Notification container (dynamically added) */
+#notifications-container {
+    pointer-events: none;
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    z-index: 1000;
 }
