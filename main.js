@@ -171,15 +171,28 @@ async function initGame() {
 
         // Check if player is spectating
         if (localPresence && localPresence.isSpectating) {
-            console.log("Click detected while spectating: Respawning player.");
+            // --- Calculate Click Position Relative to Canvas ---
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (e.clientX - rect.left) * scaleX;
+            const canvasY = (e.clientY - rect.top) * scaleY;
+
+            // --- Clamp Click Coordinates to Game Area ---
+            const clickX = Math.max(0, Math.min(config.gameAreaWidth, canvasX));
+            const clickY = Math.max(0, Math.min(config.gameAreaHeight, canvasY));
+
+            console.log(`Click detected while spectating at (${clickX.toFixed(0)}, ${clickY.toFixed(0)}): Respawning player.`);
             const now = Date.now(); // Get current time for animation end time
-            // Use triggerManualRespawn to get the correct presence update object
+            // Use triggerManualRespawn, passing the specific click coordinates
             const respawnUpdates = triggerManualRespawn(
                 localClientId,
                 localPresence,
                 config.gameAreaWidth,
                 config.gameAreaHeight,
-                now // Pass current time
+                now, // Pass current time
+                clickX, // Pass the precise click X
+                clickY  // Pass the precise click Y
             );
             // Send the presence update to rejoin the game
             room.updatePresence(respawnUpdates);
@@ -267,12 +280,14 @@ async function initGame() {
                 // --- Leave Spectate Mode ---
                 console.log("ESC pressed: Leaving spectate mode.");
                 const now = Date.now(); // Get current time for animation end time
+                // Respawn at the *current* anchor position when using ESC
                 const respawnUpdates = triggerManualRespawn(
                     localClientId,
-                    localPresence, 
+                    localPresence,
                     config.gameAreaWidth,
                     config.gameAreaHeight,
                     now // Pass current time
+                    // No clickX/clickY provided, will use presence anchor
                 );
                 room.updatePresence(respawnUpdates);
 
