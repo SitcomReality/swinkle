@@ -5,6 +5,8 @@
 import config from 'config';
 // Import room directly ONLY for spectate entry logic to drop cans. Avoid elsewhere.
 import { room } from './main.js';
+// Import notification manager
+import { addNotification } from './notification-manager.js';
 
 // Stores state for each spectator: { x: number, vx: number }
 const spectatorStates = new Map();
@@ -75,7 +77,7 @@ export function removeSpectatorState(clientId) {
 
 /**
  * Handles the logic for a player entering spectator mode.
- * Updates presence and drops the currently held can, if any.
+ * Updates presence, drops the currently held can (if any), and sends a notification.
  * @param {string} clientId - The ID of the client entering spectator mode.
  * @param {object} roomInstance - The WebsimSocket room instance.
  */
@@ -83,7 +85,10 @@ export function enterSpectateMode(clientId, roomInstance) {
     const localPresence = roomInstance.presence[clientId];
     if (!localPresence || localPresence.isSpectating) return; // Already spectating or no presence
 
-    console.log(`Player ${clientId} entering spectate mode.`);
+    const username = roomInstance.peers[clientId]?.username || 'Player';
+    console.log(`Player ${username} (${clientId}) entering spectate mode.`);
+    addNotification(`${username} is now spectating.`, 'info', 3000); // Add notification
+
     const presenceUpdate = { isSpectating: true };
     let roomStateUpdate = {};
 

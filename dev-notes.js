@@ -17,7 +17,7 @@ export const notes = `
 
 **Next Steps:**
 
-**Spectate Mode Implementation (Incremental):**
+**Spectate Mode Implementation (Complete):**
 We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang from the ceiling, are semi-transparent, have no collision, and can click to respawn/rejoin.
 
   - **1. [DONE] Add State Flag & Initial Activation:**
@@ -29,7 +29,8 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
   - **7. [DONE] UI Reminder Text:**
   - **8. [DONE] Disable Collisions for Spectators:**
   - **9. [DONE] Disable Interactions for Spectators:**
-  - **10. [DONE] Fix Anchor Point Rendering:** Ensure the anchor point (cursor circle) moves to the top edge for spectators and renders correctly.
+  - **10. [DONE] Fix Anchor Point Rendering:**
+  - **11. [DONE] Add Notification on Spectate Entry:**
 
 
 **Other Planned Features:**
