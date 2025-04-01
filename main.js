@@ -1,3 +1,8 @@
+/**
+ * main.js
+ * Entry point for the application. Initializes the room, sets up event listeners,
+ * and starts the game loop.
+ */
 import { loadDevNotes } from './dev-notes.js';
 import { startGameLoop } from './game-loop.js';
 import config from 'config';
@@ -102,23 +107,30 @@ async function initGame() {
                 room.updateRoomState(hostUpdate);
             }
         }
+        // --- Calculate Mouse Position Relative to Canvas ---
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;   // Verhältnis der tatsächlichen Canvas-Breite zur angezeigten Breite
+        const scaleY = canvas.height / rect.height; // Verhältnis der tatsächlichen Canvas-Höhe zur angezeigten Höhe
+
+        // Calculate mouse coordinates relative to the canvas element
+        // Adjusting for potential CSS scaling or borders might be needed if complex styling is applied
+        const canvasX = (e.clientX - rect.left) * scaleX;
+        const canvasY = (e.clientY - rect.top) * scaleY;
+
+        // --- Clamp Coordinates to Game Area ---
+        // Clamp the canvas-relative coordinates to the defined game area
+        const clampedX = Math.max(0, Math.min(config.gameAreaWidth, canvasX));
+        const clampedY = Math.max(0, Math.min(config.gameAreaHeight, canvasY));
+
+
+        // --- Update Presence ---
         // Send only anchor position. Other presence updates are event-driven.
         // Don't update position if player is lost - prevents moving while waiting to respawn
         const currentPresence = room.presence[room.clientId];
         if (!currentPresence || !currentPresence.lost) {
-            // Clamp mouse coordinates to game area boundaries before sending
-            let mouseX = e.clientX;
-            let mouseY = e.clientY;
-
-            // Note: This assumes the game world coordinates map directly to screen pixels
-            // within the defined area. A camera system would require converting
-            // screen coordinates to world coordinates before clamping.
-            mouseX = Math.max(0, Math.min(config.gameAreaWidth, mouseX));
-            mouseY = Math.max(0, Math.min(config.gameAreaHeight, mouseY));
-
             room.updatePresence({
-                x: mouseX,
-                y: mouseY,
+                x: clampedX,
+                y: clampedY,
             });
         }
     });
