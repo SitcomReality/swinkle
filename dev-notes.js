@@ -8,7 +8,7 @@ export const notes = `
 ## Developer Notes - Multiplayer Painter
 
 **Design Goals & Considerations:**
-- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their droplets. Collision with another player\'s droplet adds that color to the victim\'s capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Players without a can can steal one by colliding with a player holding one. Level geometry provides obstacles.
+- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their droplets. Collision with another player\'s droplet adds that color to the victim\'s capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Level geometry provides obstacles.
 - **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
@@ -17,21 +17,7 @@ export const notes = `
 
 **Completed Tasks:**
 
-*   Added "Hurricane Stadium" level (level-04).
-*   Adjusted level geometry color for better visibility.
-*   Dynamic Level Color Palettes
-*   Spectacular Paint-Out Burst
-*   Player Invisibility During Paint-Out
-*   Spectate Mode Entry on Paint-Out/Respawn
-*   Enhanced Respawn Animation & Player Fade-in
-*   Spectate Mode Implementation
-*   Score Tracking Improvements
-*   Notification Broadcasting
-*   Scoreboard Distinction for Spectators
-*   Notification Combination Effect
-*   Random Level Selection
-*   Decoupled Palettes from Levels (Random Palette Selection)
-*   Cleared available paint cans on level change.
+*   Cleared available paint cans on level change. (NOTE: this didn't actually seem to work)
 
 **Next Steps: Implementing New Power-Ups (Incremental Plan)**
 
