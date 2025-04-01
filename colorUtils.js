@@ -90,3 +90,22 @@ export function calculateBlendedColor(baseHex, paintedData = {}) {
 
     return `rgb(${finalR}, ${finalG}, ${finalB})`;
 }
+
+/**
+ * Calculates the total paint percentage from paintedData.
+ * @param {object} paintedData - Object mapping paint hex colors to percentages.
+ * @param {number} [cap=100] - Optional maximum value to cap the percentage at.
+ * @returns {number} The total percentage, optionally capped.
+ */
+export function calculateTotalPaintPercentage(paintedData = {}, cap = config.lossThreshold || 100) {
+    let totalPercentage = 0;
+    if (paintedData && typeof paintedData === 'object') {
+        Object.values(paintedData).forEach(percentage => {
+            if (typeof percentage === 'number') {
+                totalPercentage += percentage;
+            }
+        });
+    }
+    // Cap percentage at the specified value (defaults to loss threshold)
+    return Math.min(totalPercentage, cap);
+}

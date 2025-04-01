@@ -6,7 +6,7 @@
  */
 import config from '../config.js';
 import { getPlayerPhysicsState } from './playerState.js';
-import { calculateBlendedColor } from './colorUtils.js';
+import { calculateBlendedColor, calculateTotalPaintPercentage } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 
 // Helper function to draw a star (reused for mega can indicator)
@@ -152,12 +152,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const bodyWidth = config.playerBodyWidth || 20;
     const bodyHeight = config.playerBodyHeight || 30;
     const radius = bodyWidth / 2;
-    const rectHeight = bodyHeight - bodyWidth;
+    const rectHeight = bodyHeight - bodyWidth; // Height of the rectangular part
 
-    const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
-    const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData);
-
-    // Create capsule path (used for fill, stroke, and shield)
+    // Create capsule path (used for fill, stroke, clip, and shield)
     ctx.beginPath();
     ctx.moveTo(-radius, -rectHeight / 2); // Top-left start of capsule arc
     ctx.arc(0, -rectHeight / 2, radius, Math.PI, 0); // Top semi-circle
@@ -166,11 +163,42 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.lineTo(-radius, -rectHeight / 2); // Left side vertical line
     ctx.closePath();
 
-    // Draw Fill First (centered at the rotated origin 0,0)
+    // Calculate total paint percentage (capped at loss threshold)
+    const totalPaintPercentage = calculateTotalPaintPercentage(paintedData, config.lossThreshold);
+
+    // --- Render Paint Fill Background ---
+    if (totalPaintPercentage > 0) {
+        ctx.save(); // Save context before clipping
+
+        // Apply the capsule path as a clipping region
+        ctx.clip(); // Clip to the capsule path created above
+
+        // Calculate fill properties
+        const fillRatio = Math.min(1, totalPaintPercentage / config.lossThreshold); // Ratio 0 to 1
+        const fillHeightAbsolute = bodyHeight * fillRatio;
+        // Top Y coordinate of the fill rectangle (relative to capsule center 0,0)
+        // Starts from the bottom (bodyHeight / 2) and goes up
+        const fillTopYRelative = (bodyHeight / 2) - fillHeightAbsolute;
+        const baseBodyColor = config.playerBodyColor || '#FFAABB'; // Base color for the fill blend
+        const blendedFillColor = calculateBlendedColor(baseBodyColor, paintedData); // Blend based on body color
+
+        // Draw the fill rectangle covering the bottom portion within the clip
+        ctx.fillStyle = blendedFillColor;
+        // Draw from the calculated top edge down to slightly below the bottom edge to ensure coverage
+        // Use bodyWidth (not radius) for the width
+        ctx.fillRect(-radius - 1, fillTopYRelative, bodyWidth + 2, fillHeightAbsolute + 2);
+
+        ctx.restore(); // Restore context (removes the clip)
+    }
+    // --- END Paint Fill Background ---
+
+    // Draw Base Body Color (fills the whole capsule, paint fill sits on top within the clipped area)
     ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
-    ctx.fill(); // Fill the path
+    ctx.fill(); // Fill the original capsule path
 
     // Draw Blended Stroke
+    const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
+    const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData); // Blend based on stroke color
     ctx.strokeStyle = blendedStrokeColor; // Use blended stroke color
     ctx.lineWidth = 2;
     ctx.stroke(); // Draw blended stroke using the same path
