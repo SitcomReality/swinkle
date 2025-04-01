@@ -6,7 +6,7 @@ import { addNotification } from './notification-manager.js'; // Import notificat
 // Import room to access peers for username lookup
 import { room } from './main.js';
 import config from 'config'; // Import config for spawn coordinates, player color
-import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
+import { removeSpectatorState, enterSpectateMode } from './spectate-mode.js'; // Import spectator state cleanup and enterSpectateMode
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 // Import utility to calculate paint percentage
 import { calculateTotalPaintPercentage } from './colorUtils.js';
@@ -28,20 +28,13 @@ const RESPAWN_ANIM_DURATION = 500; // milliseconds
 export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWidth, gameAreaHeight) {
     // Check for respawn timer completion
     if (localPresence.lost && localPresence.respawnTime && now >= localPresence.respawnTime) {
-        console.log(`Respawning player ${localClientId} after loss`);
+        console.log(`Player ${localClientId} respawn time reached - entering spectate mode`);
 
-        // Get username for notification
-        const username = room.peers[localClientId]?.username || 'Player';
-        // Replace with broadcast
-        // addNotification(`${username} respawned!`, 'info', 3000);
-        broadcastNotification(`${username} respawned!`, 'info', 3000);
-
-        // Generate and return the respawn presence update object
-        // triggerManualRespawn handles the effect and spectator cleanup
-        // Pass the current presence to conditionally reset paint
-        // Pass gameArea dimensions for fallback positioning
-        // Automatic respawn uses the presence anchor, not a specific click location
-        return triggerManualRespawn(localClientId, localPresence, gameAreaWidth, gameAreaHeight, now);
+        // Instead of respawning automatically, enter spectate mode
+        enterSpectateMode(localClientId, room);
+        
+        // Return empty updates - enterSpectateMode handles the presence changes
+        return {};
     }
     return {};
 }

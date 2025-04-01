@@ -102,6 +102,11 @@ export default {
     blockSparkColor: '#FFFFFF', // Color of the block spark
     blockSparkRadius: 15,       // Max radius of the block spark
 
+    // Paint Out Burst Effect settings
+    paintOutBurstParticles: 60, // Number of droplets to create when painted out
+    paintOutBurstSpeed: 300,    // Maximum initial speed for paint burst particles
+    paintOutBurstRadius: 150,   // Maximum distance particles can travel
+
     // Theme & Glow Settings
     neonGlowBlur: 10,           // Intensity of the glow effect for neon elements
     anchorPointGlowColor: 'rgba(255, 255, 255, 0.7)', // Glow color for the anchor point

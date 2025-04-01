@@ -7,6 +7,8 @@ import config from 'config';
 import { room } from './main.js';
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 import { broadcastNotification } from './notification-broadcaster.js'; // Add import
+import { enterSpectateMode } from './spectate-mode.js'; // Import for auto-entering spectate mode
+import { createPaintBurst } from './paint-burst.js'; // Import new paint burst creator
 
 /**
  * Checks for collisions between the local player and all droplets.
@@ -25,6 +27,7 @@ import { broadcastNotification } from './notification-broadcaster.js'; // Add im
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
+    let newDroplets = {};
     
     // --- Skip checks if presence is missing, player is already lost, or spectating ---
     if (!currentPresence || currentPresence.lost || currentPresence.isSpectating) {
@@ -122,9 +125,13 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         if (totalPercentage >= config.lossThreshold) {
             console.log(`Player ${localClientId} has been fully painted out! (${totalPercentage}%)`);
             updateData.lost = true;
-            // Set the respawn time
+            // Set the respawn time - still needed for internal state tracking
             updateData.respawnTime = now + (config.respawnDelay || 5000);
             justLost = true; // Flag that the loss occurred this frame
+
+            // Create paint burst effect when painted out
+            const burstData = createPaintBurst(localClientId, playerBodyPos, currentPaintedData, now);
+            Object.assign(newDroplets, burstData);
 
             // Record the loss in the database
             const username = room.peers[localClientId]?.username;
@@ -203,5 +210,5 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         }
     }
 
-    return { dropletsToRemove, collisionPoints };
+    return { dropletsToRemove, collisionPoints, newDroplets };
 }
