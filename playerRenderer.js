@@ -99,7 +99,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // --- Apply Spectator Transparency ---
     ctx.save(); // Save context before potentially changing alpha for spectator
     if (isSpectating) {
-        ctx.globalAlpha = 0.5;
+        // Adjust spectator opacity to 25%
+        ctx.globalAlpha = 0.25;
     }
 
     // --- Render Player Bungee Cord (Anchor -> Body) ---
@@ -198,13 +199,13 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         // Style and draw the shield
         ctx.strokeStyle = '#88FFFF'; // Shield color
         ctx.lineWidth = 2;
-        // Use current global alpha (which might be 0.5 if spectating)
-        const baseAlpha = isSpectating ? 0.5 : 1.0;
+        // Use current global alpha (which might be 0.25 if spectating)
+        const baseAlpha = isSpectating ? 0.25 : 1.0; // Use the new alpha value
         ctx.globalAlpha = baseAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
         ctx.shadowBlur = glowBlur;
         ctx.shadowColor = '#00FFFF';
         ctx.stroke();
-        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.5 or 1.0)
+        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.25 or 1.0)
     }
 
     // --- Render Eyes (Relative to Rotated Body Center) ---
@@ -274,7 +275,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.restore(); // Restore translation and rotation
 
     // --- Render Player Name (Not Rotated) ---
-    // Alpha is already potentially 0.5
+    // Alpha is already potentially 0.25
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
@@ -282,7 +283,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
     // --- Render Mega Can Ready Indicator (Not Rotated) ---
-    // Alpha is already potentially 0.5
+    // Alpha is already potentially 0.25
     if (hasMegaCanPowerup) {
         ctx.save();
         const starSize = 10; // Small indicator
@@ -297,7 +298,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Display Loss Message if Player has Lost (Not Rotated) ---
-    // Alpha is already potentially 0.5
+    // Alpha is already potentially 0.25
     if (presence.lost) {
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
@@ -306,7 +307,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
-    // Alpha is already potentially 0.5
+    // Alpha is already potentially 0.25
     const currentCanId = presence?.currentCanId;
     if (currentCanId && allPaintCansState && allPaintCansState[currentCanId]) {
         const canState = allPaintCansState[currentCanId];
