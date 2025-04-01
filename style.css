@@ -122,6 +122,16 @@ body {
      color: #FFFF99;
 }
 
+#scoreboard-table .spectating-player td {
+    opacity: 0.6;
+    font-style: italic;
+}
+#scoreboard-table .spectating-player .player-name::after {
+    content: " (spectating)";
+    font-size: 0.8em;
+    color: #aaaaff;
+}
+
 .player-avatar {
     width: 24px;
     height: 24px;

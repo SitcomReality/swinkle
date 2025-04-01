@@ -56,6 +56,7 @@ function updateScoreboard() {
         const losses = lossCounts[peer.username] || 0;
         const isLost = playerPresence.lost || false;
         const score = playerPresence.score || 0; // Get player score from presence
+        const isSpectating = playerPresence.isSpectating || false; // Track spectating state
 
         return {
             username: peer.username,
@@ -64,6 +65,7 @@ function updateScoreboard() {
             losses: losses,
             isLost: isLost,
             score: score, // Include score in player data
+            isSpectating: isSpectating, // Include spectating status
             clientId: clientId // Keep client ID if needed for sorting tie-breakers etc.
         };
     });
@@ -95,6 +97,9 @@ function updateScoreboard() {
         row.style.opacity = player.isLost ? 0.5 : 1; // Dim lost players
         if (player.clientId === localClientId) {
              row.classList.add('local-player'); // Add class for CSS styling
+        }
+        if (player.isSpectating) {
+             row.classList.add('spectating-player'); // Add class for spectating players
         }
 
         const nameCell = row.insertCell();
