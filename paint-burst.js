@@ -17,10 +17,10 @@ import { calculatePaintOnlyBlendedColor } from './colorUtils.js';
 export function createPaintBurst(playerId, playerPos, paintedData, now) {
     const burstDroplets = {};
     
-    // Get parameters from config or use defaults
-    const numDroplets = config.paintOutBurstParticles || 60; // Lots of droplets for dramatic effect
-    const maxSpeed = config.paintOutBurstSpeed || 300; // Pixels per second
-    const spreadRadius = config.paintOutBurstRadius || 150; // Maximum distance particles travel
+    // Get parameters from config or use updated defaults
+    const numDroplets = config.paintOutBurstParticles || 120; // Significantly increased droplets
+    const maxSpeed = config.paintOutBurstSpeed || 300; // Keep speed the same for now
+    const spreadRadius = config.paintOutBurstRadius || 500; // Significantly increased radius
     
     // Calculate weighted color based on the painted data
     const blendedColor = calculatePaintOnlyBlendedColor(paintedData);
@@ -32,21 +32,22 @@ export function createPaintBurst(playerId, playerPos, paintedData, now) {
         const angle = Math.random() * Math.PI * 2;
         
         // Random speed and distance scaling
-        const speed = Math.random() * maxSpeed;
+        const speed = Math.random() * maxSpeed; // Still use speed for potential future movement
         // Random radius with bias toward center (square root makes distribution more toward edges)
-        const radius = Math.sqrt(Math.random()) * spreadRadius;
+        const radius = Math.sqrt(Math.random()) * spreadRadius; // Use increased radius
         
-        // Calculate position with small random offset from player center
-        const offsetX = Math.random() * 20 - 10;
-        const offsetY = Math.random() * 20 - 10;
+        // Calculate initial position offset based on random angle and radius
+        const offsetX = Math.cos(angle) * radius;
+        const offsetY = Math.sin(angle) * radius;
         
+        // The actual droplet position is the player's center + the calculated offset
         burstDroplets[dropletId] = {
             id: dropletId,
             ownerId: playerId, // Keep track of which player this came from
             color: blendedColor, // Use their blended paint color
             x: playerPos.x + offsetX,
             y: playerPos.y + offsetY,
-            // These droplets don't move - they're just for visual effect
+            // These droplets don't move - they're just for visual effect (no velocity added)
             createdAt: now
         };
     }
