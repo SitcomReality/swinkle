@@ -6,7 +6,8 @@
  */
 import config from '../config.js';
 import { getPlayerPhysicsState } from './playerState.js';
-import { calculateBlendedColor, calculateTotalPaintPercentage } from './colorUtils.js';
+// Import the specific color utils needed
+import { calculatePaintOnlyBlendedColor, calculateTotalPaintPercentage, calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 
 // Helper function to draw a star (reused for mega can indicator)
@@ -179,8 +180,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         // Top Y coordinate of the fill rectangle (relative to capsule center 0,0)
         // Starts from the bottom (bodyHeight / 2) and goes up
         const fillTopYRelative = (bodyHeight / 2) - fillHeightAbsolute;
-        const baseBodyColor = config.playerBodyColor || '#FFAABB'; // Base color for the fill blend
-        const blendedFillColor = calculateBlendedColor(baseBodyColor, paintedData); // Blend based on body color
+
+        // *** CHANGE: Use paint-only blend for the fill ***
+        const blendedFillColor = calculatePaintOnlyBlendedColor(paintedData);
 
         // Draw the fill rectangle covering the bottom portion within the clip
         ctx.fillStyle = blendedFillColor;
@@ -192,11 +194,14 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
     // --- END Paint Fill Background ---
 
-    // Draw Base Body Color (fills the whole capsule, paint fill sits on top within the clipped area)
+    // --- Draw Base Body Color ---
+    // This now draws the *underlying* body color BEFORE the paint fill is drawn on top
+    // (Fill was drawn inside a clipped region, this fills the whole capsule)
     ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
     ctx.fill(); // Fill the original capsule path
 
-    // Draw Blended Stroke
+    // --- Draw Blended Stroke ---
+    // The stroke color should still blend with the original stroke color
     const baseStrokeColor = config.playerBodyStrokeColor || '#FF88AA';
     const blendedStrokeColor = calculateBlendedColor(baseStrokeColor, paintedData); // Blend based on stroke color
     ctx.strokeStyle = blendedStrokeColor; // Use blended stroke color

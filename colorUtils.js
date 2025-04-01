@@ -92,12 +92,62 @@ export function calculateBlendedColor(baseHex, paintedData = {}) {
 }
 
 /**
+ * Blends only the paint colors based on their percentages in paintedData.
+ * Does not include a base color in the blend. Returns a neutral color if no paint data.
+ * @param {object} paintedData - Object mapping paint hex colors to percentages (e.g., {'#FF0000': 10}).
+ * @returns {string} The resulting CSS color string (e.g., "rgb(r,g,b)"). Returns 'rgba(0,0,0,0)' if no paint.
+ */
+export function calculatePaintOnlyBlendedColor(paintedData = {}) {
+    let totalPaintPercent = 0;
+    const paintRgbs = [];
+
+    for (const [colorHex, percent] of Object.entries(paintedData)) {
+        const paintRgb = hexToRgb(colorHex);
+        if (paintRgb && percent > 0) {
+            const clampedPercent = Math.max(0, percent); // Ensure percent is non-negative
+            paintRgbs.push({ ...paintRgb, percent: clampedPercent });
+            totalPaintPercent += clampedPercent;
+        }
+    }
+
+    // If there's no paint, return transparent or a default neutral color
+    if (totalPaintPercent <= 0 || paintRgbs.length === 0) {
+        return 'rgba(0,0,0,0)'; // Return transparent if no paint
+    }
+
+    let finalR = 0;
+    let finalG = 0;
+    let finalB = 0;
+
+    // Blend only the paint colors based on their relative percentages
+    for (const paint of paintRgbs) {
+        // Weight each color by its percentage relative to the total paint percentage
+        const weight = paint.percent / totalPaintPercent;
+        finalR += paint.r * weight;
+        finalG += paint.g * weight;
+        finalB += paint.b * weight;
+    }
+
+    // Round the final values
+    finalR = Math.round(finalR);
+    finalG = Math.round(finalG);
+    finalB = Math.round(finalB);
+
+    // Clamp final values to 0-255
+    finalR = Math.max(0, Math.min(255, finalR));
+    finalG = Math.max(0, Math.min(255, finalG));
+    finalB = Math.max(0, Math.min(255, finalB));
+
+    return `rgb(${finalR}, ${finalG}, ${finalB})`;
+}
+
+/**
  * Calculates the total paint percentage from paintedData.
  * @param {object} paintedData - Object mapping paint hex colors to percentages.
  * @param {number} [cap=100] - Optional maximum value to cap the percentage at.
  * @returns {number} The total percentage, optionally capped.
  */
-export function calculateTotalPaintPercentage(paintedData = {}, cap = config.lossThreshold || 100) {
+export function calculateTotalPaintPercentage(paintedData = {}, cap = 100) {
     let totalPercentage = 0;
     if (paintedData && typeof paintedData === 'object') {
         Object.values(paintedData).forEach(percentage => {
@@ -106,6 +156,6 @@ export function calculateTotalPaintPercentage(paintedData = {}, cap = config.los
             }
         });
     }
-    // Cap percentage at the specified value (defaults to loss threshold)
+    // Cap percentage at the specified value (defaults to 100)
     return Math.min(totalPercentage, cap);
 }
