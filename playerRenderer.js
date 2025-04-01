@@ -87,7 +87,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
 
     // --- Apply Spectator Transparency ---
-    ctx.save(); // Save context before potentially changing alpha
+    ctx.save(); // Save context before potentially changing alpha for spectator
     if (isSpectating) {
         ctx.globalAlpha = 0.5;
     }
@@ -190,12 +190,12 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         ctx.strokeStyle = '#88FFFF'; // Shield color
         ctx.lineWidth = 2;
         // Use current global alpha (which might be 0.5 if spectating)
-        const currentAlpha = ctx.globalAlpha;
-        ctx.globalAlpha = currentAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
+        const baseAlpha = isSpectating ? 0.5 : 1.0;
+        ctx.globalAlpha = baseAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
         ctx.shadowBlur = glowBlur;
         ctx.shadowColor = '#00FFFF';
         ctx.stroke();
-        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.5)
+        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.5 or 1.0)
     }
 
     // --- Render Eyes (Relative to Rotated Body Center) ---
