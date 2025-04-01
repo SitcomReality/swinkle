@@ -42,6 +42,7 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
  * and their held paint can if applicable. Includes power-up visual indicators.
  * Uses the physics state's `lastAnchorPos` for accurate anchor rendering.
  * Handles fade-in effect during respawn animation.
+ * If the player is lost, only renders the anchor and "PAINTED OUT!" message.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
@@ -51,6 +52,61 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
  */
 export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPaintCansState) {
+    // --- Get Player Physics State ---
+    const physicsState = getPlayerPhysicsState(clientId);
+    if (!physicsState) {
+        if (!presence.isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
+        return;
+    }
+    const anchorX = physicsState.lastAnchorPos.x;
+    const anchorY = physicsState.lastAnchorPos.y;
+
+    if (typeof anchorX !== 'number' || typeof anchorY !== 'number') {
+        console.warn(`Invalid anchor coordinates in physics state for ${clientId}:`, physicsState.lastAnchorPos);
+        return;
+    }
+
+    const baseColor = presence.color || config.defaultPlayerColor || '#FFF';
+    const paintedData = presence.paintedData || {};
+    const glowBlur = config.neonGlowBlur || 10;
+    const anchorGlowColor = config.anchorPointGlowColor || 'rgba(255, 255, 255, 0.7)';
+    const isSpringy = presence.springyBungee || false;
+    const isShielded = presence.shielded || false;
+    const hasMegaCanPowerup = presence.activePowerUps?.['megaCan'];
+
+    // --- Render Anchor Point (Always Visible) ---
+    ctx.save();
+    ctx.shadowBlur = glowBlur;
+    ctx.shadowColor = anchorGlowColor;
+    ctx.beginPath();
+    ctx.arc(anchorX, anchorY, config.cursorSize || 8, 0, Math.PI * 2);
+    ctx.fillStyle = baseColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Check if player is lost ---
+    const isLost = presence.lost || false;
+    if (isLost) {
+        // Player is lost, only render the "PAINTED OUT!" message and exit
+        ctx.save();
+        ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
+        ctx.font = config.lossMessageFont || '24px sans-serif';
+        ctx.textAlign = 'center';
+        // Use physics state position to place the text correctly even if body isn't rendered
+        const bodyX = physicsState.position.x;
+        const bodyY = physicsState.position.y;
+        const bodyHeight = config.playerBodyHeight || 30;
+        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight / 2 - 15); // Position above where body would be
+        ctx.restore();
+        return; // Exit function, skipping the rest of the rendering
+    }
+
+    // --- Proceed with rendering if NOT lost ---
+
     // --- Calculate Opacity and Visibility based on Respawn/Spectate ---
     const now = Date.now();
     const respawnAnimEndTime = presence.respawnAnimEndTime;
@@ -83,45 +139,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // Final combined alpha for elements affected by spectator/respawn state
     const combinedAlpha = baseAlpha * respawnOpacity;
 
-    // --- Get Player Physics State ---
-    const physicsState = getPlayerPhysicsState(clientId);
-    if (!physicsState) {
-        if (!isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
-        return;
-    }
-    const anchorX = physicsState.lastAnchorPos.x;
-    const anchorY = physicsState.lastAnchorPos.y;
-
-    if (typeof anchorX !== 'number' || typeof anchorY !== 'number') {
-        console.warn(`Invalid anchor coordinates in physics state for ${clientId}:`, physicsState.lastAnchorPos);
-        return;
-    }
-
-    const baseColor = presence.color || config.defaultPlayerColor || '#FFF';
-    const paintedData = presence.paintedData || {};
-    const glowBlur = config.neonGlowBlur || 10;
-    const anchorGlowColor = config.anchorPointGlowColor || 'rgba(255, 255, 255, 0.7)';
-    const isSpringy = presence.springyBungee || false;
-    const isShielded = presence.shielded || false;
-    const hasMegaCanPowerup = presence.activePowerUps?.['megaCan'];
-
-    // --- Render Anchor Point (Cursor/Spectator Anchor) ---
-    // Anchor is always fully opaque and visible
-    ctx.save();
-    ctx.shadowBlur = glowBlur;
-    ctx.shadowColor = anchorGlowColor;
-    ctx.beginPath();
-    ctx.arc(anchorX, anchorY, config.cursorSize || 8, 0, Math.PI * 2);
-    ctx.fillStyle = baseColor;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-
     // --- Exit early if hidden during respawn ---
-    // Don't render bungee, body, limbs, name, can if hidden
+    // Anchor was already rendered above
     if (isHiddenDuringRespawn) {
         return;
     }
@@ -360,15 +379,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         drawStarIcon(ctx, starX, starY, starSize, 5, 0.5); // Reuse star drawing logic
         ctx.fill();
         ctx.restore();
-    }
-
-    // --- Display Loss Message if Player has Lost (Not Rotated) ---
-    // Alpha is still combinedAlpha
-    if (presence.lost) {
-        ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
-        ctx.font = config.lossMessageFont || '24px sans-serif';
-        ctx.textAlign = 'center'; // Ensure it's centered
-        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight); // Position above body (world Y)
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
