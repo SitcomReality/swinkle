@@ -30,10 +30,10 @@ export const powerUpDefinitions = {
         rarity: 4,
         effect: (clientId, presence) => {
             console.log(`Shield effect applied to ${clientId}`);
-            // Will handle actual implementation later
+            // Presence updates to apply
             return {
                 shielded: true,
-                shieldEndTime: Date.now() + 5000
+                // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
             };
         }
     },
@@ -49,7 +49,6 @@ export const powerUpDefinitions = {
         rarity: 5,
         effect: (clientId, presence) => {
             console.log(`Acetone effect applied to ${clientId}`);
-            // Will handle actual implementation later
             return {
                 paintedData: {} // Reset painted data
             };
@@ -67,10 +66,9 @@ export const powerUpDefinitions = {
         rarity: 3,
         effect: (clientId, presence) => {
             console.log(`Spring effect applied to ${clientId}`);
-            // Will handle actual implementation later
             return {
                 springyBungee: true,
-                springyBungeeEndTime: Date.now() + 8000
+                // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
             };
         }
     },
@@ -86,10 +84,9 @@ export const powerUpDefinitions = {
         rarity: 2,
         effect: (clientId, presence) => {
             console.log(`Mega can effect applied to ${clientId}`);
-            // Will handle actual implementation later
             return {
                 megaCanPowerup: true,
-                megaCanEndTime: Date.now() + 15000
+                // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
             };
         }
     },
@@ -105,19 +102,11 @@ export const powerUpDefinitions = {
         size: 24,
         rarity: 4,
         effect: (clientId, presence) => {
-            console.log(`Short Rope effect applied to ${clientId} (Placeholder)`);
-            // Placeholder: Actual effect implemented in later step
-            // Need to add 'shortRopeActive: true' and 'shortRopeEndTime'
-            // For now, just return an empty object or track in activePowerUps
+            console.log(`Short Rope effect applied to ${clientId}`);
+            // Actual effect: Set flag in presence
              return {
-                // shortRopeActive: true, // Add this in the next step
-                activePowerUps: {
-                    ...(presence.activePowerUps || {}),
-                    [powerUpDefinitions.shortRope.id]: {
-                        type: powerUpDefinitions.shortRope.id,
-                        endTime: Date.now() + powerUpDefinitions.shortRope.duration
-                    }
-                }
+                shortRopeActive: true, // Set the flag for physics check
+                // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
              };
         }
     },
@@ -138,13 +127,7 @@ export const powerUpDefinitions = {
             // For now, just return an empty object or track in activePowerUps
             return {
                 // bigBurstActive: true, // Add this in the next step
-                activePowerUps: {
-                     ...(presence.activePowerUps || {}),
-                     [powerUpDefinitions.bigBurst.id]: {
-                         type: powerUpDefinitions.bigBurst.id,
-                         endTime: Date.now() + powerUpDefinitions.bigBurst.duration
-                     }
-                 }
+                // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
             };
         }
     }
@@ -164,10 +147,10 @@ export function getRandomPowerUpDefinition() {
             weightedChoices.push(id);
         }
     }
-    
+
     // Select a random item from the weighted array
     const randomIndex = Math.floor(Math.random() * weightedChoices.length);
     const selectedId = weightedChoices[randomIndex];
-    
+
     return powerUpDefinitions[selectedId];
 }

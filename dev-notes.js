@@ -24,13 +24,13 @@ export const notes = `
 2.1  ~~**(Done)** **Implement Short Rope Physics:**~~
     *   ~~Added new config values to \`config.js\` for \`shortRopeMultiplier\` (e.g., 0.2) and \`shortRopeDuration\`. ~~
     &   ~~Modified \`playerPhysics.js\` (\`updatePlayerPhysics\`) to check for a new presence flag (e.g., \`shortRopeActive\`) and apply the multiplier to bungee \`restLength\` and \`maxLength\`. ~~
+2.2 ~~**(Done)** **Handle Short Rope Activation/Expiration:**~~
+    *   ~~Updated the 'shortRope' \`effect\` function in \`power-ups/power-up-data.js\` to set \`shortRopeActive: true\` in presence (in addition to adding to \`activePowerUps\`).~~
+    &   ~~Updated \`power-ups/power-up-manager.js\` (\`processActivePowerUps\`) to handle the expiration of 'shortRope', setting \`shortRopeActive: false\`. ~~
 
 **Next Steps:**
 
-2.2  **(This Step)** **Handle Short Rope Activation/Expiration:**
-    *   Update the 'shortRope' \`effect\` function in \`power-ups/power-up-data.js\` to set \`shortRopeActive: true\` in presence (in addition to adding to \`activePowerUps\`).
-    &   Update \`power-ups/power-up-manager.js\` (\`processActivePowerUps\`) to handle the expiration of 'shortRope', setting \`shortRopeActive: false\`.
-3.  **Refactor Burst Logic:**
+3.  **(This Step)** **Refactor Burst Logic:**
  3.1   *   Move the \`createBurstDroplets\` function from \`playerInteractions.js\` into its own file (e.g., \`paint-burst.js\` or similar).
   3.2  *   Update imports and function calls in \`playerInteractions.js\` and potentially \`collisionHandler.js\` (if it uses burst on paint-out) to use the new file.
 4.  **Implement Big Burst Logic:**
