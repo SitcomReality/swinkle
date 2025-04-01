@@ -17,34 +17,37 @@ export const notes = `
 
 **Next Steps:**
 
-**Spectate Mode Implementation (Complete):**
-We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang from the ceiling, are semi-transparent, have no collision, and can click to respawn/rejoin.
+**Enhanced Respawn Animation (Incremental Plan):**
+Goal: Create a more visually appealing respawn sequence beyond the current basic sparkle. We'll implement this in stages to minimize errors. *Note: This should NOT involve `level-transition.js`.*
 
-  - **1. [DONE] Add State Flag & Initial Activation:**
-  - **2. [DONE] Create Spectate Module & Anchor Logic:**
-  - **3. [DONE] ESC Key Toggle:**
-  - **4. [DONE] Idle Timer Activation:**
-  - **5. [DONE] Click to Rejoin/Respawn:**
-  - **6. [DONE] Visual Transparency:**
-  - **7. [DONE] UI Reminder Text:**
-  - **8. [DONE] Disable Collisions for Spectators:**
-  - **9. [DONE] Disable Interactions for Spectators:**
-  - **10. [DONE] Fix Anchor Point Rendering:**
-  - **11. [DONE] Add Notification on Spectate Entry:**
+  - **1. Refine Existing Effect:**
+    - Enhance the current 'respawnSparkle' effect in `effectsRenderer.js`. Make it a brighter, quicker burst of particles using the player's base color.
+    - Update `respawn-manager.js` to pass the player's color when calling `addEffect`.
+    - *Files Modified: `effectsRenderer.js`, `respawn-manager.js`*
 
+  - **2. Player Fade-In:**
+    - Add a temporary state to player presence indicating they are in the 'respawning animation' phase (e.g., \`respawnAnimProgress: 1\` initially, counting down).
+    - Update `respawn-manager.js` (`triggerManualRespawn`) to set this state (e.g., for 0.5 seconds).
+    - Update `game-loop.js` to decrement this timer each frame for relevant players and remove the state when done. Update presence if the timer state changes.
+    - Modify `playerRenderer.js` to check for this state. If present, render the player capsule with opacity and/or scale based on the animation progress (e.g., scaling from 0 to 1 and fading from 0 to 1 as the timer goes from 0.5s down to 0s).
+    - *Files Modified: `respawn-manager.js`, `game-loop.js`, `playerRenderer.js`, potentially `main.js` (for initial presence structure if field added)*
+
+  - **3. Hide Player During Initial Burst:**
+    - Modify `playerRenderer.js` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule at all. The fade-in from Step 2 should only start *after* the initial particle burst.
+    - *Files Modified: `playerRenderer.js`*
+
+  - **4. (Optional) Sound Effect:**
+    - Once audio is available, trigger a respawn sound effect in `respawn-manager.js` when the respawn occurs.
 
 **Other Planned Features:**
 
-2. **[DONE] Better Score Tracking:** Reward players for painting other players.
-   - 2.1: **[DONE]** Add score tracking to player presence data structure and update scoreboard to show scores.
-   - 2.2: **[DONE]** Modify collisionHandler.js to track who painted whom by storing ownerId with droplet hits.
-   - 2.3: **[DONE]** Update score increment logic in collisionHandler.js when droplet hits a player.
-   - 2.4: **[DONE]** Add visual feedback (notification) when a player scores points.
+- **[DONE] Spectate Mode Implementation:** (Details omitted for brevity)
+- **[DONE] Better Score Tracking:** (Details omitted for brevity)
 
-3. **Sound effects.** (Requires audio capabilities)
+- **Sound effects.** (Requires audio capabilities)
 
-4. **More visual effects:**
-   - **[DONE] Add player respawn animation.**
+- **More visual effects:**
+   - **[DONE] Add player respawn animation.** (Now being replaced by the enhanced plan above)
    - Player loss/paint-out effect.
    - Can pickup/steal effect improvement.
 
