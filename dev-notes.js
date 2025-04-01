@@ -21,7 +21,7 @@ export const notes = `
 **Remaining Steps:**
 
 1.  **Update Burst Function Signature & Calls:**
-    1.1. Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept a \`spreadRadius\` argument alongside \`numDroplets\`.
+    1.1. Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept a \`spreadRadius\` argument alongside \`numDroplets\`. *(DONE)*
     1.2. Update the call site in \`collisionHandler.js\` (\`createPaintBurst\`) to pass the default \`config.paintOutBurstRadius\`. (Note: Paint-out burst has separate config).
     1.3. Update the call site(s) within \`playerInteractions.js\` (for manual burst release on mouse up AND burst-on-empty while charging) to pass the default \`config.burstSpreadRadius\` for now.
 
@@ -41,7 +41,6 @@ export const notes = `
 
 **Next Steps:**
 
-1.1 Implement **Burst Function Signature**: Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept \`spreadRadius\`.
 1.2 Implement **Collision Handler Call Update**: Update the call in \`collisionHandler.js\` (\`createPaintBurst\`).
 1.3 Implement **Player Interactions Call Updates**: Update the calls in \`playerInteractions.js\` (mouse up burst, burst-on-empty).
 
