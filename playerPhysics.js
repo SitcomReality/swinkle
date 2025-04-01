@@ -99,7 +99,7 @@ function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
 
 /**
  * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
- * Also handles collision with level geometry and applies power-up effects ('springyBungee', 'shortRopeActive').
+ * Also handles collision with level geometry, game boundaries, and applies power-up effects ('springyBungee', 'shortRopeActive').
  * Accounts for spectator mode anchor point logic. Stores the anchor point used.
  *
  * @param {string} clientId - The ID of the player to update.
@@ -189,6 +189,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     const inertia = config.playerRotationalInertia;
     const uprightStrength = config.playerUprightingStrength;
     const rotationalDamping = config.playerRotationalDamping;
+    const bodyWidth = config.playerBodyWidth || 20; // Needed for collision checks
     const bodyHeight = config.playerBodyHeight || 30;
 
     // Torque calculation
@@ -211,6 +212,40 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
 
     // --- Level Collision Check and Response (Body) ---
     handlePlayerLevelCollision(state, presence);
+
+    // --- World Boundary Collision Check and Response ---
+    const playerRadius = bodyWidth / 2; // Use radius for horizontal checks
+    const playerHalfHeight = bodyHeight / 2; // Use half height for vertical checks
+    const restitution = 0.1; // Small bounce factor
+
+    // Left boundary
+    if (state.position.x - playerRadius < 0) {
+        state.position.x = playerRadius;
+        if (state.velocity.x < 0) {
+            state.velocity.x *= -restitution;
+        }
+    }
+    // Right boundary
+    if (state.position.x + playerRadius > config.gameAreaWidth) {
+        state.position.x = config.gameAreaWidth - playerRadius;
+        if (state.velocity.x > 0) {
+            state.velocity.x *= -restitution;
+        }
+    }
+    // Top boundary
+    if (state.position.y - playerHalfHeight < 0) {
+        state.position.y = playerHalfHeight;
+        if (state.velocity.y < 0) {
+            state.velocity.y *= -restitution;
+        }
+    }
+    // Bottom boundary
+    if (state.position.y + playerHalfHeight > config.gameAreaHeight) {
+        state.position.y = config.gameAreaHeight - playerHalfHeight;
+        if (state.velocity.y > 0) {
+            state.velocity.y *= -restitution;
+        }
+    }
 
     // --- Constraints (Post-Collision) ---
     // Max Length Constraint for Bungee (uses potentially modified maxLength)

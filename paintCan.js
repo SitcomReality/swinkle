@@ -8,7 +8,7 @@ import { handleCanLevelCollision } from './level-collision.js'; // Import level 
 
 /**
  * Updates the physics simulation for a paint can attached to a player.
- * Includes level collision handling.
+ * Includes level collision handling and world boundary checks.
  * @param {object} canState - The state object for the can { x, y, vx, vy }.
  * @param {object} playerBodyPos - The current position of the player's body {x, y}.
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
@@ -21,6 +21,9 @@ export function updatePaintCanPhysics(canState, playerBodyPos, deltaTime) {
     const gravity = config.gravityAcceleration * config.paintCanGravityFactor;
     const mass = config.paintCanMass;
     const maxLength = restLength * config.paintCanBungeeMaxLengthMultiplier;
+    // Dimensions needed for boundary checks
+    const canWidth = config.paintCanWidth || 18;
+    const canHeight = config.paintCanHeight || 25;
 
     // Attachment point is the player's body position
     const attachmentPoint = { x: playerBodyPos.x, y: playerBodyPos.y };
@@ -74,8 +77,42 @@ export function updatePaintCanPhysics(canState, playerBodyPos, deltaTime) {
     // Modifies canState.x, y, vx, vy directly if collision occurs
     handleCanLevelCollision(canState);
 
-    // --- Constraints (Post-Collision) ---
-    // Max Length Constraint (relative to attachment point) applied AFTER level collision
+    // --- World Boundary Collision Check and Response (Can) ---
+    const canRadius = canWidth / 2;
+    const canHalfHeight = canHeight / 2;
+    const restitution = 0.1; // Small bounce
+
+    // Left boundary
+    if (canState.x - canRadius < 0) {
+        canState.x = canRadius;
+        if (canState.vx < 0) {
+            canState.vx *= -restitution;
+        }
+    }
+    // Right boundary
+    if (canState.x + canRadius > config.gameAreaWidth) {
+        canState.x = config.gameAreaWidth - canRadius;
+        if (canState.vx > 0) {
+            canState.vx *= -restitution;
+        }
+    }
+    // Top boundary
+    if (canState.y - canHalfHeight < 0) {
+        canState.y = canHalfHeight;
+        if (canState.vy < 0) {
+            canState.vy *= -restitution;
+        }
+    }
+    // Bottom boundary
+    if (canState.y + canHalfHeight > config.gameAreaHeight) {
+        canState.y = config.gameAreaHeight - canHalfHeight;
+        if (canState.vy > 0) {
+            canState.vy *= -restitution;
+        }
+    }
+
+    // --- Constraints (Post-Collision and Boundary Check) ---
+    // Max Length Constraint (relative to attachment point) applied AFTER level and boundary collision
     const finalDx = attachmentPoint.x - canState.x;
     const finalDy = attachmentPoint.y - canState.y;
     const finalDistance = Math.sqrt(finalDx * finalDx + finalDy * finalDy);
