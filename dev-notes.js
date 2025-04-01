@@ -25,6 +25,7 @@ Goal: Make key game event notifications visible to all players, not just the cli
     - Implemented subscription logic: Subscribe to \`global_notification_event_v1\`. When a *new* record *from another client* is received, parse its \`eventType\` and \`payload\`. Call the local \`addNotification\` function (from \`notification-manager.js\`) with the appropriate message and type.
     - Imported and initialized this module in \`main.js\`.
     - Added basic cleanup for old records (e.g., delete records older than 1 minute? Or maybe just filter in the subscription).
+    - **[Refinement]** Modified \`handleNotificationRecords\` in \`global-notifier.js\` to *immediately* process notifications broadcast by the *local* client, ensuring the user who triggered the event sees it instantly. Notifications from other clients are still processed normally via the subscription. This addresses the issue where removing direct \`addNotification\` calls prevented the originating user from seeing their own event notification.
     - *Files Created/Modified: \`global-notifier.js\` (new), \`main.js\`, \`index.html\`*
 
   - **2. [DONE] Integrate Player Loss Notifications:**
@@ -39,11 +40,11 @@ Goal: Make key game event notifications visible to all players, not just the cli
     - Updated \`global-notifier.js\` subscription logic to handle the \`'POWERUP_COLLECT'\` event type.
     - *Files Modified: \`power-up-manager.js\`, \`global-notifier.js\`*
 
-  - **4. Integrate Score Update Notifications:**
-    - Modify \`collisionHandler.js\`: When points are awarded (\`painterId\` gets points), *remove* the direct call(s) to \`addNotification\` related to scoring.
-    - Instead, call \`broadcastNotification('SCORE_UPDATE', { scorerUsername: painterUsername, victimUsername: localUsername, points: incrementAmount, isLoss: justLost })\`.
-    - Update \`global-notifier.js\` subscription logic to handle \`'SCORE_UPDATE'\`. Replicate the logic to only show loss-related scores or occasional regular hits to avoid spam.
-    - *Files to Modify: \`collisionHandler.js\`, \`global-notifier.js\`*
+  - **4. [DONE] Integrate Score Update Notifications:**
+    - Modified \`collisionHandler.js\`: When points are awarded (\`painterId\` gets points), *removed* the direct call(s) to \`addNotification\` related to scoring.
+    - Instead, called \`broadcastNotification('SCORE_UPDATE', { scorerUsername: painterUsername, victimUsername: localUsername, points: incrementAmount, isLoss: justLost })\`.
+    - Updated \`global-notifier.js\` subscription logic to handle \`'SCORE_UPDATE'\`. Replicated the logic to only show loss-related scores or occasional regular hits to avoid spam.
+    - *Files Modified: \`collisionHandler.js\`, \`global-notifier.js\`*
 
   - **5. Integrate Respawn Notifications:**
     - Modify \`respawn-manager.js\` (\`checkPlayerRespawn\`): *Remove* the direct call to \`addNotification\`.
@@ -65,7 +66,7 @@ Goal: Make key game event notifications visible to all players, not just the cli
     - *Files to Modify: \`host-logic.js\`, \`global-notifier.js\`*
 
   - **8. Review & Refine:**
-    - Test thoroughly. Ensure notifications appear correctly for all players and aren't duplicated excessively.
+    - Test thoroughly. Ensure notifications appear correctly for all players and aren't duplicated excessively. Check if the self-notification fix works as expected.
     - Verify join/leave notifications in \`peer-manager.js\` are working globally as expected.
     - Adjust notification messages/types/durations as needed in \`global-notifier.js\`.
 

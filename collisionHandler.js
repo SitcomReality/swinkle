@@ -6,7 +6,6 @@ import config from 'config';
 // Import the room instance directly to access peers and collections
 import { room } from './main.js';
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
-import { addNotification } from './notification-manager.js'; // Import notification function
 // Import the global broadcast function
 import { broadcastNotification } from './global-notifier.js';
 
@@ -16,6 +15,7 @@ import { broadcastNotification } from './global-notifier.js';
  * Records a loss event when the player reaches the loss threshold.
  * Accounts for the 'shield' power-up.
  * Skips collision checks if the player is spectating.
+ * Broadcasts PLAYER_LOSS and SCORE_UPDATE events.
  *
  * @param {object} playerBodyPos - The body position of the local player {x, y}.
  * @param {object} droplets - The current droplets in the room state.
@@ -76,12 +76,10 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
 
             if (isShielded) {
                 // Shield blocked the paint!
-                // console.log(`Shield blocked droplet ${dropletId}`);
                 // Add a visual effect for the block
                 addEffect('blockSpark', { x: droplet.x, y: droplet.y, color: droplet.color });
             } else {
                 // No shield - apply paint
-                // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
 
                 // Record collision point for splat effect
                 collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
@@ -114,8 +112,6 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         // Clamp total percentage at the loss threshold to avoid going over visually
         totalPercentage = Math.min(totalPercentage, config.lossThreshold);
 
-        // console.log(`Player ${localClientId} painted: ${totalPercentage}% total`);
-
         // Prepare presence update data
         const updateData = { paintedData: updatedPaintedData };
         let justLost = false;
@@ -132,8 +128,6 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             const username = room.peers[localClientId]?.username;
             if (username) {
                 console.log(`Recording loss for ${username}`);
-                // *** CHANGE: Remove local notification, use broadcast ***
-                // addNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
                 broadcastNotification('PLAYER_LOSS', { loserUsername: username });
                 room.collection('loss_v1').create({ loserUsername: username })
                     .then(record => console.log("Loss recorded:", record))
@@ -150,13 +144,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                  const canState = room.roomState.paintCans?.[canId];
                  if (canState) {
                     // Send room state updates to make the can available
-                    // This might be better handled in game-loop or playerInteractions on presence change detection
-                    // For now, let's just update presence to drop it.
-                    // The disconnect logic in main.js might handle the roomState update implicitly,
-                    // OR we need dedicated logic here or elsewhere.
-                    // Simplest: Update presence. Game loop will eventually see player has no can.
-                    // We need to ensure the can itself becomes available though.
-                     room.updateRoomState({
+                    room.updateRoomState({
                          paintCans: { [canId]: null }, // Remove from owned cans
                          availablePaintCans: { // Add to available cans
                             [canId]: {
@@ -187,17 +175,17 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                         amount: incrementAmount
                     });
 
-                    // Get painter's username for notification
+                    // Get usernames for notification payload
                     const painterUsername = room.peers[painterId]?.username || 'Player';
                     const localUsername = room.peers[localClientId]?.username || 'Player';
 
-                    // Notify about score increase
-                    // *** TODO: Replace these local notifications with broadcast in Step 4 ***
-                    if (justLost) {
-                        addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'score', 4000);
-                    } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam
-                        addNotification(`${painterUsername} scored a point for painting ${localUsername}`, 'info', 2000);
-                    }
+                    // Broadcast the score update event
+                    broadcastNotification('SCORE_UPDATE', {
+                        scorerUsername: painterUsername,
+                        victimUsername: localUsername,
+                        points: incrementAmount,
+                        isLoss: justLost
+                    });
 
                     // Optional: Log for debug
                     console.log(`Player ${painterId} gets ${incrementAmount} points for painting ${localClientId}`);
