@@ -29,6 +29,7 @@ export const notes = `
 *   Notification Broadcasting
 *   Scoreboard Distinction for Spectators
 *   Notification Combination Effect
+*   Random Level Selection
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects. (Requires audio capabilities)

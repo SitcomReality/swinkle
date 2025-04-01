@@ -11,6 +11,7 @@ import { addNotification } from './notification-manager.js';
 
 /**
  * Executes host-specific tasks like spawning items and managing level changes.
+ * Selects the next level randomly, avoiding the current level if possible.
  * @param {object} room - The WebsimSocket room instance.
  * @param {number} deltaTime - Time since last frame in seconds.
  * @param {number} now - Current timestamp (Date.now()).
@@ -39,19 +40,32 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
     const nextLevelChangeTime = currentRoomState.nextLevelChangeTime;
     if (typeof nextLevelChangeTime === 'number' && now >= nextLevelChangeTime) {
         console.log("Host: Level change time reached!");
-        const currentLevelId = currentRoomState.currentLevelId || allLevels[0].id;
-        const currentLevelIndex = allLevels.findIndex(level => level.id === currentLevelId);
-        const nextLevelIndex = (currentLevelIndex + 1) % allLevels.length;
-        const nextLevel = allLevels[nextLevelIndex];
+        const currentLevelId = currentRoomState.currentLevelId;
+        let nextLevel = null;
+
+        if (allLevels.length <= 1) {
+            // If only one level exists, just select it
+            nextLevel = allLevels[0];
+        } else {
+            // Select a random level, different from the current one
+            let potentialNextLevel;
+            do {
+                const randomIndex = Math.floor(Math.random() * allLevels.length);
+                potentialNextLevel = allLevels[randomIndex];
+            } while (potentialNextLevel.id === currentLevelId); // Keep trying until a different level is found
+            nextLevel = potentialNextLevel;
+        }
 
         if (nextLevel) {
             updates.levelUpdates.currentLevelId = nextLevel.id;
             updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
             console.log(`Host: Changing level to ${nextLevel.name} (${nextLevel.id}). Next change at ${new Date(updates.levelUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
+            // Notify locally, level-transition handles the visual update for all clients via roomState subscription
             addNotification(`Changing level to: ${nextLevel.name}`, 'info', 5000);
         } else {
-            console.error(`Host: Could not find next level at index ${nextLevelIndex}`);
-            // Reset timer to try again later? Or keep current level? Resetting timer.
+            // This case should ideally not happen if allLevels is populated
+            console.error(`Host: Could not find a next level.`);
+            // Reset timer to try again later
              updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
         }
     } else if (typeof nextLevelChangeTime !== 'number') {
@@ -60,7 +74,10 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
         updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
          // Optionally set a default level ID if it's also missing
          if (!currentRoomState.currentLevelId) {
-             updates.levelUpdates.currentLevelId = allLevels[0].id;
+             // Set a random initial level if current is missing
+             const initialLevelIndex = Math.floor(Math.random() * allLevels.length);
+             updates.levelUpdates.currentLevelId = allLevels[initialLevelIndex].id;
+             console.log(`Host: Setting initial level randomly to ${updates.levelUpdates.currentLevelId}`);
          }
     }
 

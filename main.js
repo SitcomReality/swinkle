@@ -104,9 +104,12 @@ async function initGame() {
 
     // If this client is the host and needs to initialize level state
     if (hostNeedsToInitialize) {
-        initialRoomStateUpdates.currentLevelId = allLevels[0].id; // Default to first level
+        // Select a random initial level
+        const initialLevelIndex = Math.floor(Math.random() * allLevels.length);
+        const initialLevel = allLevels[initialLevelIndex];
+        initialRoomStateUpdates.currentLevelId = initialLevel.id;
         initialRoomStateUpdates.nextLevelChangeTime = Date.now() + config.levelCycleTime;
-        console.log(`Host initializing level to ${initialRoomStateUpdates.currentLevelId}, next change at ${new Date(initialRoomStateUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
+        console.log(`Host initializing level randomly to ${initialRoomStateUpdates.currentLevelId}, next change at ${new Date(initialRoomStateUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
     }
 
     if (Object.keys(initialRoomStateUpdates).length > 0) {
@@ -127,12 +130,15 @@ async function initGame() {
             const currentLowestId = getLowestClientId(room.peers);
             if (currentLowestId === room.clientId) {
                 // If this client is now the lowest ID, claim host and initialize level state
+                // Select a random initial level when claiming host via movement
+                const initialLevelIndex = Math.floor(Math.random() * allLevels.length);
+                const initialLevel = allLevels[initialLevelIndex];
                 const hostUpdate = {
                     hostClientId: room.clientId,
-                    currentLevelId: allLevels[0].id, // Default to first level
+                    currentLevelId: initialLevel.id, // Use random level
                     nextLevelChangeTime: Date.now() + config.levelCycleTime
                 };
-                console.log(`Claiming host status on mouse move, initializing level.`);
+                console.log(`Claiming host status on mouse move, initializing level randomly to ${initialLevel.id}.`);
                 room.updateRoomState(hostUpdate);
             }
         }
@@ -248,8 +254,8 @@ async function initGame() {
                 const updates = {
                     paintCans: {
                         [canId]: {
-                            isCharging: false, 
-                            accumulatedDroplets: 0 
+                            isCharging: false,
+                            accumulatedDroplets: 0
                         }
                     }
                 };
@@ -258,8 +264,8 @@ async function initGame() {
                 if (dropletsToBurst > 0) {
                     console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
                     const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
-                    updates.droplets = burstData; 
-                } 
+                    updates.droplets = burstData;
+                }
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
                 room.updateRoomState(updates);
@@ -285,7 +291,7 @@ async function initGame() {
         if (e.key === 'Escape') {
             const localClientId = room.clientId;
             const localPresence = room.presence[localClientId];
-            if (!localPresence) return; 
+            if (!localPresence) return;
 
             if (localPresence.isSpectating) {
                 // --- Leave Spectate Mode ---
@@ -325,12 +331,12 @@ async function initGame() {
     room.updatePresence({
         x: initialX,
         y: initialY,
-        color: config.defaultPlayerColor || '#FFFFFF', 
-        paintedData: {}, 
-        currentCanId: null, 
-        lost: false, 
-        score: 0, 
-        isSpectating: true, 
+        color: config.defaultPlayerColor || '#FFFFFF',
+        paintedData: {},
+        currentCanId: null,
+        lost: false,
+        score: 0,
+        isSpectating: true,
         respawnAnimEndTime: null // Initialize respawn animation timer state
     });
     // Set initial known position for idle timer
@@ -342,7 +348,7 @@ async function initGame() {
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
         const localClientId = room.clientId;
         const localPresence = room.presence[localClientId];
-        if (!localPresence) return; 
+        if (!localPresence) return;
 
         if (updateRequest.type === 'dropCan') {
             if (localPresence.currentCanId) {
