@@ -1,0 +1,99 @@
+/* Instructions styling */
+#instructions-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(20, 20, 50, 0.9);
+    border: 3px solid #9d00ff;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 600px;
+    z-index: 1100;
+    box-shadow: 0 0 20px rgba(157, 0, 255, 0.7);
+    font-family: 'Lucida Console', Monaco, monospace;
+    color: #e0e0ff;
+    text-align: center;
+}
+
+#instructions-container.hidden {
+    display: none;
+}
+
+#swinkle-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    margin-bottom: 20px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px currentColor;
+}
+
+.sw-letter {
+    color: #00ffff;
+}
+
+.ink-letters {
+    color: #ff00ff;
+}
+
+#instructions-list {
+    list-style-type: none;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-align: left;
+}
+
+#instructions-list li {
+    margin-bottom: 15px;
+    padding-left: 25px;
+    position: relative;
+}
+
+#instructions-list li:before {
+    content: "•";
+    color: #00ffff;
+    font-size: 1.5em;
+    position: absolute;
+    left: 0;
+    top: -2px;
+}
+
+.powerup-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    margin: 0 4px;
+}
+
+.powerup-bigBurst {
+    background-image: url('./powerups/bigBurst-icon.png');
+}
+
+.powerup-shortRope {
+    background-image: url('./powerups/shortRope-icon.png');
+}
+
+.powerup-shield {
+    background-image: url('./powerups/shield-icon.png');
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #instructions-container {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    #swinkle-title {
+        font-size: 2.5rem;
+    }
+    
+    #instructions-list {
+        font-size: 1rem;
+    }
+}
