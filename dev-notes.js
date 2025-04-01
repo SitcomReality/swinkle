@@ -17,10 +17,17 @@ export const notes = `
 
 **Next Steps:**
 
-  - Debug notifications. 
-  - Player loss/paint-out effect. "Painted out" - Currently all that happens is the player freezes and we get the "Painted Out" text on screen, and they stay frozen for a few seconds, and then they respawn. This is terrifically boring. Once their more interesting demise is animated, they should enter spectate mode.
-  - Add more levels.
-    
+  - **Debugging Global Notifications:**
+     - **Issue:** Most global notifications (join/leave, powerup pickup, player loss, level change) are not appearing. Respawn/spectate notifications are also local. Score notifications remain local (by design for now).
+     - **Potential Causes & Debugging Strategy:**
+        1. **Record Creation Failure:** Verify that \`addGlobalNotification\` is being called in the expected places (e.g., \`collisionHandler.js\` for loss, \`power-up-manager.js\` for pickup, \`peer-manager.js\` for join/leave, \`host-logic.js\` for level change). Add \`console.log\` statements inside \`addGlobalNotification\` in \`notification-manager.js\`.
+        2. **Record Subscription Issue:** Add a \`console.log\` inside the \`room.collection('notification_v2').subscribe()\` callback in \`initializeNotificationManager\` to confirm it's receiving records.
+        3. **Rendering Logic / Duplicate Prevention:** The previous strict check using \`displayedGlobalNotificationIds\` might have been preventing notifications. This has been relaxed. Monitor if global notifications now appear. The remaining duplicate check within \`addNotificationInternal\` based on *active* notifications (matching record ID) should prevent visual spam while allowing timers to reset.
+        4. **Local Fallback:** Ensure all intended global notifications are calling \`addGlobalNotification\` and not the local \`addNotification\` (e.g., respawns, spectate). Score notifications are intentionally local for now. Check \`respawn-manager.js\`, \`spectate-mode.js\`, \`main.js\` for calls to \`addNotification\` that should be global. (Done in this update).
+        5. **Websim Console/Tools:** If available, directly inspect the \`notification_v2\` collection in the Websim backend/debugger to see if records are being created as expected.
+
+  - **Player loss/paint-out effect:** "Painted out" - Currently all that happens is the player freezes and we get the "Painted Out" text on screen, and they stay frozen for a few seconds, and then they respawn. This is terrifically boring. Once their more interesting demise is animated, they should enter spectate mode.
+  - **Add more levels.**
 
 **Other Planned Features:**
 
@@ -28,7 +35,7 @@ export const notes = `
    - Once audio is available, trigger a respawn sound effect in \`respawn-manager.js\` when the respawn occurs.
 
 - **More visual effects:**
-   
+
    - Can pickup/steal effect improvement.
 
 - **Future Ideas/Stretch Goals:**

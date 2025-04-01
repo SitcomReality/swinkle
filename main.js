@@ -19,7 +19,8 @@ import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
 // Import notification manager and specific functions
-import { initializeNotificationManager, addNotification, cleanupNotifications } from './notification-manager.js';
+// Use GLOBAL notification for respawn click
+import { initializeNotificationManager, addNotification, cleanupNotifications, addGlobalNotification } from './notification-manager.js';
 
 export const room = new WebsimSocket();
 
@@ -197,9 +198,10 @@ async function initGame() {
             // Send the presence update to rejoin the game
             room.updatePresence(respawnUpdates);
 
-            // Send notification
+            // Send GLOBAL notification
             const username = room.peers[localClientId]?.username || 'Player';
-            addNotification(`${username} respawned!`, 'info', 3000);
+            addGlobalNotification(`${username} respawned!`, 'info', 3000)
+                .catch(err => console.error('Error sending global respawn notification:', err));
 
             // Reset idle timer state immediately upon rejoining
             lastSignificantMoveTime = Date.now();
@@ -237,8 +239,8 @@ async function initGame() {
                 const updates = {
                     paintCans: {
                         [canId]: {
-                            isCharging: false, 
-                            accumulatedDroplets: 0 
+                            isCharging: false,
+                            accumulatedDroplets: 0
                         }
                     }
                 };
@@ -247,8 +249,8 @@ async function initGame() {
                 if (dropletsToBurst > 0) {
                     console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
                     const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
-                    updates.droplets = burstData; 
-                } 
+                    updates.droplets = burstData;
+                }
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
                 room.updateRoomState(updates);
@@ -274,7 +276,7 @@ async function initGame() {
         if (e.key === 'Escape') {
             const localClientId = room.clientId;
             const localPresence = room.presence[localClientId];
-            if (!localPresence) return; 
+            if (!localPresence) return;
 
             if (localPresence.isSpectating) {
                 // --- Leave Spectate Mode ---
@@ -291,9 +293,11 @@ async function initGame() {
                 );
                 room.updatePresence(respawnUpdates);
 
-                // Send notification
+                // Send GLOBAL notification
                 const username = room.peers[localClientId]?.username || 'Player';
-                addNotification(`${username} respawned!`, 'info', 3000);
+                addGlobalNotification(`${username} respawned!`, 'info', 3000)
+                     .catch(err => console.error('Error sending global respawn notification:', err));
+
 
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
@@ -312,12 +316,12 @@ async function initGame() {
     room.updatePresence({
         x: initialX,
         y: initialY,
-        color: config.defaultPlayerColor || '#FFFFFF', 
-        paintedData: {}, 
-        currentCanId: null, 
-        lost: false, 
-        score: 0, 
-        isSpectating: true, 
+        color: config.defaultPlayerColor || '#FFFFFF',
+        paintedData: {},
+        currentCanId: null,
+        lost: false,
+        score: 0,
+        isSpectating: true,
         respawnAnimEndTime: null // Initialize respawn animation timer state
     });
     // Set initial known position for idle timer
@@ -328,7 +332,7 @@ async function initGame() {
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
         const localClientId = room.clientId;
         const localPresence = room.presence[localClientId];
-        if (!localPresence) return; 
+        if (!localPresence) return;
 
         if (updateRequest.type === 'dropCan') {
             if (localPresence.currentCanId) {
