@@ -21,13 +21,14 @@ export const notes = `
 
 0.   ~~**(Done)** Defined 'shortRope' and 'bigBurst' power-up data structures and placeholder effects in \`power-ups/power-up-data.js\`.
 1.   ~~**(Done)** **Defined Power-Up Data:** Added 'shortRope' and 'bigBurst' definitions to \`power-ups/power-up-data.js\`. Include ID, name, description, duration, visual properties (color, icon ID), rarity, and *placeholder* \`effect\` functions.~~
+2.1  ~~**(Done)** **Implement Short Rope Physics:**~~
+    *   ~~Added new config values to \`config.js\` for \`shortRopeMultiplier\` (e.g., 0.2) and \`shortRopeDuration\`. ~~
+    &   ~~Modified \`playerPhysics.js\` (\`updatePlayerPhysics\`) to check for a new presence flag (e.g., \`shortRopeActive\`) and apply the multiplier to bungee \`restLength\` and \`maxLength\`. ~~
 
-**Next Steps: 
+**Next Steps:**
 
-2.1  **(This Step)** **Implement Short Rope Physics:**
-    *   Add new config values to \`config.js\` for \`shortRopeMultiplier\` (e.g., 0.2) and \`shortRopeDuration\`.
-    &   Modify \`playerPhysics.js\` (\`updatePlayerPhysics\`) to check for a new presence flag (e.g., \`shortRopeActive\`) and apply the multiplier to bungee \`restLength\` and \`maxLength\`.
-2.2   *   Update the 'shortRope' \`effect\` function in \`power-ups/power-up-data.js\` to set \`shortRopeActive: true\` in presence (in addition to adding to \`activePowerUps\`).
+2.2  **(This Step)** **Handle Short Rope Activation/Expiration:**
+    *   Update the 'shortRope' \`effect\` function in \`power-ups/power-up-data.js\` to set \`shortRopeActive: true\` in presence (in addition to adding to \`activePowerUps\`).
     &   Update \`power-ups/power-up-manager.js\` (\`processActivePowerUps\`) to handle the expiration of 'shortRope', setting \`shortRopeActive: false\`.
 3.  **Refactor Burst Logic:**
  3.1   *   Move the \`createBurstDroplets\` function from \`playerInteractions.js\` into its own file (e.g., \`paint-burst.js\` or similar).

@@ -99,11 +99,11 @@ function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
 
 /**
  * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
- * Also handles collision with level geometry and applies the 'springyBungee' power-up effect.
+ * Also handles collision with level geometry and applies power-up effects ('springyBungee', 'shortRopeActive').
  * Accounts for spectator mode anchor point logic. Stores the anchor point used.
  *
  * @param {string} clientId - The ID of the player to update.
- * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee, isSpectating).
+ * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee, shortRopeActive, isSpectating).
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  */
 export function updatePlayerPhysics(clientId, presence, deltaTime) {
@@ -126,18 +126,30 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     }
 
     const state = ensurePhysicsState(clientId, anchorPos); // Ensure state exists, pass determined anchor for initialization if needed
-    const isSpringy = presence.springyBungee || false; // Check for springy power-up
+
+    // --- Check Power-Up Effects ---
+    const isSpringy = presence.springyBungee || false;
+    const isShortRope = presence.shortRopeActive || false; // Check for short rope power-up
 
     // --- Body Linear Physics (Position/Velocity) ---
     // Adjust spring constant based on power-up
     const baseK = config.bungeeSpringConstant;
     const k = isSpringy ? baseK * config.springyBungeeMultiplier : baseK;
 
-    const restLength = config.bungeeRestLength;
+    // Adjust bungee lengths based on power-ups
+    let baseRestLength = config.bungeeRestLength;
+    let baseMaxLengthMultiplier = config.bungeeMaxLengthMultiplier || 50;
+
+    if (isShortRope) {
+        baseRestLength *= config.shortRopeMultiplier;
+        baseMaxLengthMultiplier *= config.shortRopeMultiplier; // Shorten max length too
+    }
+
+    const restLength = baseRestLength;
     const damping = config.bungeeDampingFactor;
     const gravity = config.gravityAcceleration;
     const mass = config.playerBodyMass || 1;
-    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 50); // Adjusted default
+    const maxLength = restLength * baseMaxLengthMultiplier;
 
     const dx = anchorPos.x - state.position.x;
     const dy = anchorPos.y - state.position.y;
@@ -201,7 +213,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     handlePlayerLevelCollision(state, presence);
 
     // --- Constraints (Post-Collision) ---
-    // Max Length Constraint for Bungee
+    // Max Length Constraint for Bungee (uses potentially modified maxLength)
     const finalDx = anchorPos.x - state.position.x;
     const finalDy = anchorPos.y - state.position.y;
     const finalDistance = Math.sqrt(finalDx * finalDx + finalDy * finalDy);
