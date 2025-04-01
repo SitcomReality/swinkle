@@ -7,6 +7,8 @@ import config from 'config';
 import { room } from './main.js';
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 import { addNotification } from './notification-manager.js'; // Import notification function
+// Import the global broadcast function
+import { broadcastNotification } from './global-notifier.js';
 
 /**
  * Checks for collisions between the local player and all droplets.
@@ -130,8 +132,9 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             const username = room.peers[localClientId]?.username;
             if (username) {
                 console.log(`Recording loss for ${username}`);
-                // Add notification of player loss
-                addNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
+                // *** CHANGE: Remove local notification, use broadcast ***
+                // addNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
+                broadcastNotification('PLAYER_LOSS', { loserUsername: username });
                 room.collection('loss_v1').create({ loserUsername: username })
                     .then(record => console.log("Loss recorded:", record))
                     .catch(err => console.error("Error recording loss:", err));
@@ -189,6 +192,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                     const localUsername = room.peers[localClientId]?.username || 'Player';
 
                     // Notify about score increase
+                    // *** TODO: Replace these local notifications with broadcast in Step 4 ***
                     if (justLost) {
                         addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'score', 4000);
                     } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam

@@ -86,6 +86,7 @@ function handleNotificationRecords(records) {
 
         // --- Map event types to local addNotification calls ---
         switch (type) {
+            // *** ADDED: Handler for PLAYER_LOSS ***
             case 'PLAYER_LOSS':
                 if (payload.loserUsername) {
                     addNotification(`${payload.loserUsername} was PAINTED OUT!`, 'loss', 5000);

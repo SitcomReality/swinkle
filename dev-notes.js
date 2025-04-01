@@ -27,11 +27,11 @@ Goal: Make key game event notifications visible to all players, not just the cli
     - Added basic cleanup for old records (e.g., delete records older than 1 minute? Or maybe just filter in the subscription).
     - *Files Created/Modified: \`global-notifier.js\` (new), \`main.js\`, \`index.html\`*
 
-  - **2. Integrate Player Loss Notifications:**
-    - Modify \`collisionHandler.js\`: When a player loss is detected (\`totalPercentage >= config.lossThreshold\`), *remove* the direct call to \`addNotification\`.
-    - Instead, call \`broadcastNotification('PLAYER_LOSS', { loserUsername: username })\`.
-    - Update \`global-notifier.js\` subscription logic to handle the \`'PLAYER_LOSS'\` event type and format the message for \`addNotification\`.
-    - *Files to Modify: \`collisionHandler.js\`, \`global-notifier.js\`*
+  - **2. [DONE] Integrate Player Loss Notifications:**
+    - Modified \`collisionHandler.js\`: When a player loss is detected (\`totalPercentage >= config.lossThreshold\`), *removed* the direct call to \`addNotification\`.
+    - Instead, called \`broadcastNotification('PLAYER_LOSS', { loserUsername: username })\`.
+    - Updated \`global-notifier.js\` subscription logic to handle the \`'PLAYER_LOSS'\` event type and format the message for \`addNotification\`.
+    - *Files Modified: \`collisionHandler.js\`, \`global-notifier.js\`*
 
   - **3. Integrate Power-up Collection Notifications:**
     - Modify \`power-up-manager.js\` (\`checkPowerUpCollisions\`): *Remove* the direct call to \`addNotification\` upon successful collection.
