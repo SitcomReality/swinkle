@@ -9,21 +9,21 @@ export default {
     nameFont: '12px "Lucida Console", Monaco, monospace', // Font for player names
     playerBodyWidth: 20,  // Width of the character body capsule
     playerBodyHeight: 30, // Height of the character body capsule
-    playerEyeRadius: 4,   // Radius of the character's eyes
+    playerEyeRadius: 6,   // Radius of the character's eyes
     playerEyeOffsetX: 6,  // Horizontal offset of eyes from center
     playerEyeOffsetY: -3, // Vertical offset of eyes from body center
     playerBodyColor: '#FFAABB', // Base color for the player body (gets blended with paint later)
     playerBodyStrokeColor: '#FF88AA', // Base color for the player body stroke (gets blended with paint later)
 
     // Bungee Physics settings (Player -> Cursor)
-    bungeeRestLength: 8,        // Natural length of the player's bungee cord
-    bungeeSpringConstant: 8,     // Stiffness of the player's bungee cord
+    bungeeRestLength: 4,        // Natural length of the player's bungee cord
+    bungeeSpringConstant: 9,     // Stiffness of the player's bungee cord
     bungeeDampingFactor: 0.98,   // Damping factor for player's bungee (Less damping = more swing)
     gravityAcceleration: 1200,   // Force of gravity pulling the player body down
     playerBodyMass: 0.8,         // Mass affects how forces influence player acceleration
     bungeeCordColor: 'rgba(255, 255, 255, 0.5)', // Color of the player's bungee line
     bungeeCordWidth: 2,         // Width of the player's bungee line
-    bungeeMaxLengthMultiplier: 50, // Max stretch factor for player bungee relative to rest length
+    bungeeMaxLengthMultiplier: 60, // Max stretch factor for player bungee relative to rest length
 
     // Limb Physics & Appearance Settings
     numberOfLimbs: 2,            // How many limbs the character has
@@ -54,15 +54,15 @@ export default {
     paintCanInitialAmount: 100, // Starting paint amount in a new can
     paintCanStrokeColor: '#AAAAAA',
     paintCanStrokeWidth: 1,
-    paintCanChargeIndicatorHeight: 4, // Height of the charge bar
+    paintCanChargeIndicatorHeight: 6, // Height of the charge bar
     paintCanChargeIndicatorWidth: 20, // Width of the charge bar background
     paintCanChargeIndicatorColor: '#FFFFFF', // Color of the charge bar fill
     initialAvailableCans: 2, // Number of cans to spawn initially
     maxAvailableCans: 3,    // Max number of available cans allowed on map
 
     // Paint Can Bungee Physics (Player Capsule -> Paint Can)
-    paintCanBungeeRestLength: 30, // Let it dangle a bit further
-    paintCanBungeeSpringConstant: 4, // Less stiff than player bungee
+    paintCanBungeeRestLength: 20, // Let it dangle a bit further
+    paintCanBungeeSpringConstant: 6, // Less stiff than player bungee
     paintCanBungeeDampingFactor: 0.95, // More damped, less wild swinging
     paintCanMass: 0.4, // Heavier than limbs, lighter than player
     paintCanGravityFactor: 1.0, // Affected by full gravity
