@@ -172,12 +172,14 @@ async function initGame() {
         // Check if player is spectating
         if (localPresence && localPresence.isSpectating) {
             console.log("Click detected while spectating: Respawning player.");
+            const now = Date.now(); // Get current time for animation end time
             // Use triggerManualRespawn to get the correct presence update object
             const respawnUpdates = triggerManualRespawn(
                 localClientId,
                 localPresence,
                 config.gameAreaWidth,
-                config.gameAreaHeight
+                config.gameAreaHeight,
+                now // Pass current time
             );
             // Send the presence update to rejoin the game
             room.updatePresence(respawnUpdates);
@@ -264,11 +266,13 @@ async function initGame() {
             if (localPresence.isSpectating) {
                 // --- Leave Spectate Mode ---
                 console.log("ESC pressed: Leaving spectate mode.");
+                const now = Date.now(); // Get current time for animation end time
                 const respawnUpdates = triggerManualRespawn(
                     localClientId,
                     localPresence, 
                     config.gameAreaWidth,
-                    config.gameAreaHeight
+                    config.gameAreaHeight,
+                    now // Pass current time
                 );
                 room.updatePresence(respawnUpdates);
 
@@ -300,7 +304,8 @@ async function initGame() {
         currentCanId: null, 
         lost: false, 
         score: 0, 
-        isSpectating: true 
+        isSpectating: true, 
+        respawnAnimEndTime: null // Initialize respawn animation timer state
     });
     // Set initial known position for idle timer
     lastKnownPosition = { x: initialX, y: initialY };

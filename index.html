@@ -1,10 +1,8 @@
-<!DOCTYPE html>
 <html>
 <head>
-    <title>SWINKLE! Swing! Ink! Sprinkle!</title>
+    <title>Interactive Web Project</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="notification-styles.css">
-    <link rel="stylesheet" href="instructions/instructions.css">
+    <link rel="stylesheet" href="notification-styles.css"> 
     <script type="importmap">
     {
         "imports": {
@@ -14,7 +12,6 @@
             "./playerState.js": "./playerState.js",
             "./playerPhysics.js": "./playerPhysics.js",
             "./playerRenderer.js": "./playerRenderer.js",
-            "./player-effects-renderer.js": "./player-effects-renderer.js",
             "./colorUtils.js": "./colorUtils.js",
             "./playerInteractions.js": "./playerInteractions.js",
             "./dropletRenderer.js": "./dropletRenderer.js",
@@ -38,55 +35,26 @@
             "./power-ups/power-up-manager.js": "./power-ups/power-up-manager.js",
             "./power-ups/power-up-renderer.js": "./power-ups/power-up-renderer.js",
             "./notification-manager.js": "./notification-manager.js",
-            "./notification-broadcaster.js": "./notification-broadcaster.js",
             "./host-logic.js": "./host-logic.js",
             "./renderer.js": "./renderer.js",
             "./boundary-renderer.js": "./boundary-renderer.js",
             "./level-transition.js": "./level-transition.js",
             "./debug-utils.js": "./debug-utils.js",
-            "./spectate-mode.js": "./spectate-mode.js",
-            "./paletteData.js": "./paletteData.js",
-            "./paint-burst.js": "./paint-burst.js",
-            "./burst-handler.js": "./burst-handler.js",
-            "./instructions/instructions.js": "./instructions/instructions.js",
-            "./local-state.js": "./local-state.js",
-            "./websocket-chunker.js": "./websocket-chunker.js",
-            "./loading-screen.js": "./loading-screen.js"
+            "./spectate-mode.js": "./spectate-mode.js"
         }
     }
     </script>
 </head>
 <body>
     <div id="dev-notes-container"></div>
-    <div id="loading-screen">
-        <h1 class="loading-title">
-            <span class="load-letter">L</span>
-            <span class="load-letter">O</span>
-            <span class="ink-letters">A</span>
-            <span class="ink-letters">D</span>
-            <span class="ink-letters">I</span>
-            <span class="load-letter">N</span>
-            <span class="load-letter">G</span>
-        </h1>
-        <p class="loading-subtitle">Preparing ink buckets...</p>
-    </div>
     <div id="scoreboard">
         <h2>Scoreboard</h2>
-        <div class="swinkle-title">
-            <span class="sw-letter">S</span>
-            <span class="sw-letter">W</span>
-            <span class="ink-letters">I</span>
-            <span class="ink-letters">N</span>
-            <span class="ink-letters">K</span>
-            <span class="sw-letter">L</span>
-            <span class="sw-letter">E</span>
-        </div>
         <table id="scoreboard-table">
             <thead>
                 <tr>
                     <th>Player</th>
                     <th>Score</th>
-                    <th>% Inked</th>
+                    <th>% Painted</th>
                     <th>Losses</th>
                 </tr>
             </thead>
@@ -106,7 +74,6 @@
     </div>
     <!-- Container for DOM-based notifications -->
     <div id="notifications-container"></div>
-    <!-- Instructions container will be added by instructions.js -->
     <script type="module" src="main.js"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>

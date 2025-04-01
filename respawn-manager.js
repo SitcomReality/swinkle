@@ -11,6 +11,9 @@ import { addEffect } from './effectsRenderer.js'; // Import addEffect
 // Import utility to calculate paint percentage
 import { calculateTotalPaintPercentage } from './colorUtils.js';
 
+// Duration for the respawn fade-in animation
+const RESPAWN_ANIM_DURATION = 500; // milliseconds
+
 /**
  * Checks if a player should respawn based on timer and generates presence updates.
  * Also sends a notification upon automatic respawn.
@@ -33,7 +36,7 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
         // Generate and return the respawn presence update object
         // triggerManualRespawn handles the effect and spectator cleanup
         // Pass the current presence to conditionally reset paint
-        return triggerManualRespawn(localClientId, localPresence, gameAreaWidth, gameAreaHeight);
+        return triggerManualRespawn(localClientId, localPresence, gameAreaWidth, gameAreaHeight, now);
     }
     return {};
 }
@@ -43,14 +46,16 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
  * Resets relevant state and places the player in the center.
  * Conditionally resets paintedData based on whether the player was fully painted out.
  * Also cleans up spectator state and adds a visual effect using the player's base color.
+ * Sets the animation end time for the fade-in effect.
  * Does NOT send notification (callers should handle that).
  * @param {string} clientId - The ID of the client respawning.
  * @param {object} currentPresence - The presence data of the player *before* respawning.
  * @param {number} gameAreaWidth - Width of the game area from config.
  * @param {number} gameAreaHeight - Height of the game area from config.
+ * @param {number} now - The current timestamp (Date.now()).
  * @returns {object} Presence updates for respawn/rejoin.
  */
-export function triggerManualRespawn(clientId, currentPresence, gameAreaWidth, gameAreaHeight) {
+export function triggerManualRespawn(clientId, currentPresence, gameAreaWidth, gameAreaHeight, now) {
     console.log(`Generating respawn/rejoin presence update for player ${clientId}`);
 
     // Spawn in the middle of the defined game area
@@ -86,6 +91,7 @@ export function triggerManualRespawn(clientId, currentPresence, gameAreaWidth, g
         x: spawnX,              // Reset anchor position to center
         y: spawnY,
         isSpectating: false,    // Player is no longer spectating
+        respawnAnimEndTime: now + RESPAWN_ANIM_DURATION, // Set animation end time
         // Keep score, reset power-ups? (Currently keeping score, powerups time out)
     };
 

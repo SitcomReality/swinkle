@@ -13,6 +13,7 @@ import { checkCollisionsWithPlayer } from './collisionHandler.js';
 import { handlePlayerCollisions } from './collision-system.js';
 import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
+import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator, updateScoreboardStyle } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js';
 import { addNotification, updateNotifications } from './notification-manager.js';
@@ -51,24 +52,35 @@ function handleLocalPlayerChecks(now, localClientId) {
         config.gameAreaHeight
     );
     localPresenceUpdates = { ...localPresenceUpdates, ...respawnUpdates };
-    if (Object.keys(respawnUpdates).length > 0 && roomInstance.presence[localClientId]) {
-        Object.assign(roomInstance.presence[localClientId], respawnUpdates);
+    let presenceAfterRespawn = localPresenceBeforeUpdate;
+    if (Object.keys(respawnUpdates).length > 0) {
+        presenceAfterRespawn = { ...presenceAfterRespawn, ...respawnUpdates };
     }
 
-    const localPresenceForIdleCheck = roomInstance.presence[localClientId] || localPresenceBeforeUpdate;
-    if (localPresenceForIdleCheck && !localPresenceForIdleCheck.isSpectating && !localPresenceForIdleCheck.lost) {
+    if (presenceAfterRespawn && !presenceAfterRespawn.isSpectating && !presenceAfterRespawn.lost) {
         const lastMoveTime = getLastSignificantMoveTime();
         if (now - lastMoveTime > config.idleThreshold) {
             console.log(`Player ${localClientId} detected as idle, entering spectate mode.`);
             enterSpectateMode(localClientId, roomInstance); 
+            presenceAfterRespawn = { ...(roomInstance.presence[localClientId] || presenceAfterRespawn) };
         }
     }
 
-    const presenceAfterIdleCheck = roomInstance.presence[localClientId] || localPresenceBeforeUpdate;
-    const expiredPowerUpUpdates = processActivePowerUps(localClientId, presenceAfterIdleCheck, now);
+    const expiredPowerUpUpdates = processActivePowerUps(localClientId, presenceAfterRespawn, now);
     localPresenceUpdates = { ...localPresenceUpdates, ...expiredPowerUpUpdates };
-    if (Object.keys(expiredPowerUpUpdates).length > 0 && roomInstance.presence[localClientId]) {
-        Object.assign(roomInstance.presence[localClientId], expiredPowerUpUpdates);
+    let presenceAfterPowerups = presenceAfterRespawn;
+    if (Object.keys(expiredPowerUpUpdates).length > 0) {
+        presenceAfterPowerups = { ...presenceAfterPowerups, ...expiredPowerUpUpdates };
+    }
+
+    if (presenceAfterPowerups.respawnAnimEndTime && now >= presenceAfterPowerups.respawnAnimEndTime) {
+        localPresenceUpdates.respawnAnimEndTime = null; 
+        console.log(`Respawn animation finished for ${localClientId}`);
+        presenceAfterPowerups = { ...presenceAfterPowerups, respawnAnimEndTime: null };
+    }
+
+    if (Object.keys(localPresenceUpdates).length > 0 && roomInstance.presence[localClientId]) {
+        Object.assign(roomInstance.presence[localClientId], localPresenceUpdates);
     }
 
     return localPresenceUpdates;

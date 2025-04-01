@@ -26,11 +26,15 @@ Goal: Create a more visually appealing respawn sequence beyond the current basic
     - *Files Modified: \`effectsRenderer.js\`, \`respawn-manager.js\`*
 
   - **2. Player Fade-In:**
-    - Add a temporary state to player presence indicating they are in the 'respawning animation' phase (e.g., \`respawnAnimProgress: 1\` initially, counting down).
-    - Update \`respawn-manager.js\` (\`triggerManualRespawn\`) to set this state (e.g., for 0.5 seconds).
-    - Update \`game-loop.js\` to decrement this timer each frame for relevant players and remove the state when done. Update presence if the timer state changes.
-    - Modify \`playerRenderer.js\` to check for this state. If present, render the player capsule with opacity and/or scale based on the animation progress (e.g., scaling from 0 to 1 and fading from 0 to 1 as the timer goes from 0.5s down to 0s).
-    - *Files Modified: \`respawn-manager.js\`, \`game-loop.js\`, \`playerRenderer.js\`, potentially \`main.js\` (for initial presence structure if field added)*
+    - Add a temporary state to player presence indicating they are in the 'respawning animation' phase.
+        - **2a. [DONE] Add Presence State (`respawnAnimEndTime`):**
+            - Updated \`respawn-manager.js\` (\`triggerManualRespawn\`) to set \`respawnAnimEndTime = now + DURATION\`.
+            - Updated \`main.js\` to initialize \`respawnAnimEndTime: null\` in presence and pass \`now\` to \`triggerManualRespawn\` on click/escape respawns.
+            - Updated \`game-loop.js\` to check if \`respawnAnimEndTime\` exists and \`now >= respawnAnimEndTime\`, setting it to \`null\` in presence updates if true.
+            - *Files Modified: \`respawn-manager.js\`, \`main.js\`, \`game-loop.js\`*
+        - **2b. Update Renderer:**
+            - Modify \`playerRenderer.js\` to check for \`respawnAnimEndTime\`. If present, calculate the remaining animation time and progress (0 to 1, where 1 is start and 0 is end). Render the player capsule, limbs, name, and held can/bungee with opacity based on this progress (fade from 0 to 1).
+            - *Files Modified: \`playerRenderer.js\`*
 
   - **3. Hide Player During Initial Burst:**
     - Modify \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule at all. The fade-in from Step 2 should only start *after* the initial particle burst.
