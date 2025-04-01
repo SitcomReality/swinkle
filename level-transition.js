@@ -5,6 +5,8 @@
 import { powerUpDefinitions } from './power-ups/power-up-data.js';
 import config from 'config';
 import { hexToRgb, calculateBlendedColor } from './colorUtils.js'; // Import for color blending
+// Import level manager directly to update its state
+import * as levelManager from './level-manager.js';
 
 // Transition state
 let isTransitioning = false;
@@ -31,6 +33,10 @@ export function startLevelTransition(oldData, newData) {
         console.error("Level Transition: Cannot start transition, new level data is missing.");
         return;
     }
+    if (isTransitioning) {
+        console.warn("Level Transition: Already transitioning, ignoring new request.");
+        return;
+    }
     console.log(`Starting level transition from ${oldData?.id || 'none'} to ${newData.id}`);
     isTransitioning = true;
     transitionStartTime = Date.now();
@@ -41,9 +47,9 @@ export function startLevelTransition(oldData, newData) {
     newBgColor = hexToRgb(newData.backgroundColor || '#0a0a1e');
     transitionPhase = 'fade_out';
     progress = 0;
-    
+
     // Potentially clear effects or other elements tied to the old level here
-     import('./effectsRenderer.js').then(({ clearEffects }) => clearEffects());
+    import('./effectsRenderer.js').then(({ clearEffects }) => clearEffects());
 }
 
 /**
@@ -66,14 +72,17 @@ export function updateLevelTransition(deltaTime, now) {
         progress = Math.min(1, (elapsed - FADE_OUT_DURATION) / FADE_IN_DURATION);
     } else {
         // Transition finished
+        // Set final background color precisely
+        document.body.style.backgroundColor = newLevelData?.backgroundColor || '#0a0a1e';
+        // Immediately update the level manager's state *before* setting isTransitioning to false
+        levelManager.setCurrentLevelDataFromTransition(newLevelData);
+        // Now mark transition as complete
         isTransitioning = false;
         transitionPhase = 'idle';
         progress = 0;
-        // Set final background color precisely
-        document.body.style.backgroundColor = newLevelData?.backgroundColor || '#0a0a1e';
         console.log("Level transition finished.");
-        // Notify level manager that transition is complete
-        import('./level-manager.js').then(manager => manager.notifyTransitionComplete(newLevelData));
+        // Remove notification call - level manager update is now synchronous
+        // import('./level-manager.js').then(manager => manager.notifyTransitionComplete(newLevelData));
         return;
     }
 
@@ -81,7 +90,7 @@ export function updateLevelTransition(deltaTime, now) {
     if (oldBgColor && newBgColor) {
         let currentProgress = 0;
         if (transitionPhase === 'fade_out') {
-             // Fade progresses from 0 to 1 during fade_out phase
+            // Fade progresses from 0 to 1 during fade_out phase
             currentProgress = progress * 0.5; // Reach halfway color blend at end of fade_out
         } else { // fade_in phase
             // Fade progresses from 0 to 1 during fade_in phase

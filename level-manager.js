@@ -9,35 +9,31 @@ import { startLevelTransition, isTransitionActive } from './level-transition.js'
 let currentLevelData = null;
 let levelRoom = null; // Store the room instance
 let unsubscribeRoomState = () => {};
-let waitingForTransition = false; // Flag to track if we're waiting for a transition to finish
 
 /**
- * Loads a specific level object based on its ID.
- * This is now primarily called AFTER a transition completes.
+ * Sets the current level data. Called internally or by level-transition.js.
+ * Background color updates are now handled by the transition process.
  * @param {object} levelObject - The level data object to load.
  */
-function loadLevel(levelObject) {
+function setInternalLevelData(levelObject) {
     if (!levelObject) {
-        console.error("loadLevel called with invalid levelObject.");
+        console.error("setInternalLevelData called with invalid levelObject.");
         return;
     }
-    console.log(`Loading level: ${levelObject.name} (${levelObject.id})`);
     currentLevelData = levelObject;
-    // Background color update is now handled by level-transition.js
-    // document.body.style.backgroundColor = currentLevelData.backgroundColor || '#0a0a1e';
 }
 
 /**
- * Callback function for level-transition.js to signal completion.
+ * Public function called by level-transition.js when the transition is finished
+ * to update the manager's internal state.
  * @param {object} completedLevelData - The data of the level that just finished transitioning in.
  */
-export function notifyTransitionComplete(completedLevelData) {
+export function setCurrentLevelDataFromTransition(completedLevelData) {
      if (completedLevelData) {
-        loadLevel(completedLevelData); // Officially load the new level data
+        setInternalLevelData(completedLevelData); 
      } else {
-        console.error("Transition completed but no level data provided.");
+        console.error("setCurrentLevelDataFromTransition called but no level data provided.");
      }
-     waitingForTransition = false;
 }
 
 /**
@@ -55,7 +51,7 @@ export function initializeLevelManager(room) {
     console.log("Initializing level manager...");
 
     // Initial level load based on current room state (no transition on first load)
-    const initialLevelId = levelRoom.roomState?.currentLevelId;
+    const initialLevelId = room.roomState?.currentLevelId;
     const initialLevelObject = allLevels.find(level => level.id === initialLevelId) || allLevels[0];
 
     if (!initialLevelId) {
@@ -63,11 +59,11 @@ export function initializeLevelManager(room) {
     }
     // Set initial background immediately
     document.body.style.backgroundColor = initialLevelObject.backgroundColor || '#0a0a1e';
-    loadLevel(initialLevelObject); // Load initial level data directly
+    setInternalLevelData(initialLevelObject); 
 
 
     // Subscribe to room state changes
-    unsubscribeRoomState = levelRoom.subscribeRoomState((currentRoomState) => {
+    unsubscribeRoomState = room.subscribeRoomState((currentRoomState) => {
         // Don't process updates if a transition is already in progress
         if (isTransitionActive()) return;
 
@@ -81,7 +77,6 @@ export function initializeLevelManager(room) {
             if (newLevelObject) {
                 // Start transition instead of loading directly
                 startLevelTransition(currentLevelData, newLevelObject);
-                waitingForTransition = true;
             } else {
                  console.error(`Level with ID "${newLevelId}" found in room state but not in level-data.js!`);
                  // Potentially fall back or keep current level?
@@ -99,9 +94,6 @@ export function initializeLevelManager(room) {
  * @returns {object | null} The current level data object, or null if none is loaded.
  */
 export function getCurrentLevel() {
-    if (!currentLevelData) {
-        console.warn("Attempted to get current level, but none is loaded.");
-    }
     return currentLevelData;
 }
 

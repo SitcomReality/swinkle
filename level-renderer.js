@@ -14,6 +14,8 @@ export function renderLevel(ctx) {
     if (isTransitionActive()) {
         renderTransitioningObstacles(ctx);
     } else {
+        // When not transitioning, get the current level data from the manager
+        // This data should be the correct (new) level after the transition finishes
         const levelData = getCurrentLevel();
         renderStableObstacles(ctx, levelData);
     }
@@ -34,14 +36,19 @@ function renderTransitioningObstacles(ctx) {
         if (oldLevel?.obstacles) {
             // Fade out: Rapid flickering / fade alpha
             const alpha = 1.0 - progress; // Simple fade
+            // Ensure alpha doesn't go negative or above 1
+            const clampedAlpha = Math.max(0, Math.min(1, alpha));
             const flicker = Math.random() > 0.3 ? 1 : 0; // Flicker effect
-            ctx.globalAlpha = alpha * flicker;
+            ctx.globalAlpha = clampedAlpha * flicker;
 
-            oldLevel.obstacles.forEach(obstacle => {
-                if (obstacle.type === 'rectangle') {
-                    renderRectangleObstacle(ctx, obstacle, 1.0); // Render at normal scale
-                }
-            });
+            // Render only if alpha is positive to prevent the last flicker
+            if (ctx.globalAlpha > 0) {
+                oldLevel.obstacles.forEach(obstacle => {
+                    if (obstacle.type === 'rectangle') {
+                        renderRectangleObstacle(ctx, obstacle, 1.0); // Render at normal scale
+                    }
+                });
+            }
         }
     } else if (phase === 'fade_in') {
         const newLevel = getNewLevelData();
@@ -49,7 +56,9 @@ function renderTransitioningObstacles(ctx) {
             // Fade in: Zoom/Scale effect
             // Ease-out scaling: Start fast, slow down
             const scale = Math.sin(progress * Math.PI / 2);
-            ctx.globalAlpha = scale; // Fade in alpha as well
+             // Ensure alpha doesn't go negative or above 1
+            const clampedAlpha = Math.max(0, Math.min(1, scale));
+            ctx.globalAlpha = clampedAlpha; // Fade in alpha as well
 
             newLevel.obstacles.forEach(obstacle => {
                 if (obstacle.type === 'rectangle') {
@@ -65,15 +74,16 @@ function renderTransitioningObstacles(ctx) {
 /**
  * Renders obstacles when no transition is active.
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
- * @param {object} levelData - The level data to render.
+ * @param {object} levelData - The level data to render (obtained via getCurrentLevel).
  */
 function renderStableObstacles(ctx, levelData) {
     if (!levelData || !levelData.obstacles) {
-        // console.warn("No stable level data or obstacles found to render.");
-        return; // Don't warn every frame
+        // console.warn("No stable level data or obstacles found to render."); // Reduce noise
+        return;
     }
 
     ctx.save(); // Save context state before drawing level
+    ctx.globalAlpha = 1.0; // Ensure full opacity
 
     levelData.obstacles.forEach(obstacle => {
         if (obstacle.type === 'rectangle') {
@@ -100,6 +110,8 @@ function renderRectangleObstacle(ctx, obstacle, scale = 1.0) {
         console.warn("Invalid dimensions for rectangle obstacle:", obstacle.id);
         return;
     }
+    // Don't render if scale is effectively zero or negative
+    if (scale <= 0.001) return;
 
     ctx.save(); // Save context for potential rotation/scaling
 
@@ -118,7 +130,8 @@ function renderRectangleObstacle(ctx, obstacle, scale = 1.0) {
 
     // Optional: Add a subtle stroke for definition (scale linewidth?)
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.lineWidth = 1 / scale; // Keep stroke visually consistent when scaling down
+    // Prevent stroke width from becoming infinite when scale is near zero
+    ctx.lineWidth = scale > 0.01 ? 1 / scale : 100; // Keep stroke visually consistent, large value if scale is tiny
     ctx.strokeRect(-width / 2, -height / 2, width, height);
 
     ctx.restore(); // Restore context (removes translation, rotation, scaling)
