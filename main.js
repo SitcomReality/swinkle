@@ -161,9 +161,28 @@ async function initGame() {
         }
     });
 
-    // Handle clicks for squirting (now droplets) - Disabled
+    // Handle clicks for respawning from spectator mode
     canvas.addEventListener('click', (e) => {
         // Default click action disabled, handled by mousedown/up for charging/burst
+        const localClientId = room.clientId;
+        const localPresence = room.presence[localClientId];
+
+        // Check if player is spectating
+        if (localPresence && localPresence.isSpectating) {
+            console.log("Click detected while spectating: Respawning player.");
+            // Use triggerManualRespawn to get the correct presence update object
+            const respawnUpdates = triggerManualRespawn(
+                localClientId,
+                config.gameAreaWidth,
+                config.gameAreaHeight
+            );
+            // Send the presence update to rejoin the game
+            room.updatePresence(respawnUpdates);
+
+            // Reset idle timer state immediately upon rejoining
+            lastSignificantMoveTime = Date.now();
+            lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
+        }
     });
 
     // Handle mouse down/up for paint charging
