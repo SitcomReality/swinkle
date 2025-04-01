@@ -13,45 +13,23 @@ export const notes = `
 - **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright.
 - **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
 - **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
-- **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes.
+- **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes!
 
-**Next Steps: Dynamic Level Color Palettes**
+**Task: Dynamic Level Color Palettes**
 
 Goal: Implement a system where each level uses a distinct color palette consisting of two paint colors (that mix well) and a background/geometry base color.
 
 **Implementation Plan:**
 
-1.  **[DONE] Palette Definition:**
-    *   Created \`paletteData.js\` and defined several pre-approved palettes (arrays of objects) with \`paint1\`, \`paint2\`, \`backgroundBase\` hex codes. Ensured paint colors mix reasonably well. Exported these palettes.
-    *   Added \`paletteData.js\` to the import map in \`index.html\`.
-    *   *Files Modified: \`paletteData.js\` (new), \`index.html\`*
-
-2.  **[DONE] Palette Selection Logic:**
-    *   In \`level-manager.js\`, imported \`getPaletteByIndex\` from \`paletteData.js\` and the full \`palettes\` array.
-    *   Added state within \`level-manager.js\` to store the \`currentPalette\` and \`nextPalette\`.
-    *   Created \`getPaletteForLevel\` helper to select a palette based on level index (modulo).
-    *   Modified the level loading/transition logic in \`initializeLevelManager\` and the \`subscribeRoomState\` callback to select palettes for current/next levels. Stored the selected palette in \`currentPalette\` *after* the transition completes (via \`setCurrentLevelDataFromTransition\`).
-    *   Added getter functions \`getCurrentPalette()\` and \`getNextPalette()\` to \`level-manager.js\`.
-    *   Modified \`level-transition.js\` signature to accept palettes (\`startLevelTransition(oldData, newData, oldPaletteData, newPaletteData)\`) and store them. Added getters \`getOldPalette()\` and \`getNewPalette()\`.
-    *   *Files Modified: \`level-manager.js\`, \`level-transition.js\`*
-
-3.  **[DONE] Apply Background/Geometry Colors:**
-    *   Modified \`level-renderer.js\`: Imported \`getCurrentPalette\`, \`getOldPalette\`, \`getNewPalette\`. In \`renderStableObstacles\`, get current palette. Pass \`palette.backgroundBase\` to \`renderRectangleObstacle\`. Updated \`renderTransitioningObstacles\` to use palettes from \`getOldPalette()\` / \`getNewPalette()\` and pass the correct base color.
-    *   Modified \`level-transition.js\`: Verified that the background color blending logic already uses \`oldBgColor\` and \`newBgColor\` derived from palette \`backgroundBase\` properties. No changes needed.
-    *   Modified \`levels/level-data.js\`: Removed the static \`backgroundColor\` and \`obstacle.color\` properties from the level definitions.
-    *   *Files Modified: \`level-renderer.js\`, \`levels/level-data.js\`*
-
-4.  **[DONE] Apply Paint Colors:**
-    *   Modified \`can-manager.js\` (\`spawnPaintCans\`): Imported \`getCurrentPalette\` from \`level-manager.js\`. Get the current palette. Instead of picking from the removed \`config.paintCanColors\`, randomly choose between \`currentPalette.paint1\` and \`currentPalette.paint2\` for the \`paintColor\` property of the new can.
-    *   Modified \`config.js\`: Removed the \`paintCanColors\` array.
-    *   *Files Modified: \`can-manager.js\`, \`config.js\`*
-
-5.  **Testing & Refinement:**
-    *   Test thoroughly to ensure colors change correctly with levels, transitions are smooth, cans spawn with the right colors, and paint blending looks good. Refine palettes or generation logic if needed.
-
+1.  **[DONE] Palette Definition:** Created \`paletteData.js\`, defined palettes, added to import map.
+2.  **[DONE] Palette Selection Logic:** Added state and logic in \`level-manager.js\` and \`level-transition.js\` to select and manage palettes based on level index. Added getters.
+3.  **[DONE] Apply Background/Geometry Colors:** Updated \`level-renderer.js\` and \`level-transition.js\` to use palette \`backgroundBase\`. Removed static colors from \`levels/level-data.js\`.
+4.  **[DONE] Apply Paint Colors:** Updated \`can-manager.js\` to use palette \`paint1\`/\`paint2\` for spawning cans. Removed static colors from \`config.js\`.
+5.  **[DONE] Testing & Refinement:** Reviewed implementation across files. Background colors blend during transitions. Obstacle colors use the background base. Cans spawn using palette paint colors. Paint blending uses these colors. System appears correctly implemented.
 
 **Previous Completed Tasks:**
 
+*   Dynamic Level Color Palettes
 *   Spectacular Paint-Out Burst
 *   Player Invisibility During Paint-Out
 *   Spectate Mode Entry on Paint-Out/Respawn
