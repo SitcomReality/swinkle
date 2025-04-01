@@ -44,6 +44,7 @@ export function createBurstDroplets(ownerId, canState, numDroplets, now) {
 /**
  * Facade function to handle all local player interactions within a frame.
  * Calls specific interaction handlers and aggregates their updates.
+ * Skips all interactions if the player is spectating.
  *
  * @param {string} localClientId - The ID of the local client.
  * @param {object} presence - The player's current presence data.
@@ -62,13 +63,17 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
         availablePaintCanUpdates: {}
     };
 
+    // --- Skip ALL interactions if player is lost or spectating ---
+    if (presence.lost || presence.isSpectating) {
+        return aggregatedUpdates;
+    }
+
     let currentCanId = presence.currentCanId; // Get current can ID
     let canState = currentCanId ? currentOwnedCans[currentCanId] : null;
 
     // 1. Check for Empty Can Drop (Applies if can becomes empty due to auto-drop OR charging)
-    // This check might now be partly redundant due to burst-on-empty logic in charging,
-    // but keeping it ensures cans are dropped if they somehow become empty without bursting.
     if (currentCanId && canState) {
+        // Pass presence for spectating check within the function
         const emptyCanResult = handleEmptyPaintCan(localClientId, canState, presence);
         Object.assign(aggregatedUpdates.paintCanUpdates, emptyCanResult.paintCanUpdates);
         Object.assign(aggregatedUpdates.presenceUpdates, emptyCanResult.presenceUpdates);
@@ -80,8 +85,9 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
     }
 
     // 2. Check for Paint Can Pickup (only if not currently holding a can)
+    // Presence check handles spectating implicitly here as well
     if (!currentCanId) {
-        // Pass the *current* presence state, which includes power-up status
+        // Pass the *current* presence state, which includes power-up status and spectating
         const pickupResult = handlePaintCanPickup(playerBodyPos, localClientId, presence, currentAvailableCans);
         Object.assign(aggregatedUpdates.paintCanUpdates, pickupResult.paintCanUpdates);
         Object.assign(aggregatedUpdates.availablePaintCanUpdates, pickupResult.availablePaintCanUpdates);
@@ -98,6 +104,7 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
      if (currentCanId) {
          // Ensure we use the most up-to-date state for interactions, potentially including pickup updates
          const currentCanStateForInteraction = aggregatedUpdates.paintCanUpdates[currentCanId] || currentOwnedCans[currentCanId];
+         // Presence check above already filters out spectating players
          if (currentCanStateForInteraction) {
              const chargeDropResult = handleCanChargingAndDropping(localClientId, currentCanStateForInteraction, deltaTime, now);
              // Merge results, potentially overwriting previous paintCanUpdates for this can ID
@@ -133,6 +140,7 @@ export function handleLocalPlayerInteractions(localClientId, presence, playerBod
  * Includes logic for bursting accumulated droplets if the can runs out while charging.
  * Includes logic to auto-drop paint if charging while accumulation is already maxed out.
  * This function is INTERNAL and called by handleLocalPlayerInteractions.
+ * Assumes the player is NOT spectating (checked in the caller).
  *
  * @param {string} localClientId - The ID of the local client.
  * @param {object} canState - The current state of the paint can being interacted with.
@@ -144,10 +152,13 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
     const paintCanUpdates = {}; // Updates for the paintCans state object
     const newDroplets = {};     // Updates for the droplets state object
 
+    // Basic validation - also handles case where can was dropped mid-frame
     if (!canState || canState.ownerId !== localClientId) {
         timeSinceLastAutoDrop = 0; // Reset timer if can isn't owned
         return { paintCanUpdates, newDroplets };
     }
+
+    // Player is guaranteed not to be spectating here due to check in handleLocalPlayerInteractions
 
     const currentPaintAmount = canState.paintAmount || 0;
     const currentAccumulated = canState.accumulatedDroplets || 0;
@@ -262,16 +273,19 @@ function handleCanChargingAndDropping(localClientId, canState, deltaTime, now) {
 /**
  * Checks if the player can pick up an available paint can and returns the updates.
  * Applies the Mega Can power-up effect if active.
+ * Skips if player is lost or spectating.
  * INTERNAL function called by handleLocalPlayerInteractions.
  * @param {object} playerBodyPos - The player's body position {x, y}.
  * @param {string} localClientId - The ID of the local client.
- * @param {object} presence - The player's current presence data (including power-up states).
+ * @param {object} presence - The player's current presence data (including power-up states, spectating).
  * @param {object} availablePaintCans - The available paint cans from roomState.
  * @returns {object} Update objects for roomState and presence.
  */
 function handlePaintCanPickup(playerBodyPos, localClientId, presence, availablePaintCans) {
-    // Skip if player already has a can or has lost
-    if (presence.currentCanId || presence.lost) return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+    // Skip if player already has a can, has lost, or is spectating
+    if (presence.currentCanId || presence.lost || presence.isSpectating) {
+        return { paintCanUpdates: {}, availablePaintCanUpdates: {}, presenceUpdates: {} };
+    }
 
     const pickupDistance = config.paintCanPickupDistance;
     const nearestCan = findNearestAvailableCan(playerBodyPos, availablePaintCans, pickupDistance);
@@ -329,16 +343,16 @@ function handlePaintCanPickup(playerBodyPos, localClientId, presence, availableP
 
 /**
  * Checks for empty paint cans and returns updates to handle them (drop).
+ * Skips if player is lost or spectating.
  * INTERNAL function called by handleLocalPlayerInteractions.
  * @param {string} localClientId - The ID of the local client.
  * @param {object} canState - The current state of the player's paint can (potentially updated within frame).
- * @param {object} presence - The player's current presence data.
+ * @param {object} presence - The player's current presence data (including spectating state).
  * @returns {object} Update objects for roomState and presence.
  */
 function handleEmptyPaintCan(localClientId, canState, presence) {
-    // Basic check, also ensure the presence matches the can owner for sanity
-    // Skip if already lost
-    if (!canState || canState.ownerId !== localClientId || presence.currentCanId !== canState.id || presence.lost) {
+    // Basic check, ensure presence matches can owner, skip if lost or spectating
+    if (!canState || canState.ownerId !== localClientId || presence.currentCanId !== canState.id || presence.lost || presence.isSpectating) {
         return { paintCanUpdates: {}, presenceUpdates: {} };
     }
 
