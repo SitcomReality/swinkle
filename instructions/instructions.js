@@ -1,7 +1,8 @@
 /**
  * instructions.js
- * Handles showing gameplay instructions/tips during spectator mode
+ * Handles showing gameplay and hiding gameplay instructions
  */
+import { renderer } from './renderer.js';
 
 // Store references to DOM elements
 let instructionsContainer;
@@ -59,7 +60,9 @@ export function initializeInstructions() {
  * @param {boolean} isSpectating - Whether the player is currently spectating
  */
 export function toggleInstructions(isSpectating) {
-    if (!instructionsContainer) return;
+    if (!instructionsContainer) {
+        initializeInstructions();
+    }
     
     if (isSpectating) {
         instructionsContainer.classList.remove('hidden');
@@ -81,4 +84,9 @@ export function updatePowerUpIcon(powerUpType, iconUrl) {
             el.style.backgroundImage = `url(${iconUrl})`;
         });
     }
+}
+
+// New function to check if instructions should be shown
+export function shouldShowInstructions(presence) {
+    return presence && presence.isSpectating;
 }
