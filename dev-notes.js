@@ -20,16 +20,14 @@ export const notes = `
 
 **Remaining Steps:**
 
-1.  **Update Burst Function Signature & Calls:**
-    1.1. Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept a \`spreadRadius\` argument alongside \`numDroplets\`. *(DONE)*
-    1.2. Update the call site in \`collisionHandler.js\` (\`createPaintBurst\`) to pass the default \`config.paintOutBurstRadius\`. (Note: Paint-out burst has separate config).
-    1.3. Update the call site(s) within \`playerInteractions.js\` (for manual burst release on mouse up AND burst-on-empty while charging) to pass the default \`config.burstSpreadRadius\` for now.
+1.  **Refactor Burst Logic:**
+    1.1. Move burst-on-empty logic from \`playerInteractions.js\` to \`burst-handler.js\`. *(DONE)*
+    1.2. Move manual burst logic (on mouseup) from \`main.js\` to \`burst-handler.js\`. (Because \`main.js\` is at max length). Update \`main.js\` to call the new handler.
 
 2.  **Implement Big Burst Trigger Logic:**
-    2.1. **Refactor Burst Release:** Extract the logic for releasing a burst (both on mouse up and when a can empties while charging) from \`playerInteractions.js\` into a new, dedicated function or module (e.g., \`burstHandler.js\`). This is necessary because \`playerInteractions.js\` is at its maximum length. Update \`playerInteractions.js\` to call this new function.
-    2.2. **Check Power-Up:** In the *new* burst release logic, check the player's presence for the \`bigBurstActive\` flag.
-    2.3. **Apply Multipliers:** If \`bigBurstActive\` is true, calculate the number of droplets and spread radius using \`config.bigBurstDropletMultiplier\` and \`config.bigBurstRangeMultiplier\`. Otherwise, use the default values (\`canState.accumulatedDroplets\` and \`config.burstSpreadRadius\`).
-    2.4. **Call Creation:** Pass the calculated (or default) \`numDroplets\` and \`spreadRadius\` to the updated \`createBurstDroplets\` function.
+    2.1. Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE for burst-on-empty)*
+    2.2. Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE for burst-on-empty)*
+    2.3. Add logic to consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE for burst-on-empty in \`playerInteractions.js\`; need to add for manual burst in \`burst-handler.js\` after refactor)*
 
 3.  **Add Power-Up Icons:**
     *   Create rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`.
@@ -41,9 +39,8 @@ export const notes = `
 
 **Next Steps:**
 
-1.2 Implement **Collision Handler Call Update**: Update the call in \`collisionHandler.js\` (\`createPaintBurst\`).
-1.3 Implement **Player Interactions Call Updates**: Update the calls in \`playerInteractions.js\` (mouse up burst, burst-on-empty).
-
+1.2 Implement **Manual Burst Refactor**: Move manual burst logic (mouseup) from \`main.js\` to \`burst-handler.js\`. Update \`main.js\` call.
+2.1, 2.2, 2.3 Implement **Big Burst Logic for Manual Burst**: Add the check, multiplier application, and consumption logic to the new manual burst handler in \`burst-handler.js\`.
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects.
@@ -61,7 +58,7 @@ export function loadDevNotes() {
     if (container) {
         // Use textContent to avoid HTML injection issues
         // Replace escaped backticks with single quotes for display
-        container.textContent = notes.replace(/\\`/g, "'"); 
+        container.textContent = notes.replace(/\\`/g, "'");
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");

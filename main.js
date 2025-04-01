@@ -11,8 +11,10 @@ import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
 // Import level manager initializer + helper + level data + palette getter
 import { initializeLevelManager, getLowestClientId, allLevels, getCurrentPalette } from './level-manager.js';
-// Import the burst droplet helper
-import { createBurstDroplets } from './paint-burst.js'; // Corrected import path
+// Import the burst droplet helper (used in manual burst logic before refactor)
+// import { createBurstDroplets } from './paint-burst.js'; // Now handled in burst-handler.js
+// Import burst handler (will be used after refactor)
+// import { handleManualBurst } from './burst-handler.js'; // Placeholder for future refactor
 // Import respawn helper for manual rejoin
 import { triggerManualRespawn } from './respawn-manager.js';
 // Import spectate helper for entering mode
@@ -144,23 +146,19 @@ async function initGame() {
         }
         // --- Calculate Mouse Position Relative to Canvas ---
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;   // Verhältnis der tatsächlichen Canvas-Breite zur angezeigten Breite
-        const scaleY = canvas.height / rect.height; // Verhältnis der tatsächlichen Canvas-Höhe zur angezeigten Höhe
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-        // Calculate mouse coordinates relative to the canvas element
-        // Adjusting for potential CSS scaling or borders might be needed if complex styling is applied
         const canvasX = (e.clientX - rect.left) * scaleX;
         const canvasY = (e.clientY - rect.top) * scaleY;
 
         // --- Clamp Coordinates to Game Area ---
-        // Clamp the canvas-relative coordinates to the defined game area
         const clampedX = Math.max(0, Math.min(config.gameAreaWidth, canvasX));
         const clampedY = Math.max(0, Math.min(config.gameAreaHeight, canvasY));
 
 
         // --- Update Presence ---
-        // Send only anchor position. Other presence updates are event-driven.
-        // Don't update position if player is lost or spectating - prevents moving while waiting to respawn/or spectating
+        // Don't update position if player is lost or spectating
         const currentPresence = room.presence[room.clientId];
         if (!currentPresence || (!currentPresence.lost && !currentPresence.isSpectating)) {
             room.updatePresence({
@@ -230,7 +228,6 @@ async function initGame() {
         // Prevent interaction if lost or spectating
         if (localPresence && localPresence.currentCanId && !localPresence.lost && !localPresence.isSpectating) {
             const canId = localPresence.currentCanId;
-            // Check if can still exists and is owned by us (prevent race condition errors)
             const canState = room.roomState.paintCans?.[canId];
             if (canState && canState.ownerId === room.clientId) {
                 room.updateRoomState({
@@ -242,15 +239,30 @@ async function initGame() {
         }
     });
     canvas.addEventListener('mouseup', (e) => {
-        const localPresence = room.presence[room.clientId];
-        // Don't burst if lost or spectating, even if mouseup happens after loss/spectate start
+        const localClientId = room.clientId;
+        const localPresence = room.presence[localClientId];
+        // Prevent interaction if lost or spectating
         if (localPresence && localPresence.currentCanId && !localPresence.lost && !localPresence.isSpectating) {
             const canId = localPresence.currentCanId;
             const canState = room.roomState.paintCans?.[canId];
 
             // Only proceed if the can exists, is owned by us
-            if (canState && canState.ownerId === room.clientId) {
-                const dropletsToBurst = canState.accumulatedDroplets || 0;
+            if (canState && canState.ownerId === localClientId) {
+
+                // --- START: Manual Burst Logic (To be refactored into burst-handler.js) ---
+                // Note: This section is temporarily duplicated logic until refactoring is complete.
+                // It includes Big Burst check but relies on direct access to room/presence here.
+                const accumulated = canState.accumulatedDroplets || 0;
+                const isBigBurstActive = localPresence.bigBurstActive || false;
+                let finalNumDroplets = accumulated;
+                let finalSpreadRadius = config.burstSpreadRadius;
+
+                if (isBigBurstActive) {
+                    finalNumDroplets = Math.round(accumulated * config.bigBurstDropletMultiplier);
+                    finalSpreadRadius = config.burstSpreadRadius * config.bigBurstRangeMultiplier;
+                    console.log(`Manual Burst: Big Burst active! Applying multipliers.`);
+                }
+
                 const updates = {
                     paintCans: {
                         [canId]: {
@@ -260,22 +272,38 @@ async function initGame() {
                     }
                 };
 
-                // Use the helper function to create burst droplets
-                if (dropletsToBurst > 0) {
-                    console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
-                    const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
-                    updates.droplets = burstData;
-                }
+                if (finalNumDroplets > 0) {
+                     console.log(`Mouse Up: Releasing manual burst of ${finalNumDroplets} droplets from ${canId}`);
+                     // Import and call the actual creator function
+                     import('./paint-burst.js').then(({ createBurstDroplets }) => {
+                         const burstData = createBurstDroplets(localClientId, canState, finalNumDroplets, finalSpreadRadius, Date.now());
+                         updates.droplets = burstData; // Add droplets to the update
+                         room.updateRoomState(updates); // Send combined update
 
-                // Send the combined update (stop charge, reset accum, add burst droplets if any)
-                room.updateRoomState(updates);
+                         // Consume Big Burst power-up if it was used
+                         if (isBigBurstActive) {
+                            const presenceUpdates = { bigBurstActive: false };
+                            if (localPresence.activePowerUps && localPresence.activePowerUps['bigBurst']) {
+                                presenceUpdates.activePowerUps = { ...(localPresence.activePowerUps || {}) };
+                                delete presenceUpdates.activePowerUps['bigBurst'];
+                            }
+                             room.updatePresence(presenceUpdates); // Send presence update separately
+                             console.log("Consumed Big Burst power-up after manual burst.");
+                         }
+                     }).catch(err => console.error("Error importing createBurstDroplets for manual burst:", err));
+
+                } else {
+                     // If no droplets to burst, just send the can state update
+                     room.updateRoomState(updates);
+                }
+                // --- END: Manual Burst Logic ---
+
             }
         }
         // Also stop charging if mouse is released outside the canvas or if player lost the can meanwhile or started spectating
         const currentlyOwnedCanId = room.presence[room.clientId]?.currentCanId;
         if (currentlyOwnedCanId) {
             const currentCanState = room.roomState.paintCans?.[currentlyOwnedCanId];
-            // Check if the can is still owned and currently charging
             if (currentCanState && currentCanState.ownerId === room.clientId && currentCanState.isCharging) {
                 room.updateRoomState({
                     paintCans: {
