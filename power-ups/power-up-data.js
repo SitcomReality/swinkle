@@ -92,6 +92,61 @@ export const powerUpDefinitions = {
                 megaCanEndTime: Date.now() + 15000
             };
         }
+    },
+    // --- NEW POWER-UPS ---
+    'shortRope': {
+        id: 'shortRope',
+        name: 'Short Rope',
+        description: 'Temporarily shortens your bungee cord',
+        duration: 7000, // 7 seconds
+        color: '#FFA500', // Orange
+        glowColor: '#FF8C00', // Darker Orange
+        icon: 'rope', // New icon ID - need to add rendering later
+        size: 24,
+        rarity: 4,
+        effect: (clientId, presence) => {
+            console.log(`Short Rope effect applied to ${clientId} (Placeholder)`);
+            // Placeholder: Actual effect implemented in later step
+            // Need to add 'shortRopeActive: true' and 'shortRopeEndTime'
+            // For now, just return an empty object or track in activePowerUps
+             return {
+                // shortRopeActive: true, // Add this in the next step
+                activePowerUps: {
+                    ...(presence.activePowerUps || {}),
+                    [powerUpDefinitions.shortRope.id]: {
+                        type: powerUpDefinitions.shortRope.id,
+                        endTime: Date.now() + powerUpDefinitions.shortRope.duration
+                    }
+                }
+             };
+        }
+    },
+    'bigBurst': {
+        id: 'bigBurst',
+        name: 'Big Burst',
+        description: 'Your next paint burst is bigger and wider',
+        duration: 10000, // 10 seconds or until next burst
+        color: '#FF4500', // OrangeRed
+        glowColor: '#FF6347', // Tomato
+        icon: 'burst', // New icon ID - need to add rendering later
+        size: 26,
+        rarity: 3,
+        effect: (clientId, presence) => {
+            console.log(`Big Burst effect applied to ${clientId} (Placeholder)`);
+            // Placeholder: Actual effect implemented in later step
+            // Need to add 'bigBurstActive: true' and 'bigBurstEndTime'
+            // For now, just return an empty object or track in activePowerUps
+            return {
+                // bigBurstActive: true, // Add this in the next step
+                activePowerUps: {
+                     ...(presence.activePowerUps || {}),
+                     [powerUpDefinitions.bigBurst.id]: {
+                         type: powerUpDefinitions.bigBurst.id,
+                         endTime: Date.now() + powerUpDefinitions.bigBurst.duration
+                     }
+                 }
+            };
+        }
     }
 };
 
