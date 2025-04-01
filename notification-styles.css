@@ -1,128 +1,23 @@
-/* Notification System Styles */
-#notifications-container {
-    position: fixed;
-    right: 20px;
-    top: 80px; /* Start Y position */
-    width: 300px; /* Max width */
-    z-index: 1000;
-    pointer-events: none; /* Allow clicks through the container */
-}
+@@ -31,6 +31,10 @@
+     border-left: 4px solid #FF88FF;
+ }
+ 
++.notification-score {
++    border-left: 4px solid #66FFAA;
++}
++
+ .notification-loss {
+     border-left: 4px solid #FF5555;
+ }
+@@ -78,6 +82,10 @@
+     background-color: #FF88FF;
+ }
+ 
++.notification-score .notification-icon {
++    background-color: #66FFAA;
++}
++
+ .notification-loss .notification-icon {
+     background-color: #FF5555;
+ }
 
-.notification {
-    position: relative; /* Needed for absolute positioning/transform */
-    background-color: rgba(20, 20, 40, 0.85);
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-    width: 100%;
-    margin-bottom: 10px; /* Spacing */
-    opacity: 0; /* Start invisible for fade-in */
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Smooth slide/fade */
-    will-change: transform, opacity; /* Optimize animations */
-}
-
-/* Notification left border colors by type */
-.notification-info {
-    border-left: 4px solid #44AAFF;
-}
-
-.notification-success {
-    border-left: 4px solid #44FF88;
-}
-
-.notification-warning {
-    border-left: 4px solid #FFAA44;
-}
-
-.notification-error {
-    border-left: 4px solid #FF5555;
-}
-
-.notification-pickup {
-    border-left: 4px solid #FF88FF;
-}
-
-.notification-loss {
-    border-left: 4px solid #FF5555;
-}
-
-.notification-join {
-    border-left: 4px solid #66FF66;
-}
-
-.notification-leave {
-    border-left: 4px solid #FFAA66;
-}
-
-.notification-tip {
-    border-left: 4px solid #FFFF66;
-}
-
-/* Notification content */
-.notification-content {
-    padding: 12px 15px 12px 15px;
-    color: #FFFFFF;
-    font-size: 14px;
-    line-height: 1.4;
-    display: flex;
-    align-items: center;
-}
-
-/* Icons or indicators for different notification types */
-.notification-icon {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    margin-right: 10px;
-    flex-shrink: 0;
-}
-
-.notification-info .notification-icon {
-    background-color: #44AAFF;
-}
-
-.notification-success .notification-icon {
-    background-color: #44FF88;
-}
-
-.notification-warning .notification-icon {
-    background-color: #FFAA44;
-}
-
-.notification-error .notification-icon {
-    background-color: #FF5555;
-}
-
-.notification-pickup .notification-icon {
-    background-color: #FF88FF;
-}
-
-.notification-loss .notification-icon {
-    background-color: #FF5555;
-}
-
-.notification-join .notification-icon {
-    background-color: #66FF66;
-}
-
-.notification-leave .notification-icon {
-    background-color: #FFAA66;
-}
-
-.notification-tip .notification-icon {
-    background-color: #FFFF66;
-}
-
-/* Animation keyframes for fade in/out */
-@keyframes notificationFadeIn {
-    from { opacity: 0; transform: translateX(50px) translateY(var(--translate-y, 0)); } /* Start off-screen right */
-    to { opacity: 1; transform: translateX(0) translateY(var(--translate-y, 0)); } /* Slide in to final position */
-}
-
-@keyframes notificationFadeOut {
-    from { opacity: 1; transform: translateX(0) translateY(var(--translate-y, 0)); } /* Start at current position */
-    to { opacity: 0; transform: translateX(50px) translateY(var(--translate-y, 0)); } /* Slide off-screen right */
-}
-
-/* Apply animations using classes if needed, or directly via JS */
-/* Example JS application: element.style.animation = 'notificationFadeIn 0.3s forwards'; */

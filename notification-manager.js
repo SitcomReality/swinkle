@@ -24,6 +24,7 @@ const NOTIFICATION_CONFIG = {
         warning: '#FFAA44',
         error: '#FF5555',
         pickup: '#FF88FF',
+        score: '#66FFAA', // Add color for score notifications
         loss: '#FF5555',
         join: '#66FF66',
         leave: '#FFAA66',
@@ -54,7 +55,7 @@ function getNotificationsContainer() {
 /**
  * Adds a new notification to be displayed.
  * @param {string} message - The text content of the notification.
- * @param {string} [type='info'] - Type of notification ('info', 'success', 'warning', 'error', 'pickup', 'loss', 'join', 'leave', 'tip'). Affects styling/icon later.
+ * @param {string} [type='info'] - Type of notification ('info', 'success', 'warning', 'error', 'pickup', 'loss', 'join', 'leave', 'tip', 'score'). Affects styling/icon later.
  * @param {number} [duration=DEFAULT_DURATION] - How long the notification should stay on screen in milliseconds.
  */
 export function addNotification(message, type = 'info', duration = DEFAULT_DURATION) {
@@ -71,13 +72,31 @@ export function addNotification(message, type = 'info', duration = DEFAULT_DURAT
         duration = DEFAULT_DURATION;
     }
 
+    // --- Check for Identical Active Notification ---
+    let foundMatch = false;
+    activeNotifications.forEach(existingNotification => {
+        if (!foundMatch && existingNotification.message === message && existingNotification.type === type) {
+            // Found an identical notification
+            existingNotification.count = (existingNotification.count || 1) + 1; // Increment count
+            existingNotification.startTime = now; // Reset timer
+            existingNotification.duration = duration; // Update duration in case it changed
+            foundMatch = true;
+            // console.log(`Combined notification (${type}): ${message} (x${existingNotification.count})`);
+            // Trigger update to reflect the change immediately (e.g., text update, position)
+            updateAndRenderNotifications(now);
+        }
+    });
+
+    if (foundMatch) return; // Don't add a new one if we combined it
+
     activeNotifications.set(id, {
         id,
         message,
         type,
         startTime: now,
         duration,
-        element: null // Will store the DOM element reference
+        element: null, // Will store the DOM element reference
+        count: 1 // Initialize count
     });
     // console.log(`Added notification (${type}): ${message}`); // Optional logging
 
@@ -175,15 +194,23 @@ function updateAndRenderNotifications(now) {
 
             // Add message
             const messageSpan = document.createElement('span');
-            messageSpan.textContent = notification.message;
+            messageSpan.textContent = notification.message + (notification.count > 1 ? ` (x${notification.count})` : '');
+            messageSpan.className = 'notification-message'; // Add class for targeting
             content.appendChild(messageSpan);
 
-            element.appendChild(content);
+            element.appendChild(content); // Append to container
             container.appendChild(element); // Append to container
 
             // Apply fade-in animation
             element.style.animation = `notificationFadeIn ${NOTIFICATION_CONFIG.fadeInTime / 1000}s forwards`;
 
+        }
+
+        // Update existing message text if count changed
+        const messageSpan = element.querySelector('.notification-message');
+        if (messageSpan) {
+            const expectedText = notification.message + (notification.count > 1 ? ` (x${notification.count})` : '');
+            if (messageSpan.textContent !== expectedText) messageSpan.textContent = expectedText;
         }
 
         // Ensure fade-out class is removed if it was added previously (e.g., if it reappeared)
@@ -193,12 +220,10 @@ function updateAndRenderNotifications(now) {
              element.style.animation = '';
          }
 
-
         // Calculate vertical position - newest at bottom (index = visibleNotifications.length - 1)
         // translateY should be based on position *from the top*
         const yPos = index * (NOTIFICATION_CONFIG.height + NOTIFICATION_CONFIG.spacing);
         element.style.transform = `translateY(${yPos}px)`;
-
 
         // Optionally handle fade-out based on time remaining (can make it smoother)
         const age = now - notification.startTime;

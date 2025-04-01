@@ -190,7 +190,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
 
                     // Notify about score increase
                     if (justLost) {
-                        addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'success', 4000);
+                        addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'score', 4000);
                     } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam
                         addNotification(`${painterUsername} scored a point for painting ${localUsername}`, 'info', 2000);
                     }
