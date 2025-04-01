@@ -37,7 +37,7 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
  * @param {string} localClientId - The ID of the current user's client.
- * @param {object} presence - The player's presence data (x, y anchor, color, paintedData, currentCanId, power-up flags, activePowerUps).
+ * @param {object} presence - The player's presence data (x, y anchor, color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
  */
@@ -55,8 +55,10 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const isSpringy = presence.springyBungee || false; // Check for springy power-up
     const isShielded = presence.shielded || false; // Check for shield power-up
     const hasMegaCanPowerup = presence.activePowerUps?.['megaCan']; // Check for active mega can powerup
+    const isSpectating = presence.isSpectating || false; // Check spectating state
 
     // --- Render Anchor Point (Cursor) ---
+    // Anchor is always fully opaque, even for spectators
     ctx.save();
     ctx.shadowBlur = glowBlur;
     ctx.shadowColor = anchorGlowColor; // White/Translucent glow for anchor
@@ -76,12 +78,19 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // --- Get Player Physics State ---
     const physicsState = getPlayerPhysicsState(clientId);
     if (!physicsState) {
-        console.warn(`No physics state found for client ${clientId} during render.`);
+        // Don't warn if spectating, physics state might be cleaned up
+        if (!isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
         return; // Cannot render body/limbs without physics state
     }
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
     const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
+
+    // --- Apply Spectator Transparency ---
+    ctx.save(); // Save context before potentially changing alpha
+    if (isSpectating) {
+        ctx.globalAlpha = 0.5;
+    }
 
     // --- Render Player Bungee Cord (Anchor -> Body) ---
     ctx.save(); // Save context for potential bungee modifications
@@ -156,6 +165,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.stroke(); // Draw blended stroke using the same path
 
     // --- Render Shield Effect (if active) ---
+    // Shield should still be rendered even if spectating (might rejoin with it active)
     if (isShielded) {
         ctx.save();
         // Draw pulsating shield outline around the existing capsule path
@@ -179,11 +189,13 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         // Style and draw the shield
         ctx.strokeStyle = '#88FFFF'; // Shield color
         ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed); // Pulsating alpha
+        // Use current global alpha (which might be 0.5 if spectating)
+        const currentAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = currentAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
         ctx.shadowBlur = glowBlur;
         ctx.shadowColor = '#00FFFF';
         ctx.stroke();
-        ctx.restore(); // Restore alpha, shadow settings etc.
+        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.5)
     }
 
     // --- Render Eyes (Relative to Rotated Body Center) ---
@@ -216,8 +228,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     let pupilOffsetX = 0;
     let pupilOffsetY = 0;
 
-    // Only make local player's eyes look
-    if (clientId === localClientId) {
+    // Only make local player's eyes look, and only if not spectating
+    if (clientId === localClientId && !isSpectating) {
         // Calculate direction from world body center to world anchor
         const worldDirX = anchorX - bodyX;
         const worldDirY = anchorY - bodyY;
@@ -235,7 +247,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
             pupilOffsetX = localNormX * maxPupilOffset; // Apply offset in local space
             pupilOffsetY = localNormY * maxPupilOffset;
         }
-    } // Other players' pupils stay centered
+    } // Other players' or spectator's pupils stay centered
 
     ctx.fillStyle = '#000000'; // Black pupils
 
@@ -253,6 +265,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.restore(); // Restore translation and rotation
 
     // --- Render Player Name (Not Rotated) ---
+    // Alpha is already potentially 0.5 from the save/restore block above
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
@@ -260,6 +273,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
     // --- Render Mega Can Ready Indicator (Not Rotated) ---
+    // Alpha is already potentially 0.5
     if (hasMegaCanPowerup) {
         ctx.save();
         const starSize = 10; // Small indicator
@@ -274,6 +288,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Display Loss Message if Player has Lost (Not Rotated) ---
+    // Alpha is already potentially 0.5
     if (presence.lost) {
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
@@ -282,6 +297,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
+    // Alpha is already potentially 0.5
     const currentCanId = presence?.currentCanId;
     if (currentCanId && allPaintCansState && allPaintCansState[currentCanId]) {
         const canState = allPaintCansState[currentCanId];
@@ -295,6 +311,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         ctx.stroke();
 
         // Render the can itself (at its world position)
-        renderPaintCan(ctx, canState);
+        renderPaintCan(ctx, canState); // Render can respects current alpha
     }
+
+    // --- Restore Main Alpha State ---
+    ctx.restore(); // Restores the alpha state from before the spectator check
 }

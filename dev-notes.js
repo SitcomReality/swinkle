@@ -59,7 +59,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
           - Let the normal mousemove listener take over updating the anchor point from the next frame.
       - If \`isSpectating\` is \`false\`, perform the normal click actions (charging etc.).
 
-  - 🔲 6. **Visual Transparency:**
+  - ✅ 6. **Visual Transparency:**
       - Modify \`playerRenderer.js\` (\`renderPlayer\` function):
           - Check the player's \`presence.isSpectating\` flag.
           - If \`true\`, set \`ctx.globalAlpha = 0.5;\` before drawing the player body/limbs/eyes/name.
