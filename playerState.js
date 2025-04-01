@@ -5,7 +5,7 @@
 import config from 'config';
 
 // Stores the physics state for each player, keyed by clientId
-// Each entry will have { position: {x, y}, velocity: {x, y}, angle, angularVelocity, limbs: [...] }
+// Each entry will have { position: {x, y}, velocity: {x, y}, angle, angularVelocity, limbs: [...], lastAnchorPos: {x, y} }
 const playerPhysicsStates = new Map();
 
 /**
@@ -19,7 +19,7 @@ export function getPlayerPhysicsState(clientId) {
 }
 
 /**
- * Initializes the physics state for a player if it doesn't exist, including limbs.
+ * Initializes the physics state for a player if it doesn't exist, including limbs and last anchor position.
  * @param {string} clientId - The ID of the player.
  * @param {object} initialAnchorPos - The initial anchor position {x, y}.
  * @returns {object} The ensured physics state object.
@@ -32,6 +32,7 @@ export function ensurePhysicsState(clientId, initialAnchorPos) {
             velocity: { x: 0, y: 0 },
             angle: 0, // Initial angle (radians)
             angularVelocity: 0, // Initial angular velocity (radians/sec)
+            lastAnchorPos: { x: initialAnchorPos.x, y: initialAnchorPos.y }, // Store initial anchor
             limbs: [],
         };
 
@@ -42,7 +43,7 @@ export function ensurePhysicsState(clientId, initialAnchorPos) {
             const attachmentOffsetX = (config.playerBodyWidth / 3) * side;
             // Attach slightly below the vertical center
             const attachmentOffsetY = config.playerBodyHeight * 0.2;
-            
+
             // Initial limb position: slightly below attachment point
             const initialLimbPos = {
                 x: bodyInitialPos.x + attachmentOffsetX,
@@ -61,7 +62,12 @@ export function ensurePhysicsState(clientId, initialAnchorPos) {
         playerPhysicsStates.set(clientId, initialState);
         console.log(`Initialized physics state for client ${clientId}`);
     }
-    return playerPhysicsStates.get(clientId);
+    // Ensure lastAnchorPos is present even if state existed before this change
+    const state = playerPhysicsStates.get(clientId);
+    if (!state.lastAnchorPos) {
+         state.lastAnchorPos = { x: initialAnchorPos.x, y: initialAnchorPos.y };
+    }
+    return state;
 }
 
 /**

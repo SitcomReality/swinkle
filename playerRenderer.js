@@ -33,21 +33,37 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
 /**
  * Renders a single player character, including anchor, body, bungee cord, limbs,
  * and their held paint can if applicable. Includes power-up visual indicators.
+ * Uses the physics state's `lastAnchorPos` for accurate anchor rendering.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
  * @param {string} localClientId - The ID of the current user's client.
- * @param {object} presence - The player's presence data (x, y anchor, color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating).
+ * @param {object} presence - The player's presence data (color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating, lost).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
  */
 export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPaintCansState) {
-    if (!presence || typeof presence.x !== 'number' || typeof presence.y !== 'number') {
+    if (!presence) {
         return; // Basic presence check
     }
 
-    const anchorX = presence.x;
-    const anchorY = presence.y;
+    // --- Get Player Physics State ---
+    const physicsState = getPlayerPhysicsState(clientId);
+    if (!physicsState) {
+        // Don't warn if spectating, physics state might be cleaned up
+        if (!presence.isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
+        return; // Cannot render body/limbs/anchor without physics state
+    }
+    // Use the anchor position that was used for the last physics update
+    const anchorX = physicsState.lastAnchorPos.x;
+    const anchorY = physicsState.lastAnchorPos.y;
+
+    // Check if coordinates are valid before proceeding with rendering
+    if (typeof anchorX !== 'number' || typeof anchorY !== 'number') {
+        console.warn(`Invalid anchor coordinates in physics state for ${clientId}:`, physicsState.lastAnchorPos);
+        return; // Don't render if anchor is invalid
+    }
+
     const baseColor = presence.color || config.defaultPlayerColor || '#FFF';
     const paintedData = presence.paintedData || {};
     const glowBlur = config.neonGlowBlur || 10;
@@ -57,7 +73,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const hasMegaCanPowerup = presence.activePowerUps?.['megaCan']; // Check for active mega can powerup
     const isSpectating = presence.isSpectating || false; // Check spectating state
 
-    // --- Render Anchor Point (Cursor) ---
+    // --- Render Anchor Point (Cursor/Spectator Anchor) ---
     // Anchor is always fully opaque, even for spectators
     ctx.save();
     ctx.shadowBlur = glowBlur;
@@ -75,13 +91,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.stroke();
     ctx.restore(); // Restore shadow settings etc.
 
-    // --- Get Player Physics State ---
-    const physicsState = getPlayerPhysicsState(clientId);
-    if (!physicsState) {
-        // Don't warn if spectating, physics state might be cleaned up
-        if (!isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
-        return; // Cannot render body/limbs without physics state
-    }
+    // Extract physics state variables needed below
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
     const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
@@ -95,7 +105,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // --- Render Player Bungee Cord (Anchor -> Body) ---
     ctx.save(); // Save context for potential bungee modifications
     ctx.beginPath();
-    ctx.moveTo(anchorX, anchorY);
+    ctx.moveTo(anchorX, anchorY); // Use calculated anchorX, anchorY
     ctx.lineTo(bodyX, bodyY);
     // Modify bungee appearance if springy power-up is active
     if (isSpringy) {
@@ -165,7 +175,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.stroke(); // Draw blended stroke using the same path
 
     // --- Render Shield Effect (if active) ---
-    // Shield should still be rendered even if spectating (might rejoin with it active)
     if (isShielded) {
         ctx.save();
         // Draw pulsating shield outline around the existing capsule path
@@ -231,7 +240,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // Only make local player's eyes look, and only if not spectating
     if (clientId === localClientId && !isSpectating) {
         // Calculate direction from world body center to world anchor
-        const worldDirX = anchorX - bodyX;
+        const worldDirX = anchorX - bodyX; // Use calculated anchorX, anchorY
         const worldDirY = anchorY - bodyY;
 
         // Rotate this world direction vector into the player's local coordinate system
@@ -265,7 +274,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.restore(); // Restore translation and rotation
 
     // --- Render Player Name (Not Rotated) ---
-    // Alpha is already potentially 0.5 from the save/restore block above
+    // Alpha is already potentially 0.5
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';

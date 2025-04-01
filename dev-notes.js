@@ -29,6 +29,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
   - **7. [DONE] UI Reminder Text:**
   - **8. [DONE] Disable Collisions for Spectators:**
   - **9. [DONE] Disable Interactions for Spectators:**
+  - **10. [DONE] Fix Anchor Point Rendering:** Ensure the anchor point (cursor circle) moves to the top edge for spectators and renders correctly.
 
 
 **Other Planned Features:**
@@ -42,7 +43,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
 3. **Sound effects.** (Requires audio capabilities)
 
 4. **More visual effects:**
-   - **[IN PROGRESS] Add player respawn animation.**
+   - **[DONE] Add player respawn animation.**
    - Player loss/paint-out effect.
    - Can pickup/steal effect improvement.
 

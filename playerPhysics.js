@@ -100,7 +100,7 @@ function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
 /**
  * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
  * Also handles collision with level geometry and applies the 'springyBungee' power-up effect.
- * Accounts for spectator mode anchor point logic.
+ * Accounts for spectator mode anchor point logic. Stores the anchor point used.
  *
  * @param {string} clientId - The ID of the player to update.
  * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee, isSpectating).
@@ -118,7 +118,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
         // Normal mode: Anchor point follows cursor (presence.x, presence.y)
         if (typeof presence.x !== 'number' || typeof presence.y !== 'number') {
              console.warn(`Player ${clientId} is not spectating but has invalid anchor coordinates.`);
-             // Use last known good position or default? Fallback to center for now.
+             // Fallback to center for now if anchor isn't present
              anchorPos = { x: config.gameAreaWidth / 2, y: config.gameAreaHeight / 2 };
         } else {
              anchorPos = { x: presence.x, y: presence.y };
@@ -198,7 +198,6 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.angle += state.angularVelocity * deltaTime;
 
     // --- Level Collision Check and Response (Body) ---
-    // Pass presence to check if spectating inside the collision handler
     handlePlayerLevelCollision(state, presence);
 
     // --- Constraints (Post-Collision) ---
@@ -223,10 +222,12 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     }
 
     // --- Update Limb Physics ---
-    // Limbs still dangle even in spectate mode
     state.limbs.forEach(limb => {
         updateLimbPhysics(limb, state.position, state.angle, deltaTime);
     });
+
+    // --- Store the anchor position used for this frame's calculation ---
+    state.lastAnchorPos = { x: anchorPos.x, y: anchorPos.y };
 
     // Update the state in the map
     setPlayerPhysicsState(clientId, state);
