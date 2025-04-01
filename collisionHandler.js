@@ -6,8 +6,7 @@ import config from 'config';
 // Import the room instance directly to access peers and collections
 import { room } from './main.js';
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
-// Use addGlobalNotification for loss events
-import { addNotification, addGlobalNotification } from './notification-manager.js';
+import { addNotification } from './notification-manager.js'; // Import notification function
 
 /**
  * Checks for collisions between the local player and all droplets.
@@ -25,18 +24,22 @@ import { addNotification, addGlobalNotification } from './notification-manager.j
  */
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
-    const collisionPoints = [];
-
+    const collisionPoints = []; // Store { x, y, color } for splat effects
+    
+    // --- Skip checks if presence is missing, player is already lost, or spectating ---
     if (!currentPresence || currentPresence.lost || currentPresence.isSpectating) {
         return { dropletsToRemove, collisionPoints };
     }
-
+    
     let paintedUpdates = {};
     let paintingOccurred = false;
     const currentPaintedData = currentPresence.paintedData || {};
-    const isShielded = currentPresence.shielded || false;
-    const paintingPlayers = new Set();
+    const isShielded = currentPresence.shielded || false; // Check for shield power-up
 
+    // Track painting players for score updates
+    const paintingPlayers = new Set(); // Keep track of unique players who painted this player
+
+    // Simple rectangular hitbox for the player capsule
     const bodyWidth = config.playerBodyWidth;
     const bodyHeight = config.playerBodyHeight;
     const playerHitbox = {
@@ -47,27 +50,48 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
     };
 
     Object.entries(droplets).forEach(([dropletId, droplet]) => {
+        // Skip if droplet doesn't exist or is owned by the local player
         if (!droplet || droplet.ownerId === localClientId) return;
 
+        // Simple circle-rectangle collision check
         const dropletRadius = config.dropletSize || 3;
+
+        // Find the closest point on the rectangle to the circle
         const closestX = Math.max(playerHitbox.left, Math.min(droplet.x, playerHitbox.right));
         const closestY = Math.max(playerHitbox.top, Math.min(droplet.y, playerHitbox.bottom));
+
+        // Calculate distance between the closest point and the circle center
         const distanceX = droplet.x - closestX;
         const distanceY = droplet.y - closestY;
         const distanceSquared = distanceX * distanceX + distanceY * distanceY;
 
+        // Check if the distance is less than the circle's radius squared
         if (distanceSquared <= (dropletRadius * dropletRadius)) {
-            dropletsToRemove[dropletId] = null; // Mark for removal
+            // Collision detected!
+
+            // Mark this droplet for removal regardless of shield (it's consumed)
+            dropletsToRemove[dropletId] = null;
 
             if (isShielded) {
+                // Shield blocked the paint!
+                // console.log(`Shield blocked droplet ${dropletId}`);
+                // Add a visual effect for the block
                 addEffect('blockSpark', { x: droplet.x, y: droplet.y, color: droplet.color });
             } else {
-                // --- Apply Paint ---
+                // No shield - apply paint
+                // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
+
+                // Record collision point for splat effect
                 collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });
+
+                // Update painted data: increment the percentage for this color
                 const currentPercentage = currentPaintedData[droplet.color] || 0;
+                // Make increment amount configurable?
                 const incrementAmount = config.paintIncrementPerDroplet || 2;
                 paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
                 paintingOccurred = true;
+
+                // Store the player ID who painted this player (for score update)
                 if (droplet.ownerId) {
                     paintingPlayers.add(droplet.ownerId);
                 }
@@ -75,73 +99,104 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
         }
     });
 
+    // If any painting occurred (and not shielded), update the player's painted data
     if (paintingOccurred) {
+        // Calculate total paint percentage
         let totalPercentage = 0;
         const updatedPaintedData = { ...currentPaintedData, ...paintedUpdates };
+
         Object.values(updatedPaintedData).forEach(percentage => {
             totalPercentage += percentage;
         });
+
+        // Clamp total percentage at the loss threshold to avoid going over visually
         totalPercentage = Math.min(totalPercentage, config.lossThreshold);
 
+        // console.log(`Player ${localClientId} painted: ${totalPercentage}% total`);
+
+        // Prepare presence update data
         const updateData = { paintedData: updatedPaintedData };
         let justLost = false;
 
+        // Check if player has reached loss threshold (and wasn't already lost)
         if (totalPercentage >= config.lossThreshold) {
-            // --- Player Lost ---
+            console.log(`Player ${localClientId} has been fully painted out! (${totalPercentage}%)`);
             updateData.lost = true;
+            // Set the respawn time
             updateData.respawnTime = now + (config.respawnDelay || 5000);
-            justLost = true;
+            justLost = true; // Flag that the loss occurred this frame
 
+            // Record the loss in the database
             const username = room.peers[localClientId]?.username;
             if (username) {
                 console.log(`Recording loss for ${username}`);
-                // Send GLOBAL notification of player loss
-                addGlobalNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
+                // Add notification of player loss
+                addNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
                 room.collection('loss_v1').create({ loserUsername: username })
+                    .then(record => console.log("Loss recorded:", record))
                     .catch(err => console.error("Error recording loss:", err));
+                // Use loss_v1 to invalidate any old test records if schema changes
+            } else {
+                console.warn(`Could not find username for client ${localClientId} to record loss.`);
             }
 
-            // Drop current can
+            // Optionally: Drop the player's current paint can if they lose
             if (currentPresence.currentCanId) {
+                 console.log(`Player ${localClientId} lost, dropping can ${currentPresence.currentCanId}`);
                  const canId = currentPresence.currentCanId;
                  const canState = room.roomState.paintCans?.[canId];
                  if (canState) {
+                    // Send room state updates to make the can available
+                    // This might be better handled in game-loop or playerInteractions on presence change detection
+                    // For now, let's just update presence to drop it.
+                    // The disconnect logic in main.js might handle the roomState update implicitly,
+                    // OR we need dedicated logic here or elsewhere.
+                    // Simplest: Update presence. Game loop will eventually see player has no can.
+                    // We need to ensure the can itself becomes available though.
                      room.updateRoomState({
-                         paintCans: { [canId]: null },
-                         availablePaintCans: {
+                         paintCans: { [canId]: null }, // Remove from owned cans
+                         availablePaintCans: { // Add to available cans
                             [canId]: {
-                                ...canState, ownerId: null, vx: 0, vy: 0,
+                                ...canState,
+                                ownerId: null,
+                                vx: 0, vy: 0, // Reset physics
                                 isCharging: false, accumulatedDroplets: 0,
-                                isMega: canState.isMega || false
+                                isMega: canState.isMega || false // Preserve mega status if it was mega
                              }
                          }
                      });
-                     updateData.currentCanId = null;
+                     updateData.currentCanId = null; // Also update presence immediately
                  }
             }
         }
 
-        room.updatePresence(updateData); // Update local player presence
+        // Send presence update only if something changed (paint or loss state)
+        room.updatePresence(updateData);
 
-        // --- Give Score to Painting Players ---
+        // Give points to players who painted this player
         if (paintingPlayers.size > 0) {
             paintingPlayers.forEach(painterId => {
                 if (painterId && painterId !== localClientId && room.peers[painterId]) {
-                    const incrementAmount = justLost ? 5 : 1;
+                    // Ask the painting player to increment their score
+                    const incrementAmount = justLost ? 5 : 1; // More points for causing a loss
                     room.requestPresenceUpdate(painterId, {
                         type: 'incrementScore',
                         amount: incrementAmount
                     });
 
+                    // Get painter's username for notification
                     const painterUsername = room.peers[painterId]?.username || 'Player';
                     const localUsername = room.peers[localClientId]?.username || 'Player';
 
-                    // Score notifications remain LOCAL for now to avoid spam
+                    // Notify about score increase
                     if (justLost) {
                         addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'score', 4000);
-                    } else if (Math.random() < 0.2) {
+                    } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam
                         addNotification(`${painterUsername} scored a point for painting ${localUsername}`, 'info', 2000);
                     }
+
+                    // Optional: Log for debug
+                    console.log(`Player ${painterId} gets ${incrementAmount} points for painting ${localClientId}`);
                 }
             });
         }

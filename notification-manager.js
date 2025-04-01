@@ -1,47 +1,66 @@
 /**
  * notification-manager.js
- * Manages the state and logic for notifications.
- * Handles adding local/global notifications, updates, and cleanup.
- * Delegates DOM manipulation to notification-renderer.js.
+ * Manages displaying temporary messages (notifications) to the user on screen.
  */
-// Import room instance from main.js to use collections
-import { room } from './main.js';
-// Import DOM rendering functions
-import {
-    renderNotificationsDOM,
-    removeNotificationDOM,
-    clearNotificationsDOM,
-    getNotificationsContainer // Renderer handles container creation
-} from './notification-renderer.js'; // Ensure path is correct
 
-// Store active notifications: { id: { id, message, type, startTime, duration, element, count, recordId? } }
-const activeNotifications = new Map();
-// Store IDs of global notification records *currently being displayed or fading out*
-// This prevents rapid re-adding if the subscription fires multiple times quickly for the same record.
-// IDs are removed once the notification is fully gone (after fade-out).
-const displayedGlobalNotificationIds = new Set(); // Note: This set's usage is reduced after the fix below.
+// Store active notifications
+const activeNotifications = new Map(); // { id: { id, message, type, startTime, duration, element } }
 let notificationCounter = 0;
 
 // Default notification duration (can be overridden)
 const DEFAULT_DURATION = 3000; // 3 seconds
 
-let unsubscribeGlobalNotifications = () => {}; // Unsubscribe function for global notifications
+// Configuration for notifications
+const NOTIFICATION_CONFIG = {
+    maxVisible: 5,        // Maximum number of notifications visible at once
+    spacing: 10,          // Vertical space between notifications
+    startY: 80,           // Starting Y position (from top) for the container
+    height: 45,           // Estimated height of a notification (for spacing)
+    fadeInTime: 300,      // Time in ms for fade in animation
+    fadeOutTime: 500,     // Time in ms for fade out animation
+    typeColors: {         // Colors for different notification types (used in CSS)
+        info: '#44AAFF',
+        success: '#44FF88',
+        warning: '#FFAA44',
+        error: '#FF5555',
+        pickup: '#FF88FF',
+        score: '#66FFAA', // Add color for score notifications
+        loss: '#FF5555',
+        join: '#66FF66',
+        leave: '#FFAA66',
+        tip: '#FFFF66'
+    }
+};
 
+let notificationsContainer = null;
 
 /**
- * Internal function to add or update a notification in the state map.
- * Handles duplicate checking and combining for *active* notifications.
- * Prevents re-adding global notifications that are currently active or fading out.
- * Calls the renderer to update the DOM.
- * @param {string} message - The text content.
- * @param {string} type - Notification type.
- * @param {number} duration - Duration in ms.
- * @param {string|null} recordId - The ID of the Websim record if this is a global notification.
- * @param {number|null} startTimeOverride - Specific start time (e.g., from record creation).
+ * Creates or retrieves the main container for notification elements.
+ * @returns {HTMLElement} The container element.
  */
-function addNotificationInternal(message, type, duration, recordId = null, startTimeOverride = null) {
+function getNotificationsContainer() {
+    if (!notificationsContainer) {
+        notificationsContainer = document.getElementById('notifications-container');
+        if (!notificationsContainer) {
+            console.log("Creating notifications container div.");
+            notificationsContainer = document.createElement('div');
+            notificationsContainer.id = 'notifications-container';
+            // Apply styles via CSS file now
+            document.body.appendChild(notificationsContainer);
+        }
+    }
+    return notificationsContainer;
+}
+
+/**
+ * Adds a new notification to be displayed.
+ * @param {string} message - The text content of the notification.
+ * @param {string} [type='info'] - Type of notification ('info', 'success', 'warning', 'error', 'pickup', 'loss', 'join', 'leave', 'tip', 'score'). Affects styling/icon later.
+ * @param {number} [duration=DEFAULT_DURATION] - How long the notification should stay on screen in milliseconds.
+ */
+export function addNotification(message, type = 'info', duration = DEFAULT_DURATION) {
+    const id = `notif-${notificationCounter++}`;
     const now = Date.now();
-    const startTime = startTimeOverride !== null ? startTimeOverride : now;
 
     // Basic validation
     if (!message || typeof message !== 'string') {
@@ -53,188 +72,236 @@ function addNotificationInternal(message, type, duration, recordId = null, start
         duration = DEFAULT_DURATION;
     }
 
-    // --- Check for Identical ACTIVE Notification ---
-    let foundActiveMatch = false;
+    // --- Check for Identical Active Notification ---
+    let foundMatch = false;
     activeNotifications.forEach(existingNotification => {
-        const isGlobalMatch = recordId && existingNotification.recordId === recordId;
-        const isLocalMatch = !recordId && !existingNotification.recordId && existingNotification.message === message && existingNotification.type === type;
-
-        if (!foundActiveMatch && (isGlobalMatch || isLocalMatch)) {
-            if (isLocalMatch) {
-                existingNotification.count = (existingNotification.count || 1) + 1;
-            }
-            existingNotification.startTime = startTime;
-            existingNotification.duration = duration;
-
-            if (recordId) displayedGlobalNotificationIds.add(recordId);
-
-            foundActiveMatch = true;
-            updateAndRenderNotifications(now); // Trigger DOM update via renderer
+        if (!foundMatch && existingNotification.message === message && existingNotification.type === type) {
+            // Found an identical notification
+            existingNotification.count = (existingNotification.count || 1) + 1; // Increment count
+            existingNotification.startTime = now; // Reset timer
+            existingNotification.duration = duration; // Update duration in case it changed
+            foundMatch = true;
+            // console.log(`Combined notification (${type}): ${message} (x${existingNotification.count})`);
+            // Trigger update to reflect the change immediately (e.g., text update, position)
+            updateAndRenderNotifications(now);
         }
     });
 
-    if (foundActiveMatch) return;
+    if (foundMatch) return; // Don't add a new one if we combined it
 
-    // Add new notification if no active match was found
-    const id = `notif-${notificationCounter++}`;
     activeNotifications.set(id, {
         id,
         message,
         type,
-        startTime,
+        startTime: now,
         duration,
-        element: null, // Renderer will manage the element reference
-        count: 1,
-        recordId // Store the record ID if it's a global notification
+        element: null, // Will store the DOM element reference
+        count: 1 // Initialize count
     });
+    // console.log(`Added notification (${type}): ${message}`); // Optional logging
 
-    if (recordId) {
-        displayedGlobalNotificationIds.add(recordId);
-        if (displayedGlobalNotificationIds.size > 500) {
-            const oldIds = Array.from(displayedGlobalNotificationIds).slice(0, 100);
-            oldIds.forEach(oldId => displayedGlobalNotificationIds.delete(oldId));
-            console.log("Pruned old displayed global notification IDs.");
-        }
-    }
-
-    updateAndRenderNotifications(now); // Trigger DOM update via renderer
+    // Trigger an immediate update/render to show the new notification
+    updateAndRenderNotifications(Date.now());
 }
 
 /**
- * Adds a *local* notification (only visible to the current client).
- * @param {string} message - The text content of the notification.
- * @param {string} [type='info'] - Type of notification.
- * @param {number} [duration=DEFAULT_DURATION] - Duration in ms.
- */
-export function addNotification(message, type = 'info', duration = DEFAULT_DURATION) {
-    addNotificationInternal(message, type, duration, null, null);
-}
-
-/**
- * Adds a *global* notification visible to all players by creating a Websim record.
- * Relies on the subscription in initializeNotificationManager to display it.
- * Includes detailed logging for debugging.
- * @param {string} message - The text content of the notification.
- * @param {string} [type='info'] - Type of notification.
- * @param {number} [duration=DEFAULT_DURATION] - Duration in ms.
- */
-export async function addGlobalNotification(message, type = 'info', duration = DEFAULT_DURATION) {
-    const notificationData = {
-        message,
-        type,
-        duration
-        // created_at is added automatically
-    };
-    console.log(`[DEBUG] Attempting to create global notification record:`, { ...notificationData }); // Log data being sent
-    try {
-        // Use v2 to avoid conflict with any old test data
-        const record = await room.collection('notification_v2').create(notificationData);
-        console.log(`[DEBUG] Successfully created global notification record:`, record); // Log success and the created record
-    } catch (error) {
-        console.error("[DEBUG] Failed to create global notification record:", error, "Data:", notificationData); // Log error and data
-        // Fallback to local notification on error
-        addNotification(`[Global Failed] ${message}`, 'error');
-    }
-}
-
-/**
- * Removes expired notifications and cleans up displayed global IDs.
- * Calls the renderer to update the DOM if changes occurred.
+ * Removes expired notifications. Called every frame in the game loop.
+ * Also triggers the rendering/update process.
  * @param {number} now - The current timestamp (Date.now()).
  */
 export function updateNotifications(now) {
+    // Remove expired notifications from the map
     const notificationsToRemove = [];
-    let fadeOutTime = 500; // Default fadeOutTime, get from config if possible
-    // Attempt to get fadeOutTime from renderer's config - requires renderer to export it or pass it during init
-    // For simplicity, hardcoding it here for now, but ideally it would come from the renderer's config.
-    // Example: fadeOutTime = NOTIFICATION_CONFIG.fadeOutTime (if imported/available)
-
     activeNotifications.forEach(notification => {
-        if (now >= notification.startTime + notification.duration + fadeOutTime) {
+        if (now >= notification.startTime + notification.duration + NOTIFICATION_CONFIG.fadeOutTime) {
+             // Keep it slightly longer than duration to allow fade-out
             notificationsToRemove.push(notification.id);
-            if (notification.recordId) {
-                displayedGlobalNotificationIds.delete(notification.recordId);
+        }
+    });
+
+    notificationsToRemove.forEach(id => activeNotifications.delete(id));
+
+    // Update the DOM based on the current state
+    updateAndRenderNotifications(now);
+}
+
+/**
+ * Updates the DOM elements for active notifications. Handles creation, removal, positioning, and animations.
+ * @param {number} now - The current timestamp (Date.now()).
+ */
+function updateAndRenderNotifications(now) {
+    const container = getNotificationsContainer();
+    if (!container) return;
+
+    // Get active notifications sorted oldest first, limit to max visible
+    const sortedNotifications = Array.from(activeNotifications.values())
+        .sort((a, b) => a.startTime - b.startTime); // Oldest first
+
+    const visibleNotifications = sortedNotifications.slice(-NOTIFICATION_CONFIG.maxVisible); // Take the N newest
+    const visibleIds = new Set(visibleNotifications.map(n => n.id));
+
+    // --- Manage DOM Elements ---
+    const currentElements = new Map();
+    Array.from(container.children).forEach(child => {
+        if (child.dataset.id) {
+            currentElements.set(child.dataset.id, child);
+        } else {
+            // Clean up unexpected children?
+            container.removeChild(child);
+        }
+    });
+
+    // Remove elements that are no longer visible or active
+    currentElements.forEach((element, id) => {
+        if (!visibleIds.has(id)) {
+            // Check if it's already fading out
+            if (!element.classList.contains('fade-out')) {
+                element.classList.add('fade-out');
+                element.style.animation = `notificationFadeOut ${NOTIFICATION_CONFIG.fadeOutTime / 1000}s forwards`;
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if (element.parentElement === container) {
+                        container.removeChild(element);
+                    }
+                    // Also ensure removed from activeNotifications if somehow still there
+                    activeNotifications.delete(id);
+                }, NOTIFICATION_CONFIG.fadeOutTime);
             }
         }
     });
 
-    let changed = false;
-    notificationsToRemove.forEach(id => {
-         if (activeNotifications.has(id)) {
-             activeNotifications.delete(id);
-             changed = true;
-         }
-    });
+    // Add/Update visible elements
+    visibleNotifications.forEach((notification, index) => {
+        let element = currentElements.get(notification.id);
 
-    if (changed) {
-        updateAndRenderNotifications(now); // Update the DOM via renderer
-    }
+        if (!element) {
+            // Create new notification element
+            element = document.createElement('div');
+            notification.element = element; // Store reference
+            element.id = `notification-${notification.id}`;
+            element.dataset.id = notification.id; // Store ID for later retrieval
+            element.className = `notification notification-${notification.type || 'info'}`;
+            element.style.marginBottom = `${NOTIFICATION_CONFIG.spacing}px`;
+
+            // Create content
+            const content = document.createElement('div');
+            content.className = 'notification-content';
+
+            // Add icon indicator
+            const icon = document.createElement('div');
+            icon.className = 'notification-icon';
+            content.appendChild(icon);
+
+            // Add message
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = notification.message + (notification.count > 1 ? ` (x${notification.count})` : '');
+            messageSpan.className = 'notification-message'; // Add class for targeting
+            content.appendChild(messageSpan);
+
+            element.appendChild(content); // Append to container
+            container.appendChild(element); // Append to container
+
+            // Apply fade-in animation
+            element.style.animation = `notificationFadeIn ${NOTIFICATION_CONFIG.fadeInTime / 1000}s forwards`;
+
+        }
+
+        // Update existing message text if count changed
+        const messageSpan = element.querySelector('.notification-message');
+        if (messageSpan) {
+            const expectedText = notification.message + (notification.count > 1 ? ` (x${notification.count})` : '');
+            if (messageSpan.textContent !== expectedText) {
+                messageSpan.textContent = expectedText;
+                
+                // Add the pulse animation when count increases
+                if (notification.count > 1) {
+                    // Remove any existing pulse class to restart animation
+                    element.classList.remove('notification-pulse');
+                    // Force a reflow to restart animation
+                    void element.offsetWidth;
+                    // Add pulse class
+                    element.classList.add('notification-pulse');
+                }
+            }
+        }
+
+        // Ensure fade-out class is removed if it was added previously (e.g., if it reappeared)
+         element.classList.remove('fade-out');
+         // Remove explicit animation style if it was fade-out, let CSS handle default state
+         if (element.style.animation.includes('notificationFadeOut')) {
+             element.style.animation = '';
+         }
+
+        // Calculate vertical position - newest at bottom (index = visibleNotifications.length - 1)
+        // translateY should be based on position *from the top*
+        const yPos = index * (NOTIFICATION_CONFIG.height + NOTIFICATION_CONFIG.spacing);
+        element.style.transform = `translateY(${yPos}px)`;
+
+        // Optionally handle fade-out based on time remaining (can make it smoother)
+        const age = now - notification.startTime;
+        const timeLeft = notification.duration - age;
+        if (timeLeft < NOTIFICATION_CONFIG.fadeOutTime && !element.classList.contains('fade-out')) {
+             // Start fading out early if using opacity transition instead of animation for this part
+            // element.style.opacity = Math.max(0, timeLeft / NOTIFICATION_CONFIG.fadeOutTime).toFixed(2);
+            // Using animation is simpler - the removal logic handles it.
+        } else {
+            // element.style.opacity = '1'; // Ensure opacity is 1 if not fading
+        }
+    });
 }
 
 /**
- * Updates the notification state and triggers the renderer.
- * INTERNAL function called by add/update logic.
+ * Renders active notifications on the canvas. (Deprecated - Now uses DOM manipulation)
+ * @deprecated Use updateAndRenderNotifications instead.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
  * @param {number} now - The current timestamp (Date.now()).
  */
-function updateAndRenderNotifications(now) {
-    // Callback function for the renderer to delete from our map
-    const deleteCallback = (id) => activeNotifications.delete(id);
-    // Call the renderer function, passing the state it needs
-    renderNotificationsDOM(activeNotifications, now, displayedGlobalNotificationIds, deleteCallback);
+export function renderNotifications(ctx, now) {
+    // This function is no longer used for rendering.
+    // Kept for compatibility if called elsewhere, but does nothing.
+    // console.warn("renderNotifications(ctx, now) is deprecated. Notifications are now handled via DOM.");
 }
 
 /**
- * Removes a specific notification by its ID from state and triggers DOM removal.
+ * Removes a specific notification by its ID.
  * @param {string} id - The ID of the notification to remove.
  */
 export function removeNotification(id) {
     const notification = activeNotifications.get(id);
-    if (notification) {
-        removeNotificationDOM(id, notification, displayedGlobalNotificationIds); // Trigger DOM removal via renderer
+    if (notification && notification.element && notification.element.parentElement) {
+        // Trigger fade out animation
+         if (!notification.element.classList.contains('fade-out')) {
+            notification.element.classList.add('fade-out');
+            notification.element.style.animation = `notificationFadeOut ${NOTIFICATION_CONFIG.fadeOutTime / 1000}s forwards`;
+            setTimeout(() => {
+                 if (notification.element.parentElement === getNotificationsContainer()) {
+                     getNotificationsContainer().removeChild(notification.element);
+                 }
+             }, NOTIFICATION_CONFIG.fadeOutTime);
+         }
     }
-    activeNotifications.delete(id); // Remove from active map immediately
+    activeNotifications.delete(id);
 }
 
 /**
- * Clears all active notifications from state and triggers DOM clearing.
+ * Clears all active notifications.
  */
 export function clearNotifications() {
+    activeNotifications.forEach(notification => {
+        if (notification.element && notification.element.parentElement) {
+            notification.element.parentElement.removeChild(notification.element);
+        }
+    });
     activeNotifications.clear();
-    displayedGlobalNotificationIds.clear();
-    clearNotificationsDOM(); // Trigger DOM clearing via renderer
+    const container = getNotificationsContainer();
+    if (container) container.innerHTML = ''; // Clear container just in case
 }
 
 /**
- * Initializes the notification manager. Ensures container exists and subscribes to global notifications.
+ * Initializes the notification manager. Ensures the container exists.
  */
 export function initializeNotificationManager() {
     console.log("Notification Manager Initialized.");
-    getNotificationsContainer(); // Ensure container is ready via renderer
-
-    // Subscribe to global notifications (use a versioned collection name)
-    unsubscribeGlobalNotifications = room.collection('notification_v2').subscribe((notificationRecords) => {
-        console.log(`[DEBUG] Received ${notificationRecords.length} global notification records via subscription.`); // Debugging line
-        notificationRecords.forEach(record => {
-            if (record && record.message && record.type && record.duration && record.created_at && record.id) {
-                const startTime = new Date(record.created_at).getTime();
-                console.log(`[DEBUG] Processing global notification record ${record.id} (created: ${record.created_at}): "${record.message}"`); // Debugging line
-                addNotificationInternal(record.message, record.type, record.duration, record.id, startTime);
-            } else {
-                console.warn("[DEBUG] Received invalid global notification record:", record);
-            }
-        });
-    });
-
+    getNotificationsContainer(); // Ensure container is ready
     clearNotifications(); // Clear any stale notifications if restarting
-}
-
-/**
- * Cleans up notification subscriptions.
- */
-export function cleanupNotifications() {
-    console.log("Cleaning up notification subscriptions...");
-    if (typeof unsubscribeGlobalNotifications === 'function') {
-        unsubscribeGlobalNotifications();
-    }
-    clearNotifications();
 }

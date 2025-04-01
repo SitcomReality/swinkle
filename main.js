@@ -18,9 +18,9 @@ import { triggerManualRespawn } from './respawn-manager.js';
 import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
-// Import notification manager and specific functions
-// Use GLOBAL notification for respawn click
-import { initializeNotificationManager, addNotification, cleanupNotifications, addGlobalNotification } from './notification-manager.js';
+// Import notification manager and the new global notifier
+import { addNotification } from './notification-manager.js';
+import { initializeGlobalNotifier } from './global-notifier.js'; // Import the initializer
 
 export const room = new WebsimSocket();
 
@@ -38,7 +38,7 @@ export function getLastSignificantMoveTime() {
 async function initGame() {
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
-    initializeNotificationManager(); // Initialize local UI and subscribe to global notifications
+    initializeGlobalNotifier(); // Initialize the global notification system
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -142,6 +142,7 @@ async function initGame() {
         const clampedX = Math.max(0, Math.min(config.gameAreaWidth, canvasX));
         const clampedY = Math.max(0, Math.min(config.gameAreaHeight, canvasY));
 
+
         // --- Update Presence ---
         // Send only anchor position. Other presence updates are event-driven.
         // Don't update position if player is lost or spectating - prevents moving while waiting to respawn/or spectating
@@ -198,10 +199,9 @@ async function initGame() {
             // Send the presence update to rejoin the game
             room.updatePresence(respawnUpdates);
 
-            // Send GLOBAL notification
+            // Send notification
             const username = room.peers[localClientId]?.username || 'Player';
-            addGlobalNotification(`${username} respawned!`, 'info', 3000)
-                .catch(err => console.error('Error sending global respawn notification:', err));
+            addNotification(`${username} respawned!`, 'info', 3000);
 
             // Reset idle timer state immediately upon rejoining
             lastSignificantMoveTime = Date.now();
@@ -239,8 +239,8 @@ async function initGame() {
                 const updates = {
                     paintCans: {
                         [canId]: {
-                            isCharging: false,
-                            accumulatedDroplets: 0
+                            isCharging: false, 
+                            accumulatedDroplets: 0 
                         }
                     }
                 };
@@ -249,8 +249,8 @@ async function initGame() {
                 if (dropletsToBurst > 0) {
                     console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
                     const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
-                    updates.droplets = burstData;
-                }
+                    updates.droplets = burstData; 
+                } 
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
                 room.updateRoomState(updates);
@@ -276,7 +276,7 @@ async function initGame() {
         if (e.key === 'Escape') {
             const localClientId = room.clientId;
             const localPresence = room.presence[localClientId];
-            if (!localPresence) return;
+            if (!localPresence) return; 
 
             if (localPresence.isSpectating) {
                 // --- Leave Spectate Mode ---
@@ -293,15 +293,15 @@ async function initGame() {
                 );
                 room.updatePresence(respawnUpdates);
 
-                // Send GLOBAL notification
+                // Send notification
                 const username = room.peers[localClientId]?.username || 'Player';
-                addGlobalNotification(`${username} respawned!`, 'info', 3000)
-                     .catch(err => console.error('Error sending global respawn notification:', err));
-
+                addNotification(`${username} respawned!`, 'info', 3000);
 
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
                 lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
+
+
             } else {
                 // --- Enter Spectate Mode ---
                 enterSpectateMode(localClientId, room);
@@ -316,23 +316,24 @@ async function initGame() {
     room.updatePresence({
         x: initialX,
         y: initialY,
-        color: config.defaultPlayerColor || '#FFFFFF',
-        paintedData: {},
-        currentCanId: null,
-        lost: false,
-        score: 0,
-        isSpectating: true,
+        color: config.defaultPlayerColor || '#FFFFFF', 
+        paintedData: {}, 
+        currentCanId: null, 
+        lost: false, 
+        score: 0, 
+        isSpectating: true, 
         respawnAnimEndTime: null // Initialize respawn animation timer state
     });
     // Set initial known position for idle timer
     lastKnownPosition = { x: initialX, y: initialY };
     lastSignificantMoveTime = Date.now();
 
+
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
         const localClientId = room.clientId;
         const localPresence = room.presence[localClientId];
-        if (!localPresence) return;
+        if (!localPresence) return; 
 
         if (updateRequest.type === 'dropCan') {
             if (localPresence.currentCanId) {
@@ -365,8 +366,3 @@ async function initGame() {
 // Initialize the app
 loadDevNotes();
 initGame().catch(console.error);
-
-// Optional: Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    cleanupNotifications(); // Unsubscribe from global notifications
-});

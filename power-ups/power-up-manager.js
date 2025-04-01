@@ -6,8 +6,6 @@ import { getRandomPowerUpDefinition, powerUpDefinitions } from './power-up-data.
 import config from '../config.js';
 import { addEffect } from '../effectsRenderer.js'; // Import for visual feedback
 import { room } from '../main.js'; // Import room to access peers
-// Use global notification for pickup
-import { addGlobalNotification } from '../notification-manager.js';
 
 /**
  * Checks if a new power-up should spawn and generates it if needed
@@ -67,6 +65,7 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
     const powerUpsToRemove = {};
     let presenceUpdates = {};
 
+    // Don't allow collection if player doesn't exist, has no position, is lost, or is spectating
     if (!playerBodyPos || !clientId || !currentPresence || currentPresence.lost || currentPresence.isSpectating) {
         return { powerUpsToRemove, presenceUpdates };
     }
@@ -76,25 +75,35 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
     const playerY = playerBodyPos.y;
 
     Object.entries(activePowerUps || {}).forEach(([powerUpId, powerUp]) => {
-        if (!powerUp || powerUpsToRemove[powerUpId] === null) return;
+        if (!powerUp || powerUpsToRemove[powerUpId] === null) return; // Skip if null or already marked for removal this frame
 
+        // Simple distance check
         const dx = powerUp.x - playerX;
         const dy = powerUp.y - playerY;
         const distanceSquared = dx * dx + dy * dy;
 
         if (distanceSquared <= collectDistance * collectDistance) {
+            // Collision detected - collect the power-up
             console.log(`Player ${clientId} collided with power-up ${powerUp.typeId} (ID: ${powerUpId})`);
-            powerUpsToRemove[powerUpId] = null; // Mark for removal
 
+            // Mark for removal (roomState update)
+            powerUpsToRemove[powerUpId] = null;
+
+            // Get the power-up definition
             const powerUpDef = powerUpDefinitions[powerUp.typeId];
             if (powerUpDef && typeof powerUpDef.effect === 'function') {
+                // Apply effect to player's presence data
                 const effectUpdates = powerUpDef.effect(clientId, currentPresence);
                 presenceUpdates = { ...presenceUpdates, ...effectUpdates };
 
+                // Add active power-up tracking for timed effects
                 if (powerUpDef.duration > 0) {
+                    // Ensure activePowerUps object exists in presence updates
                     if (!presenceUpdates.activePowerUps) {
+                        // Start from current presence's active powerups or an empty object
                         presenceUpdates.activePowerUps = { ...(currentPresence.activePowerUps || {}) };
                     }
+                    // Add/update the entry for this power-up type
                     presenceUpdates.activePowerUps[powerUpDef.id] = {
                         type: powerUpDef.id,
                         endTime: Date.now() + powerUpDef.duration
@@ -104,16 +113,21 @@ export function checkPowerUpCollisions(playerBodyPos, clientId, activePowerUps, 
                     console.log(`Applied instant effect ${powerUpDef.id} to ${clientId}`);
                 }
 
-                addEffect('stealSpark', { x: powerUp.x, y: powerUp.y });
+                // Add a visual effect at the power-up location upon collection
+                addEffect('stealSpark', { x: powerUp.x, y: powerUp.y }); // Reuse steal spark for now
 
-                // Add GLOBAL notification about power-up collection
-                const username = room?.peers?.[clientId]?.username || 'Player';
-                // Use addGlobalNotification - this will create a record
-                addGlobalNotification(`${username} collected ${powerUpDef.name}!`, 'pickup', 3000)
-                    .catch(err => console.error('Error sending global powerup notification:', err));
+                // Add notification about power-up collection
+                import('../notification-manager.js').then(({ addNotification }) => {
+                    // Get player username if possible
+                    const username = room?.peers?.[clientId]?.username || 'Player';
+                    addNotification(`${username} collected ${powerUpDef.name}!`, 'pickup', 3000);
+                }).catch(err => console.error('Error importing notification manager:', err));
+
             } else {
                 console.warn(`No definition or effect function found for power-up type: ${powerUp.typeId}`);
             }
+            // Prevent collecting multiple powerups in the same frame if needed,
+            // though current logic applies all collided ones.
         }
     });
 
