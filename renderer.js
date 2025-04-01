@@ -11,7 +11,8 @@ import { renderDroplets } from './dropletRenderer.js';
 import { updateAndRenderEffects } from './effectsRenderer.js';
 import { renderLevel } from './level-renderer.js'; // Now handles transitions internally
 import { renderPowerUp } from './power-ups/power-up-renderer.js';
-import { renderNotifications } from './notification-manager.js';
+// Note: renderNotifications is no longer called here for canvas drawing
+// import { renderNotifications } from './notification-manager.js';
 import { renderBoundaries } from './boundary-renderer.js'; // Import boundary renderer
 import { renderSpectateUI } from './spectate-mode.js'; // Import spectator UI renderer
 
@@ -65,7 +66,8 @@ export function renderScene(ctx, roomInstance, localClientId, now, deltaTime) {
     });
 
     // --- Render Overlay Elements ---
-    renderNotifications(ctx, now); // Render notifications on top (now uses DOM)
+    // Notifications are now handled via DOM in notification-manager.js,
+    // so no explicit call to renderNotifications(ctx, now) needed here.
 
     // Render Spectator UI Reminder (only for local player if spectating)
     const localPresence = roomInstance.presence[localClientId];

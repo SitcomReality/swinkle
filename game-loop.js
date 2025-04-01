@@ -15,6 +15,7 @@ import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js';
+// Renamed: updateNotifications handles both update and rendering now
 import { addNotification, updateNotifications } from './notification-manager.js';
 import { checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js';
 import { handleHostTasks } from './host-logic.js';
@@ -314,7 +315,7 @@ function gameLoop(timestamp) {
     updateLevelTransition(deltaTime, now);
 
     // 3. Update Notifications & Peer Management
-    updateNotifications(now);
+    updateNotifications(now); // Updates DOM notifications based on active list and time
     previousPeerData = cleanupAndNotifyPeers(previousPeerData, roomInstance.peers, addNotification);
 
     // 4. Local Player State Checks (Respawn, Idle, Expired Power-ups)
@@ -345,10 +346,10 @@ function gameLoop(timestamp) {
     // 9. Send Batched Updates
     sendBatchedUpdates(batchedUpdates);
 
-    // 10. Render Scene
-    renderScene(ctx, roomInstance, localClientId, now, deltaTime);
+    // 10. Render Scene (Canvas elements)
+    renderScene(ctx, roomInstance, localClientId, now, deltaTime); // Note: renderNotifications is called inside renderScene but now affects DOM
 
-    // 11. Update UI
+    // 11. Update UI (Paint level indicator)
     const finalLocalPresenceForUI = roomInstance.presence[localClientId];
     const ownedCansForUI = roomInstance.roomState.paintCans || {};
     updatePaintLevelIndicator(localClientId, finalLocalPresenceForUI, ownedCansForUI);
