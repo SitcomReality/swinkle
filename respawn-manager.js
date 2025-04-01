@@ -5,7 +5,7 @@
 import { addNotification } from './notification-manager.js'; // Import notification function
 // Import room to access peers for username lookup
 import { room } from './main.js';
-import config from 'config'; // Import config for spawn coordinates
+import config from 'config'; // Import config for spawn coordinates, player color
 import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 // Import utility to calculate paint percentage
@@ -42,7 +42,7 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
  * Generates the presence update object needed for a player to respawn or rejoin manually.
  * Resets relevant state and places the player in the center.
  * Conditionally resets paintedData based on whether the player was fully painted out.
- * Also cleans up spectator state and adds a visual effect.
+ * Also cleans up spectator state and adds a visual effect using the player's base color.
  * Does NOT send notification (callers should handle that).
  * @param {string} clientId - The ID of the client respawning.
  * @param {object} currentPresence - The presence data of the player *before* respawning.
@@ -60,8 +60,16 @@ export function triggerManualRespawn(clientId, currentPresence, gameAreaWidth, g
     // Clean up spectator state upon respawn/rejoin
     removeSpectatorState(clientId);
 
-    // Add respawn visual effect
-    addEffect('respawnSparkle', { x: spawnX, y: spawnY });
+    // Get player's base color for the effect
+    // Use presence.color if available, otherwise fallback to config default
+    const playerBaseColor = currentPresence?.color || config.defaultPlayerColor || '#FFFFFF';
+
+    // Add respawn visual effect, passing the base color
+    addEffect('respawnSparkle', {
+        x: spawnX,
+        y: spawnY,
+        baseColor: playerBaseColor // Pass the determined base color
+    });
 
     // Determine if paint should be reset
     // Reset paint ONLY if the player was previously 'lost' (i.e., fully painted)

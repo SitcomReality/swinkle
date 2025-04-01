@@ -10,7 +10,7 @@ let effectCounter = 0; // Simple unique ID generation
 /**
  * Adds a new visual effect to be rendered.
  * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark', 'blockSpark', 'respawnSparkle').
- * @param {object} properties - Properties specific to the effect (x, y, color, etc.).
+ * @param {object} properties - Properties specific to the effect (x, y, color, baseColor, etc.).
  */
 export function addEffect(type, properties) {
     const id = `effect-${effectCounter++}`;
@@ -28,7 +28,7 @@ export function addEffect(type, properties) {
              duration = config.blockSparkEffectDuration || 250;
              break;
         case 'respawnSparkle': // For player respawn
-             duration = 600; // Slightly longer duration for respawn
+             duration = 400; // Shortened duration for quicker burst
              break;
         default:
             console.warn(`Unknown effect type: ${type}`);
@@ -49,7 +49,7 @@ export function addEffect(type, properties) {
     activeEffects.set(id, {
         id,
         type,
-        ...properties, // Includes x, y, potentially color
+        ...properties, // Includes x, y, potentially color, baseColor
         startTime: now,
         duration: duration,
     });
@@ -199,40 +199,44 @@ function renderBlockSpark(ctx, effect, progress) {
 
 /**
  * Renders a respawn sparkle effect (e.g., multiple outward moving particles).
+ * Uses the provided baseColor.
  * @private
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
- * @param {object} effect - The respawn sparkle effect object.
+ * @param {object} effect - The respawn sparkle effect object { x, y, baseColor }.
  * @param {number} progress - The normalized age of the effect (0 to 1).
  */
 function renderRespawnSparkle(ctx, effect, progress) {
-    const particleCount = 8;
-    const maxRadius = 40; // How far particles travel
-    const startSize = 5;
-    const endSize = 1;
-    const color = '#FFFFFF';
+    const particleCount = 16; // More particles
+    const maxRadius = 70;    // Travel further
+    const startSize = 7;     // Start bigger
+    const endSize = 0;       // Fade to nothing
+    const color = effect.baseColor || '#FFFFFF'; // Use player's base color
 
-    // Ease-out progress for movement, linear for alpha/size fade
+    // Ease-out progress for movement (starts fast, slows down)
     const movementProgress = Math.sin(progress * Math.PI / 2);
+    // Linear fade for alpha/size
     const fadeProgress = progress;
 
     const currentRadius = maxRadius * movementProgress;
     const currentSize = startSize + (endSize - startSize) * fadeProgress;
-    const currentAlpha = 1.0 - fadeProgress;
+    // Faster fade out for alpha
+    const currentAlpha = 1.0 - Math.min(1, fadeProgress * 1.5);
 
     if (currentSize <= 0 || currentAlpha <= 0) return;
 
     ctx.save();
     ctx.fillStyle = color;
     ctx.globalAlpha = Math.max(0, currentAlpha);
-    ctx.shadowBlur = 5;
+    ctx.shadowBlur = 8; // Increase glow
     ctx.shadowColor = color;
 
     for (let i = 0; i < particleCount; i++) {
-        const angle = (i / particleCount) * Math.PI * 2;
+        const angle = (i / particleCount) * Math.PI * 2 + (progress * Math.PI); // Add slight rotation
         const particleX = effect.x + Math.cos(angle) * currentRadius;
         const particleY = effect.y + Math.sin(angle) * currentRadius;
 
         ctx.beginPath();
+        // Make particles slightly oblong/streaky? Simple circles for now.
         ctx.arc(particleX, particleY, Math.max(0.1, currentSize), 0, Math.PI * 2);
         ctx.fill();
     }
