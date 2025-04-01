@@ -27,7 +27,7 @@ Goal: Create a more visually appealing respawn sequence beyond the current basic
 
   - **2. Player Fade-In:**
     - Add a temporary state to player presence indicating they are in the 'respawning animation' phase.
-        - **2a. [DONE] Add Presence State (`respawnAnimEndTime`):**
+        - **2a. [DONE] Add Presence State (\`respawnAnimEndTime\`):**
             - Updated \`respawn-manager.js\` (\`triggerManualRespawn\`) to set \`respawnAnimEndTime = now + DURATION\`.
             - Updated \`main.js\` to initialize \`respawnAnimEndTime: null\` in presence and pass \`now\` to \`triggerManualRespawn\` on click/escape respawns.
             - Updated \`game-loop.js\` to check if \`respawnAnimEndTime\` exists and \`now >= respawnAnimEndTime\`, setting it to \`null\` in presence updates if true.
