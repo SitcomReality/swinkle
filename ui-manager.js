@@ -9,6 +9,7 @@ let paintIndicatorElement;
 let paintIndicatorFillElement;
 let paintIndicatorTextElement;
 let paintIndicatorLabelElement;
+let scoreboardElement; // Add reference for scoreboard
 
 /**
  * Initialize UI elements
@@ -26,6 +27,12 @@ export function initializeUI() {
         }
     } else {
         console.error("Paint level indicator container not found!");
+    }
+
+    // Get scoreboard reference
+    scoreboardElement = document.getElementById('scoreboard');
+    if (!scoreboardElement) {
+        console.error("Scoreboard element not found!");
     }
 }
 
@@ -57,5 +64,19 @@ export function updatePaintLevelIndicator(localClientId, presence, paintCans) {
         paintIndicatorElement.style.display = 'block'; // Show the indicator
     } else {
         paintIndicatorElement.style.display = 'none'; // Hide if no can or lost
+    }
+}
+
+/**
+ * Updates the style of the scoreboard (e.g., opacity) based on spectating state.
+ * @param {boolean} isSpectating - Whether the local player is currently spectating.
+ */
+export function updateScoreboardStyle(isSpectating) {
+    if (!scoreboardElement) return; // Scoreboard element not found
+
+    const targetOpacity = isSpectating ? 1.0 : 0.25;
+    // Only update if the opacity needs to change to avoid unnecessary style recalculations
+    if (parseFloat(scoreboardElement.style.opacity) !== targetOpacity) {
+         scoreboardElement.style.opacity = targetOpacity;
     }
 }
