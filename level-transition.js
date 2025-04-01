@@ -13,8 +13,10 @@ let isTransitioning = false;
 let transitionStartTime = 0;
 let oldLevelData = null;
 let newLevelData = null;
-let oldBgColor = null;
-let newBgColor = null;
+let oldPaletteData = null; // Store old palette
+let newPaletteData = null; // Store new palette
+let oldBgColor = null; // Store old BG RGB
+let newBgColor = null; // Store new BG RGB
 let transitionPhase = 'idle'; // 'idle', 'fade_out', 'fade_in'
 let progress = 0; // Progress within the current phase (0 to 1)
 
@@ -27,10 +29,12 @@ const TOTAL_DURATION = FADE_OUT_DURATION + FADE_IN_DURATION;
  * Starts the level transition animation.
  * @param {object} oldData - The data of the level being transitioned FROM.
  * @param {object} newData - The data of the level being transitioned TO.
+ * @param {object} oldPalette - The palette associated with the old level.
+ * @param {object} newPalette - The palette associated with the new level.
  */
-export function startLevelTransition(oldData, newData) {
-    if (!newData) {
-        console.error("Level Transition: Cannot start transition, new level data is missing.");
+export function startLevelTransition(oldData, newData, oldPalette, newPalette) {
+    if (!newData || !newPalette) {
+        console.error("Level Transition: Cannot start transition, new level data or palette is missing.");
         return;
     }
     if (isTransitioning) {
@@ -42,9 +46,13 @@ export function startLevelTransition(oldData, newData) {
     transitionStartTime = Date.now();
     oldLevelData = oldData;
     newLevelData = newData;
-    // Store background colors for smooth blending
-    oldBgColor = hexToRgb(oldData?.backgroundColor || '#0a0a1e');
-    newBgColor = hexToRgb(newData.backgroundColor || '#0a0a1e');
+    oldPaletteData = oldPalette; // Store old palette
+    newPaletteData = newPalette; // Store new palette
+
+    // Store background colors (from palettes) for smooth blending
+    // Use fallback if palette or backgroundBase is missing
+    oldBgColor = hexToRgb(oldPalette?.backgroundBase || '#0a0a1e');
+    newBgColor = hexToRgb(newPalette?.backgroundBase || '#0a0a1e');
     transitionPhase = 'fade_out';
     progress = 0;
 
@@ -54,7 +62,7 @@ export function startLevelTransition(oldData, newData) {
 
 /**
  * Updates the transition progress and phase. Should be called every frame.
- * Also handles smooth background color update.
+ * Also handles smooth background color update based on palettes.
  * @param {number} deltaTime - Time since last frame in seconds.
  * @param {number} now - Current timestamp (Date.now()).
  */
@@ -72,21 +80,23 @@ export function updateLevelTransition(deltaTime, now) {
         progress = Math.min(1, (elapsed - FADE_OUT_DURATION) / FADE_IN_DURATION);
     } else {
         // Transition finished
-        // Set final background color precisely
-        document.body.style.backgroundColor = newLevelData?.backgroundColor || '#0a0a1e';
+        // Set final background color precisely based on new palette
+        document.body.style.backgroundColor = newPaletteData?.backgroundBase || '#0a0a1e';
         // Immediately update the level manager's state *before* setting isTransitioning to false
         levelManager.setCurrentLevelDataFromTransition(newLevelData);
         // Now mark transition as complete
         isTransitioning = false;
         transitionPhase = 'idle';
         progress = 0;
+        oldLevelData = null; // Clear old data
+        newLevelData = null; // Clear new data (level manager holds current)
+        oldPaletteData = null; // Clear old palette
+        newPaletteData = null; // Clear new palette (level manager holds current)
         console.log("Level transition finished.");
-        // Remove notification call - level manager update is now synchronous
-        // import('./level-manager.js').then(manager => manager.notifyTransitionComplete(newLevelData));
         return;
     }
 
-    // Smoothly update background color
+    // Smoothly update background color using stored palette colors
     if (oldBgColor && newBgColor) {
         let currentProgress = 0;
         if (transitionPhase === 'fade_out') {
@@ -109,7 +119,7 @@ export function updateLevelTransition(deltaTime, now) {
         document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
     } else {
         // Fallback if colors are invalid
-        document.body.style.backgroundColor = newLevelData?.backgroundColor || '#0a0a1e';
+        document.body.style.backgroundColor = newPaletteData?.backgroundBase || '#0a0a1e';
     }
 }
 
@@ -129,6 +139,14 @@ export function getOldLevelData() {
 
 export function getNewLevelData() {
     return newLevelData;
+}
+
+export function getOldPalette() { // Getter for old palette
+    return oldPaletteData;
+}
+
+export function getNewPalette() { // Getter for new palette
+    return newPaletteData;
 }
 
 export function getProgress() {

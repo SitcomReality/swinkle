@@ -26,18 +26,21 @@ Goal: Implement a system where each level uses a distinct color palette consisti
     *   Added \`paletteData.js\` to the import map in \`index.html\`.
     *   *Files Modified: \`paletteData.js\` (new), \`index.html\`, \`dev-notes.js\`*
 
-2.  **Palette Selection Logic:**
-    *   In \`level-manager.js\`, import palettes from \`paletteData.js\`.
-    *   Add state within \`level-manager.js\` to store the \`currentPalette\` object.
-    *   Modify the level loading/transition logic (likely in \`initializeLevelManager\` and the \`subscribeRoomState\` callback) to select a palette (e.g., based on level ID or randomly) when a level *starts* loading or finishes transitioning. Store the selected palette in \`currentPalette\`.
-    *   Add a getter function \`getCurrentPalette()\` to \`level-manager.js\`.
-    *   *(Files To Modify: \`level-manager.js\`)*
+2.  **[DONE] Palette Selection Logic:**
+    *   In \`level-manager.js\`, imported \`getPaletteByIndex\` from \`paletteData.js\` and the full \`palettes\` array.
+    *   Added state within \`level-manager.js\` to store the \`currentPalette\`.
+    *   Created \`getPaletteForLevel\` helper to select a palette based on level index (modulo).
+    *   Modified the level loading/transition logic in \`initializeLevelManager\` and the \`subscribeRoomState\` callback to select a palette using \`getPaletteForLevel\` when a level *starts* loading or is identified for transition. Stored the selected palette in \`currentPalette\` *after* the transition completes (via \`setCurrentLevelDataFromTransition\`).
+    *   Stored the palette for the *next* level (\`nextPalette\`) when a transition is initiated.
+    *   Added getter functions \`getCurrentPalette()\` and \`getNextPalette()\` to \`level-manager.js\`.
+    *   Modified \`level-transition.js\` signature to accept palettes (\`startLevelTransition(oldData, newData, oldPaletteData, newPaletteData)\`) and store them. Added getters \`getOldPalette()\` and \`getNewPalette()\`.
+    *   *(Files Modified: \`level-manager.js\`, \`level-transition.js\`, \`dev-notes.js\`)*
 
 3.  **Apply Background/Geometry Colors:**
-    *   Modify \`level-renderer.js\`: Import \`getCurrentPalette\` from \`level-manager.js\`. In \`renderStableObstacles\`, get the current palette. Use \`palette.backgroundBase\` to generate obstacle colors (e.g., directly, or create a slightly darker tint). Remove the static \`obstacle.color\` usage.
-    *   Modify \`level-transition.js\`: Import \`getCurrentPalette\`. During transitions, get the palettes associated with the *old* and *new* levels (this might require passing the selected palettes into the transition function or having the transition function look them up based on level ID/palette selection logic). Blend the \`backgroundBase\` colors instead of the static \`backgroundColor\` from level data.
+    *   Modify \`level-renderer.js\`: Import \`getCurrentPalette\` from \`level-manager.js\`. In \`renderStableObstacles\`, get the current palette. Use \`palette.backgroundBase\` to generate obstacle colors (e.g., directly, or create a slightly darker tint using \`colorUtils.js\` if needed). Remove the static \`obstacle.color\` usage.
+    *   Modify \`level-transition.js\`: Use \`getOldPalette()\` and \`getNewPalette()\` getters. Blend the \`backgroundBase\` colors instead of the static \`backgroundColor\` from level data. Update the \`document.body.style.backgroundColor\` accordingly during the transition.
     *   Modify \`levels/level-data.js\`: Remove the static \`backgroundColor\` and \`obstacle.color\` properties from the level definitions.
-    *   *(Files To Modify: \`level-renderer.js\`, \`level-transition.js\`, \`levels/level-data.js\`, \`level-manager.js\` (potentially))*
+    *   *(Files To Modify: \`level-renderer.js\`, \`level-transition.js\`, \`levels/level-data.js\`, potentially \`colorUtils.js\`)*
 
 4.  **Apply Paint Colors:**
     *   Modify \`can-manager.js\` (\`spawnPaintCans\`): Import \`getCurrentPalette\` from \`level-manager.js\`. Get the current palette. Instead of picking from the removed \`config.paintCanColors\`, randomly choose between \`currentPalette.paint1\` and \`currentPalette.paint2\` for the \`paintColor\` property of the new can.
@@ -50,11 +53,13 @@ Goal: Implement a system where each level uses a distinct color palette consisti
 
 **Previous Completed Tasks:**
 
+*   Spectacular Paint-Out Burst
+*   Player Invisibility During Paint-Out
+*   Spectate Mode Entry on Paint-Out/Respawn
 *   Enhanced Respawn Animation & Player Fade-in
 *   Spectate Mode Implementation
 *   Score Tracking Improvements
 *   Notification Broadcasting
-*   Paint-Out Burst Effect + Player Invisibility + Spectate Transition
 *   Scoreboard Distinction for Spectators
 *   Notification Combination Effect
 

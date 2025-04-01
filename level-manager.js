@@ -4,15 +4,36 @@
  */
 import { allLevels } from './levels/level-data.js'; // Import all levels
 import { startLevelTransition, isTransitionActive } from './level-transition.js'; // Import transition functions
+import { palettes, getPaletteByIndex } from '../paletteData.js'; // Import palettes
 
-// Store the currently loaded level data
+// Store the currently loaded level data and palette
 let currentLevelData = null;
+let currentPalette = null;
+let nextPalette = null; // Store palette for the level being transitioned TO
 let levelRoom = null; // Store the room instance
 let unsubscribeRoomState = () => {};
 
 /**
+ * Determines the palette to use for a given level ID.
+ * Uses the level's index in the allLevels array.
+ * @param {string} levelId - The ID of the level.
+ * @returns {object} The selected palette object.
+ */
+function getPaletteForLevel(levelId) {
+    const levelIndex = allLevels.findIndex(level => level.id === levelId);
+    if (levelIndex === -1 || palettes.length === 0) {
+        console.warn(`Could not find level index for ${levelId} or no palettes defined. Using default palette.`);
+        return getPaletteByIndex(0); // Fallback to the first palette
+    }
+    // Use modulo to wrap around the available palettes
+    const paletteIndex = levelIndex % palettes.length;
+    return getPaletteByIndex(paletteIndex);
+}
+
+/**
  * Sets the current level data. Called internally or by level-transition.js.
  * Background color updates are now handled by the transition process.
+ * Also sets the currentPalette based on the provided level object.
  * @param {object} levelObject - The level data object to load.
  */
 function setInternalLevelData(levelObject) {
@@ -21,6 +42,15 @@ function setInternalLevelData(levelObject) {
         return;
     }
     currentLevelData = levelObject;
+    // Update currentPalette synchronously when the level data is set internally
+    // If nextPalette was set (meaning a transition just ended), use that. Otherwise, calculate it.
+    if (nextPalette) {
+        currentPalette = nextPalette;
+        nextPalette = null; // Clear nextPalette after using it
+    } else {
+        currentPalette = getPaletteForLevel(levelObject.id);
+    }
+    console.log(`Internal level set to ${levelObject.id}, current palette paint1: ${currentPalette?.paint1}`);
 }
 
 /**
@@ -30,7 +60,7 @@ function setInternalLevelData(levelObject) {
  */
 export function setCurrentLevelDataFromTransition(completedLevelData) {
      if (completedLevelData) {
-        setInternalLevelData(completedLevelData); 
+        setInternalLevelData(completedLevelData); // This now also sets currentPalette using nextPalette
      } else {
         console.error("setCurrentLevelDataFromTransition called but no level data provided.");
      }
@@ -57,10 +87,13 @@ export function initializeLevelManager(room) {
     if (!initialLevelId) {
         console.warn("No initial level ID found in room state, loading default level.");
     }
-    // Set initial background immediately
-    document.body.style.backgroundColor = initialLevelObject.backgroundColor || '#0a0a1e';
-    setInternalLevelData(initialLevelObject); 
+    // Set initial level data and palette immediately
+    setInternalLevelData(initialLevelObject);
 
+    // Set initial background color based on the initial palette
+    if (currentPalette) {
+         document.body.style.backgroundColor = currentPalette.backgroundBase || '#0a0a1e';
+    }
 
     // Subscribe to room state changes
     unsubscribeRoomState = room.subscribeRoomState((currentRoomState) => {
@@ -75,15 +108,22 @@ export function initializeLevelManager(room) {
             console.log(`Room state changed: New level ID detected - ${newLevelId}`);
             const newLevelObject = allLevels.find(level => level.id === newLevelId);
             if (newLevelObject) {
-                // Start transition instead of loading directly
-                startLevelTransition(currentLevelData, newLevelObject);
+                // Determine the palettes for old and new levels
+                const oldPalette = currentPalette; // Get the currently active palette
+                nextPalette = getPaletteForLevel(newLevelId); // Determine and store the palette for the incoming level
+                console.log(`Transitioning to level ${newLevelId}, next palette paint1: ${nextPalette?.paint1}`);
+
+                // Start transition, passing level data AND palette data
+                startLevelTransition(currentLevelData, newLevelObject, oldPalette, nextPalette);
             } else {
                  console.error(`Level with ID "${newLevelId}" found in room state but not in level-data.js!`);
                  // Potentially fall back or keep current level?
+                 nextPalette = null; // Clear nextPalette if transition fails
             }
         } else if (!newLevelId && currentlyLoadedId) {
             // Handle case where level ID becomes undefined (error state?)
             console.warn("Current level ID missing from room state. Keeping current level loaded.");
+            nextPalette = null; // Clear nextPalette if state is invalid
         }
     });
 }
@@ -95,6 +135,23 @@ export function initializeLevelManager(room) {
  */
 export function getCurrentLevel() {
     return currentLevelData;
+}
+
+/**
+ * Gets the currently active palette.
+ * @returns {object | null} The current palette object, or null if none is loaded.
+ */
+export function getCurrentPalette() {
+    return currentPalette;
+}
+
+/**
+ * Gets the palette selected for the *next* level during a transition.
+ * Returns null if no transition is active or imminent.
+ * @returns {object | null} The next palette object or null.
+ */
+export function getNextPalette() {
+    return nextPalette;
 }
 
 /**
