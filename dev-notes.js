@@ -32,12 +32,14 @@ Goal: Create a more visually appealing respawn sequence beyond the current basic
             - Updated \`main.js\` to initialize \`respawnAnimEndTime: null\` in presence and pass \`now\` to \`triggerManualRespawn\` on click/escape respawns.
             - Updated \`game-loop.js\` to check if \`respawnAnimEndTime\` exists and \`now >= respawnAnimEndTime\`, setting it to \`null\` in presence updates if true.
             - *Files Modified: \`respawn-manager.js\`, \`main.js\`, \`game-loop.js\`*
-        - **2b. Update Renderer:**
-            - Modify \`playerRenderer.js\` to check for \`respawnAnimEndTime\`. If present, calculate the remaining animation time and progress (0 to 1, where 1 is start and 0 is end). Render the player capsule, limbs, name, and held can/bungee with opacity based on this progress (fade from 0 to 1).
+        - **2b. [DONE] Update Renderer:**
+            - Modified \`playerRenderer.js\` to check for \`respawnAnimEndTime\`. If present, calculate the remaining animation time and progress (0 to 1, where 1 is start and 0 is end). Render the player capsule, limbs, name, and held can/bungee with opacity based on this progress (fade from 0 to 1).
+            - The opacity is combined with the spectator mode opacity. Anchor point is unaffected.
             - *Files Modified: \`playerRenderer.js\`*
 
   - **3. Hide Player During Initial Burst:**
-    - Modify \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule at all. The fade-in from Step 2 should only start *after* the initial particle burst.
+    - Modify \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b should only start *after* this initial particle burst window.
+    - We'll need to coordinate the timing constant (e.g., `RESPAWN_SPARKLE_DURATION`) with the fade-in logic.
     - *Files Modified: \`playerRenderer.js\`*
 
   - **4. (Optional) Sound Effect:**

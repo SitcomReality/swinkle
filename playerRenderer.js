@@ -10,6 +10,9 @@ import { getPlayerPhysicsState } from './playerState.js';
 import { calculatePaintOnlyBlendedColor, calculateTotalPaintPercentage, calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 
+// Duration for the respawn fade-in animation (MUST match respawn-manager.js)
+const RESPAWN_ANIM_DURATION = 500; // milliseconds
+
 // Helper function to draw a star (reused for mega can indicator)
 // Could be moved to a utils file later
 function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
@@ -35,11 +38,12 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
  * Renders a single player character, including anchor, body, bungee cord, limbs,
  * and their held paint can if applicable. Includes power-up visual indicators.
  * Uses the physics state's `lastAnchorPos` for accurate anchor rendering.
+ * Handles fade-in effect during respawn animation.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
  * @param {string} localClientId - The ID of the current user's client.
- * @param {object} presence - The player's presence data (color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating, lost).
+ * @param {object} presence - The player's presence data (color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating, lost, respawnAnimEndTime).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
  */
@@ -75,7 +79,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const isSpectating = presence.isSpectating || false; // Check spectating state
 
     // --- Render Anchor Point (Cursor/Spectator Anchor) ---
-    // Anchor is always fully opaque, even for spectators
+    // Anchor is always fully opaque, even for spectators or during respawn
     ctx.save();
     ctx.shadowBlur = glowBlur;
     ctx.shadowColor = anchorGlowColor; // White/Translucent glow for anchor
@@ -92,17 +96,32 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.stroke();
     ctx.restore(); // Restore shadow settings etc.
 
+    // --- Calculate Combined Opacity (Spectator + Respawn) ---
+    const now = Date.now(); // Need current time
+    const respawnAnimEndTime = presence.respawnAnimEndTime;
+    let respawnOpacity = 1.0;
+
+    if (respawnAnimEndTime && now < respawnAnimEndTime) {
+        const timeRemaining = respawnAnimEndTime - now;
+        // Progress goes from 1 (start) down to 0 (end)
+        const progressRemaining = Math.max(0, Math.min(1, timeRemaining / RESPAWN_ANIM_DURATION));
+        // Opacity goes from 0 (start) up to 1 (end)
+        respawnOpacity = 1.0 - progressRemaining;
+        // Clamp opacity just in case
+        respawnOpacity = Math.max(0, Math.min(1, respawnOpacity));
+    }
+
+    const baseAlpha = isSpectating ? 0.25 : 1.0;
+    const combinedAlpha = baseAlpha * respawnOpacity; // Combine spectator alpha and respawn fade
+
+    // --- Apply Combined Opacity and Render Rest of Player ---
+    ctx.save(); // Save before applying combined alpha
+    ctx.globalAlpha = combinedAlpha;
+
     // Extract physics state variables needed below
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
     const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
-
-    // --- Apply Spectator Transparency ---
-    ctx.save(); // Save context before potentially changing alpha for spectator
-    if (isSpectating) {
-        // Adjust spectator opacity to 25%
-        ctx.globalAlpha = 0.25;
-    }
 
     // --- Render Player Bungee Cord (Anchor -> Body) ---
     ctx.save(); // Save context for potential bungee modifications
@@ -232,13 +251,14 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         // Style and draw the shield
         ctx.strokeStyle = '#88FFFF'; // Shield color
         ctx.lineWidth = 2;
-        // Use current global alpha (which might be 0.25 if spectating)
-        const baseAlpha = isSpectating ? 0.25 : 1.0; // Use the current alpha value
-        ctx.globalAlpha = baseAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
+        // Use current global alpha (which includes combined spectator/respawn fade)
+        const currentCombinedAlpha = ctx.globalAlpha; // Get the current alpha
+        // Pulsate alpha relative to the current combined alpha
+        ctx.globalAlpha = currentCombinedAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed));
         ctx.shadowBlur = glowBlur;
         ctx.shadowColor = '#00FFFF';
         ctx.stroke();
-        ctx.restore(); // Restore alpha, shadow settings etc. (back to potentially 0.25 or 1.0)
+        ctx.restore(); // Restore alpha, shadow settings etc. (restores alpha back to combinedAlpha)
     }
 
     // --- Render Eyes (Relative to Rotated Body Center) ---
@@ -304,11 +324,11 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2); // Already in local rotated space
     ctx.fill();
 
-    // --- Restore Context After Body/Eyes ---
-    ctx.restore(); // Restore translation and rotation
+    // --- Restore Context After Body/Eyes Rotation ---
+    ctx.restore(); // Restore translation and rotation (alpha is still combinedAlpha)
 
     // --- Render Player Name (Not Rotated) ---
-    // Alpha is already potentially 0.25
+    // Alpha is still combinedAlpha
     ctx.fillStyle = config.nameColor || '#FFF';
     ctx.font = config.nameFont || '12px sans-serif';
     ctx.textAlign = 'center';
@@ -316,7 +336,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
     // --- Render Mega Can Ready Indicator (Not Rotated) ---
-    // Alpha is already potentially 0.25
+    // Alpha is still combinedAlpha
     if (hasMegaCanPowerup) {
         ctx.save();
         const starSize = 10; // Small indicator
@@ -331,7 +351,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Display Loss Message if Player has Lost (Not Rotated) ---
-    // Alpha is already potentially 0.25
+    // Alpha is still combinedAlpha
     if (presence.lost) {
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
@@ -340,7 +360,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     }
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
-    // Alpha is already potentially 0.25
+    // Alpha is still combinedAlpha
     const currentCanId = presence?.currentCanId;
     if (currentCanId && allPaintCansState && allPaintCansState[currentCanId]) {
         const canState = allPaintCansState[currentCanId];
@@ -354,9 +374,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         ctx.stroke();
 
         // Render the can itself (at its world position)
-        renderPaintCan(ctx, canState); // Render can respects current alpha
+        renderPaintCan(ctx, canState); // Render can respects current combinedAlpha
     }
 
     // --- Restore Main Alpha State ---
-    ctx.restore(); // Restores the alpha state from before the spectator check
+    ctx.restore(); // Restores the globalAlpha from before applying combinedAlpha
 }
