@@ -39,7 +39,7 @@ Goal: Create a more visually appealing respawn sequence beyond the current basic
 
   - **3. Hide Player During Initial Burst:**
     - Modify \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b should only start *after* this initial particle burst window.
-    - We'll need to coordinate the timing constant (e.g., `RESPAWN_SPARKLE_DURATION`) with the fade-in logic.
+    - We'll need to coordinate the timing constant (e.g., \`RESPAWN_SPARKLE_DURATION\`) with the fade-in logic.
     - *Files Modified: \`playerRenderer.js\`*
 
   - **4. (Optional) Sound Effect:**
