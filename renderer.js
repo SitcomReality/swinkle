@@ -13,6 +13,7 @@ import { renderLevel } from './level-renderer.js'; // Now handles transitions in
 import { renderPowerUp } from './power-ups/power-up-renderer.js';
 import { renderNotifications } from './notification-manager.js';
 import { renderBoundaries } from './boundary-renderer.js'; // Import boundary renderer
+import { renderSpectateUI } from './spectate-mode.js'; // Import spectator UI renderer
 
 /**
  * Initializes any setup needed for the renderer (currently none).
@@ -65,4 +66,10 @@ export function renderScene(ctx, roomInstance, localClientId, now, deltaTime) {
 
     // --- Render Overlay Elements ---
     renderNotifications(ctx, now); // Render notifications on top (now uses DOM)
+
+    // Render Spectator UI Reminder (only for local player if spectating)
+    const localPresence = roomInstance.presence[localClientId];
+    if (localPresence) {
+        renderSpectateUI(ctx, localPresence.isSpectating);
+    }
 }

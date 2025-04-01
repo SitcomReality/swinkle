@@ -113,3 +113,39 @@ export function enterSpectateMode(clientId, roomInstance) {
         roomInstance.updateRoomState(roomStateUpdate);
     }
 }
+
+/**
+ * Renders the "Spectating - Click to Respawn" UI text if the local player is spectating.
+ * Applies a pulsating effect.
+ * @param {CanvasRenderingContext2D} ctx - The drawing context.
+ * @param {boolean} isSpectating - Whether the local player is currently spectating.
+ */
+export function renderSpectateUI(ctx, isSpectating) {
+    if (!isSpectating) return;
+
+    const now = Date.now();
+    const text = "Spectating - Click to Respawn";
+    const pulseSpeed = 0.003; // Speed of pulsation
+    const minAlpha = 0.6;
+    const maxAlpha = 1.0;
+    const alphaRange = maxAlpha - minAlpha;
+    const alpha = minAlpha + (alphaRange * (1 + Math.sin(now * pulseSpeed)) / 2); // Pulsate between min and max alpha
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 24px "Orbitron", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    // Position near the bottom center of the screen
+    const x = config.gameAreaWidth / 2;
+    const y = config.gameAreaHeight - 60; // Adjust vertical position as needed
+
+    ctx.fillText(text, x, y);
+
+    ctx.restore();
+}
