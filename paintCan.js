@@ -172,26 +172,6 @@ export function renderPaintCan(ctx, canState) {
     // Reset shadow for subsequent elements like patterns or charge indicator
     ctx.shadowBlur = 0;
 
-    // --- Add a simple pattern based on color (optional example) ---
-    const colorIndex = config.paintCanColors.indexOf(color);
-    if (colorIndex !== -1) { // Only apply pattern if color is known
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Subtle dark pattern
-        ctx.save(); // Save before clipping
-        ctx.beginPath();
-        ctx.rect(x - width / 2, bandY, width, bandHeight); // Clip pattern to the band area
-        ctx.clip();
-        const patternSize = 4 * (isMega ? config.megaCanVisualSizeMultiplier : 1);
-        for (let py = bandY; py < bandY + bandHeight; py += patternSize * 2) {
-            for (let px = x - width / 2 + ( (py / patternSize) % 2 === 0 ? 0 : patternSize) ; px < x + width / 2; px += patternSize * 2) {
-                 // Draw small squares or circles as pattern
-                 ctx.fillRect(px, py, patternSize, patternSize);
-            }
-        }
-        ctx.restore(); // Restore after clipping
-    }
-    // --- End pattern example ---
-
-
     // Simple top lip
     ctx.fillStyle = '#CCCCCC';
     ctx.beginPath();
