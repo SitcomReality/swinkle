@@ -18,7 +18,6 @@ const NOTIFICATION_CONFIG = {
     height: 45,           // Estimated height of a notification (for spacing)
     fadeInTime: 300,      // Time in ms for fade in animation
     fadeOutTime: 500,     // Time in ms for fade out animation
-    popAnimationTime: 300, // Time in ms for the 'pop' animation when count increases
     typeColors: {         // Colors for different notification types (used in CSS)
         info: '#44AAFF',
         success: '#44FF88',
@@ -82,18 +81,9 @@ export function addNotification(message, type = 'info', duration = DEFAULT_DURAT
             existingNotification.startTime = now; // Reset timer
             existingNotification.duration = duration; // Update duration in case it changed
             foundMatch = true;
+            // console.log(`Combined notification (${type}): ${message} (x${existingNotification.count})`);
             // Trigger update to reflect the change immediately (e.g., text update, position)
-            updateAndRenderNotifications(now); // Renders text change
-
-            // --- Trigger pop animation ---
-            if (existingNotification.element) {
-                existingNotification.element.classList.add('notification-pop');
-                // Remove the class after the animation completes
-                setTimeout(() => {
-                    existingNotification.element?.classList.remove('notification-pop');
-                }, NOTIFICATION_CONFIG.popAnimationTime); // Use configured duration
-            }
-            // ---------------------------
+            updateAndRenderNotifications(now);
         }
     });
 
@@ -220,7 +210,19 @@ function updateAndRenderNotifications(now) {
         const messageSpan = element.querySelector('.notification-message');
         if (messageSpan) {
             const expectedText = notification.message + (notification.count > 1 ? ` (x${notification.count})` : '');
-            if (messageSpan.textContent !== expectedText) messageSpan.textContent = expectedText;
+            if (messageSpan.textContent !== expectedText) {
+                messageSpan.textContent = expectedText;
+                
+                // Add the pulse animation when count increases
+                if (notification.count > 1) {
+                    // Remove any existing pulse class to restart animation
+                    element.classList.remove('notification-pulse');
+                    // Force a reflow to restart animation
+                    void element.offsetWidth;
+                    // Add pulse class
+                    element.classList.add('notification-pulse');
+                }
+            }
         }
 
         // Ensure fade-out class is removed if it was added previously (e.g., if it reappeared)
@@ -233,10 +235,7 @@ function updateAndRenderNotifications(now) {
         // Calculate vertical position - newest at bottom (index = visibleNotifications.length - 1)
         // translateY should be based on position *from the top*
         const yPos = index * (NOTIFICATION_CONFIG.height + NOTIFICATION_CONFIG.spacing);
-        // Store Y position in CSS variable for animations if needed
-        element.style.setProperty('--translate-y', `${yPos}px`);
         element.style.transform = `translateY(${yPos}px)`;
-
 
         // Optionally handle fade-out based on time remaining (can make it smoother)
         const age = now - notification.startTime;

@@ -132,20 +132,18 @@
     to { opacity: 0; transform: translateX(50px) translateY(var(--translate-y, 0)); } /* Slide off-screen right */
 }
 
-/* Keyframes for the 'pop' animation when count increases */
-@keyframes notificationPop {
-  0% { transform: scale(1) translateY(var(--translate-y, 0)); }
-  50% { transform: scale(1.05) translateY(var(--translate-y, 0)); } /* Slightly larger */
-  100% { transform: scale(1) translateY(var(--translate-y, 0)); }
-}
-
-/* Class to apply the pop animation */
-.notification-pop {
-    /* Apply animation */
-    animation: notificationPop 0.3s ease-out forwards; /* Use configured duration */
-    /* Ensure it stays in the correct Y position */
-    transform: translateY(var(--translate-y, 0));
-}
-
 /* Apply animations using classes if needed, or directly via JS */
 /* Example JS application: element.style.animation = 'notificationFadeIn 0.3s forwards'; */
+
+/* Add pulse animation for count increments */
+@keyframes notificationPulse {
+    0% { transform: translateY(var(--translate-y, 0)) scale(1); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+    30% { transform: translateY(var(--translate-y, 0)) scale(1.05); box-shadow: 0 2px 15px rgba(255, 255, 255, 0.5); }
+    70% { transform: translateY(var(--translate-y, 0)) scale(1.03); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.3); }
+    100% { transform: translateY(var(--translate-y, 0)) scale(1); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+}
+
+.notification-pulse {
+    animation: notificationPulse 0.5s ease-out;
+    z-index: 1001; /* Ensure pulsed notification appears above others */
+}
