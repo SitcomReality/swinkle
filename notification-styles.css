@@ -132,5 +132,20 @@
     to { opacity: 0; transform: translateX(50px) translateY(var(--translate-y, 0)); } /* Slide off-screen right */
 }
 
+/* Keyframes for the 'pop' animation when count increases */
+@keyframes notificationPop {
+  0% { transform: scale(1) translateY(var(--translate-y, 0)); }
+  50% { transform: scale(1.05) translateY(var(--translate-y, 0)); } /* Slightly larger */
+  100% { transform: scale(1) translateY(var(--translate-y, 0)); }
+}
+
+/* Class to apply the pop animation */
+.notification-pop {
+    /* Apply animation */
+    animation: notificationPop 0.3s ease-out forwards; /* Use configured duration */
+    /* Ensure it stays in the correct Y position */
+    transform: translateY(var(--translate-y, 0));
+}
+
 /* Apply animations using classes if needed, or directly via JS */
 /* Example JS application: element.style.animation = 'notificationFadeIn 0.3s forwards'; */
