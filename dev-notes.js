@@ -9,48 +9,39 @@ export const notes = `
 
 **Design Goals & Considerations:**
 - **Core Gameplay:** Players swing on bungee cords, carry paint cans, drop/burst paint to cover opponents. 100% painted = loss.
-- **Theme:** 'xtreme 90s cyberpunk grungewave...' (Dark background, neon highlights).
+- **Theme:** \'xtreme 90s cyberpunk grungewave...\' (Dark background, neon highlights).
 - **Character Design:** Physics-based capsule with limbs, dangling can.
 - **Modularity:** Separate physics, rendering, game loop, networking, interactions, UI.
 - **Performance & Networking:** Prioritize smoothness, client-side prediction where feasible. Use roomState for shared objects, presence for player-specific state.
-- **Developer Notes:** Update this file outlining planned steps. Remember to escape all backticks!
+- **Developer Notes:** Update this file outlining planned steps. Remember to escape all backticks with a slash!
 
-**Implementing Power-Ups - Current Phase: 'Big Burst' & 'Short Rope'**
-*Goal: Finish implementing the 'Big Burst' & 'Short Rope' power-ups.*
+**Implementing Power-Ups - Phase: 'Big Burst' & 'Short Rope' (Complete)**
+*Goal: Implement the \'Big Burst\' & \'Short Rope\' power-ups and associated visuals.*
 
-**Completed Steps:**
+**Completed Steps (Summary):**
 
-1.  **Refactor Burst Logic:**
-    *   Moved burst logic to \`burst-handler.js\`. *(DONE)*
-    *   Updated \`playerInteractions.js\` and \`main.js\` to use the handler. *(DONE)*
+1.  **Refactored Burst Logic:** Moved burst logic to \`burst-handler.js\` and updated callers.
+2.  **Implemented Power-Up Core Logic:** Integrated checks for \`bigBurstActive\` and \`shortRopeActive\` into \`burst-handler.js\` and \`playerPhysics.js\`. Applied multipliers/effects. Handled power-up consumption via presence updates.
+3.  **Added Power-Up Icons:** Created rendering functions for new world item icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`.
+4.  **Added Player Visual Effects:**
+    *   Refactored power-up effect rendering from \`playerRenderer.js\` into \`player-effects-renderer.js\` due to file length constraints.
+    *   Added visual cues in \`player-effects-renderer.js\` for active 'shortRope' and 'bigBurst' effects on the player character.
+    *   Updated \`playerRenderer.js\` to call the new effects renderer.
 
-2.  **Implement Big Burst Trigger Logic:**
-    *   Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE)*
-    *   Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE)*
-    *   Consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE)*
+**Current Status:** Base implementation for 'Big Burst' and 'Short Rope' power-ups, including world icons and player visual cues, is complete.
 
-3.  **Add Power-Up Icons:**
-    *   Created rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`. *(DONE)*
-    *   Updated the \`switch\` statement in \`renderPowerUp\` to call the new functions. *(DONE)*
+**Next Steps / Potential Focus Areas:**
 
-**Remaining Steps:**
-
-4.  **Add Player Visual Effects (Optional/Stretch):**
-    *   Consider refactoring power-up effect rendering from \`playerRenderer.js\` (This file is large).
-    *   Add visual cues in the player renderer (or refactored module) for active 'shortRope' and 'bigBurst'.
-
-**Next Steps:**
-
-Step 4: Implement **Player Visual Effects** (considering refactoring \`playerRenderer.js\`).
-
-**Future Ideas/Stretch Goals:**
-*   Sound effects.
-*   More visual effects.
-*   Environmental hazards? Polygon obstacles?
-*   Optimize rendering/physics.
-*   Whimsical/tip messages.
-*   More social features (chat?).
-*   Fix: 'paint cans are removed on level change'.
+*   **Sound Effects:** Add basic sound effects for key actions (swing, splat, pickup, loss, power-up collect/activate).
+*   **Refinement & Bug Fixes:**
+    *   Address known issues (e.g., 'paint cans are removed on level change').
+    *   Tune physics parameters (bungee, player rotation, can physics).
+    *   Optimize rendering/physics performance if needed.
+*   **More Content:**
+    *   Additional power-ups or variations.
+    *   More complex level layouts or environmental hazards.
+    *   Whimsical tip messages during gameplay.
+*   **UI/UX Improvements:** Enhance scoreboard, add lobby features, potential chat.
 
 `;
 
@@ -58,8 +49,8 @@ export function loadDevNotes() {
     const container = document.getElementById('dev-notes-container');
     if (container) {
         // Use textContent to avoid HTML injection issues
-        // Replace escaped backticks with single quotes for display
-        container.textContent = notes.replace(/\\`/g, "'");
+        // Replace escaped backticks with actual backticks for display
+        container.textContent = notes.replace(/\\`/g, "`");
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");

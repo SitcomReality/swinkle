@@ -2,13 +2,15 @@
  * playerRenderer.js
  * Handles rendering the player character (anchor, body, limbs, eyes, name)
  * and their associated held paint can and bungee.
- * Also renders active power-up effects on the player.
+ * Calls a separate module for rendering active power-up effects on the player.
  */
 import config from '../config.js';
 import { getPlayerPhysicsState } from './playerState.js';
 // Import the specific color utils needed
 import { calculatePaintOnlyBlendedColor, calculateTotalPaintPercentage, calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
+// Import the new power-up effects renderer
+import { renderPlayerPowerUpEffects } from './player-effects-renderer.js';
 
 // Duration for the respawn fade-in animation (MUST match respawn-manager.js)
 const RESPAWN_ANIM_DURATION = 500; // milliseconds
@@ -16,30 +18,9 @@ const RESPAWN_ANIM_DURATION = 500; // milliseconds
 const RESPAWN_INITIAL_HIDE_DURATION = 150; // milliseconds
 const RESPAWN_FADE_IN_DURATION = RESPAWN_ANIM_DURATION - RESPAWN_INITIAL_HIDE_DURATION;
 
-// Helper function to draw a star (reused for mega can indicator)
-// Could be moved to a utils file later
-function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
-    const outerRadius = size / 2;
-    const innerRadius = outerRadius * innerFactor;
-
-    ctx.beginPath();
-    for (let i = 0; i < spikes * 2; i++) {
-        const radius = i % 2 === 0 ? outerRadius : innerRadius;
-        const angle = (Math.PI * i) / spikes - Math.PI / 2;
-        const pointX = x + radius * Math.cos(angle);
-        const pointY = y + radius * Math.sin(angle);
-        if (i === 0) {
-            ctx.moveTo(pointX, pointY);
-        } else {
-            ctx.lineTo(pointX, pointY);
-        }
-    }
-    ctx.closePath();
-}
-
 /**
  * Renders a single player character, including anchor, body, bungee cord, limbs,
- * and their held paint can if applicable. Includes power-up visual indicators.
+ * and their held paint can if applicable. Calls effect renderer for power-up visuals.
  * Uses the physics state's `lastAnchorPos` for accurate anchor rendering.
  * Handles fade-in effect during respawn animation.
  * If the player is lost, only renders the anchor and "PAINTED OUT!" message.
@@ -71,8 +52,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const glowBlur = config.neonGlowBlur || 10;
     const anchorGlowColor = config.anchorPointGlowColor || 'rgba(255, 255, 255, 0.7)';
     const isSpringy = presence.springyBungee || false;
-    const isShielded = presence.shielded || false;
-    const hasMegaCanPowerup = presence.activePowerUps?.['megaCan'];
 
     // --- Render Anchor Point (Always Visible) ---
     ctx.save();
@@ -258,40 +237,6 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.lineWidth = 2;
     ctx.stroke(); // Draw blended stroke using the same path
 
-    // --- Render Shield Effect (if active) ---
-    if (isShielded) {
-        ctx.save();
-        // Draw pulsating shield outline around the existing capsule path
-        const shieldPulseSpeed = 0.004; // Speed of the pulse
-        const shieldPulseAmount = 3;    // How much the shield expands (pixels)
-        const shieldOffset = 3 + shieldPulseAmount * Math.sin(Date.now() * shieldPulseSpeed); // Expand from base offset
-
-        // Slightly larger radius for shield outline
-        const shieldRadius = radius + shieldOffset;
-        const shieldRectHeight = rectHeight + shieldOffset * 2; // Increase height too
-
-        // Create slightly larger shield path
-        ctx.beginPath();
-        ctx.moveTo(-shieldRadius, -shieldRectHeight / 2);
-        ctx.arc(0, -shieldRectHeight / 2, shieldRadius, Math.PI, 0);
-        ctx.lineTo(shieldRadius, shieldRectHeight / 2);
-        ctx.arc(0, shieldRectHeight / 2, shieldRadius, 0, Math.PI);
-        ctx.lineTo(-shieldRadius, -shieldRectHeight / 2);
-        ctx.closePath();
-
-        // Style and draw the shield
-        ctx.strokeStyle = '#88FFFF'; // Shield color
-        ctx.lineWidth = 2;
-        // Use current global alpha (which includes combined spectator/respawn fade)
-        const currentCombinedAlpha = ctx.globalAlpha; // Get the current alpha
-        // Pulsate alpha relative to the current combined alpha
-        ctx.globalAlpha = currentCombinedAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed));
-        ctx.shadowBlur = glowBlur;
-        ctx.shadowColor = '#00FFFF';
-        ctx.stroke();
-        ctx.restore(); // Restore alpha, shadow settings etc. (restores alpha back to combinedAlpha)
-    }
-
     // --- Render Eyes (Relative to Rotated Body Center) ---
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
@@ -366,20 +311,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const nameYOffset = (bodyHeight / 2) + 14; // Position below the capsule (world Y)
     ctx.fillText(peer.username, bodyX, bodyY + nameYOffset);
 
-    // --- Render Mega Can Ready Indicator (Not Rotated) ---
-    // Alpha is still combinedAlpha
-    if (hasMegaCanPowerup) {
-        ctx.save();
-        const starSize = 10; // Small indicator
-        const starX = bodyX + bodyWidth/2 + starSize/2 + 2; // Position to the right of body
-        const starY = bodyY; // Center vertically with body
-        ctx.fillStyle = config.megaCanIndicatorColor;
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = config.megaCanIndicatorColor;
-        drawStarIcon(ctx, starX, starY, starSize, 5, 0.5); // Reuse star drawing logic
-        ctx.fill();
-        ctx.restore();
-    }
+    // --- Render Active Power-Up Effects (Calls the new module) ---
+    renderPlayerPowerUpEffects(ctx, clientId, localClientId, presence, peer, physicsState);
 
     // --- Render Held Paint Can and Bungee (if applicable) ---
     // Alpha is still combinedAlpha
