@@ -7,39 +7,11 @@
  */
 import config from 'config';
 import { addEffect } from './effectsRenderer.js'; // Import for pickup effects
+// Import the burst creation function from its new location
+import { createBurstDroplets } from './paint-burst.js';
 
 // Separate state for auto-drop timer as it's purely local client visual/timing state
 let timeSinceLastAutoDrop = 0; // Milliseconds
-
-/**
- * Creates the droplet data for a paint burst.
- * @param {string} ownerId - The ID of the player releasing the burst.
- * @param {object} canState - The state of the can releasing the burst { x, y, paintColor }.
- * @param {number} numDroplets - The number of droplets to create.
- * @param {number} now - The current timestamp.
- * @returns {object} An object containing droplet data keyed by unique droplet IDs.
- */
-export function createBurstDroplets(ownerId, canState, numDroplets, now) {
-    const burstDroplets = {};
-    const canX = canState.x;
-    const canY = canState.y;
-    const spreadRadius = config.burstSpreadRadius; // Use config value
-
-    for (let i = 0; i < numDroplets; i++) {
-        const dropletId = `${ownerId}-${now}-burst-${i}`;
-        const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * spreadRadius; // Random distance within spread radius
-        burstDroplets[dropletId] = {
-            id: dropletId,
-            ownerId: ownerId,
-            color: canState.paintColor,
-            x: canX + Math.cos(angle) * radius,
-            y: canY + Math.sin(angle) * radius,
-            createdAt: now
-        };
-    }
-    return burstDroplets;
-}
 
 /**
  * Facade function to handle all local player interactions within a frame.
