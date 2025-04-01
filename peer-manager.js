@@ -3,6 +3,7 @@
  * Manages peer tracking, cleanup, and notifications for joins/leaves.
  */
 import { removePlayerPhysicsState } from './playerState.js';
+import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
 
 /**
  * Track disconnected/joined peers, clean up physics state, and trigger notifications.
@@ -20,8 +21,9 @@ export function cleanupAndNotifyPeers(previousPeerData, currentPeers, addNotific
         if (!currentPeerIds.has(clientId)) {
             // Peer disconnected
             const username = previousPeerData[clientId]?.username || 'Player'; // Get username from previous data
-            removePlayerPhysicsState(clientId);
-            console.log(`Peer ${username} (${clientId}) disconnected, player physics removed.`);
+            removePlayerPhysicsState(clientId); // Clean up physics state
+            removeSpectatorState(clientId); // Clean up spectator state
+            console.log(`Peer ${username} (${clientId}) disconnected, player physics & spectator state removed.`);
             if (addNotification) {
                 addNotification(`${username} left the game.`, 'leave', 3000);
             }

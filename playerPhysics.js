@@ -5,6 +5,7 @@
 import config from './config.js';
 import { ensurePhysicsState, getPlayerPhysicsState, setPlayerPhysicsState } from './playerState.js';
 import { handlePlayerLevelCollision } from './level-collision.js'; // Import level collision handler
+import { getSpectatorAnchorPosition } from './spectate-mode.js'; // Import spectator anchor logic
 
 /**
  * Updates the physics simulation for a single limb.
@@ -99,19 +100,32 @@ function updateLimbPhysics(limbState, bodyPos, bodyAngle, deltaTime) {
 /**
  * Updates the player's body physics state based on bungee forces, gravity, damping, and rotation.
  * Also handles collision with level geometry and applies the 'springyBungee' power-up effect.
+ * Accounts for spectator mode anchor point logic.
  *
  * @param {string} clientId - The ID of the player to update.
- * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee).
+ * @param {object} presence - The player's presence data (containing anchor x, y, and power-up states like springyBungee, isSpectating).
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  */
 export function updatePlayerPhysics(clientId, presence, deltaTime) {
-    // ... (fetch state, calculate linear forces/velocity/position as before) ...
-    if (!presence || typeof presence.x !== 'number' || typeof presence.y !== 'number') {
-        return; // Need anchor position
+    if (!presence) return; // Need presence for state checks
+
+    let anchorPos;
+    // Determine anchor point based on spectating state
+    if (presence.isSpectating) {
+        // Spectator mode: Anchor point is determined by spectator logic
+        anchorPos = getSpectatorAnchorPosition(clientId, deltaTime);
+    } else {
+        // Normal mode: Anchor point follows cursor (presence.x, presence.y)
+        if (typeof presence.x !== 'number' || typeof presence.y !== 'number') {
+             console.warn(`Player ${clientId} is not spectating but has invalid anchor coordinates.`);
+             // Use last known good position or default? Fallback to center for now.
+             anchorPos = { x: config.gameAreaWidth / 2, y: config.gameAreaHeight / 2 };
+        } else {
+             anchorPos = { x: presence.x, y: presence.y };
+        }
     }
 
-    const anchorPos = { x: presence.x, y: presence.y };
-    const state = ensurePhysicsState(clientId, anchorPos);
+    const state = ensurePhysicsState(clientId, anchorPos); // Ensure state exists, pass determined anchor for initialization if needed
     const isSpringy = presence.springyBungee || false; // Check for springy power-up
 
     // --- Body Linear Physics (Position/Velocity) ---
@@ -123,7 +137,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     const damping = config.bungeeDampingFactor;
     const gravity = config.gravityAcceleration;
     const mass = config.playerBodyMass || 1;
-    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 5);
+    const maxLength = restLength * (config.bungeeMaxLengthMultiplier || 50); // Adjusted default
 
     const dx = anchorPos.x - state.position.x;
     const dy = anchorPos.y - state.position.y;
@@ -162,58 +176,35 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     // --- Body Angular Physics (Rotation) ---
     const inertia = config.playerRotationalInertia;
     const uprightStrength = config.playerUprightingStrength;
-    const rotationalDamping = config.playerRotationalDamping; // Using config value directly now
-    const bodyHeight = config.playerBodyHeight || 30; // Need body height for torque calculation
+    const rotationalDamping = config.playerRotationalDamping;
+    const bodyHeight = config.playerBodyHeight || 30;
 
     // Torque calculation
-    // 1. Uprighting torque (tries to return angle to 0)
     const uprightingTorque = -state.angle * uprightStrength;
-    // 2. Damping torque (resists angular velocity)
-    const dampingTorque = -state.angularVelocity * rotationalDamping; // Direct multiplication might be too strong, consider pow later if needed
+    const dampingTorque = -state.angularVelocity * rotationalDamping;
 
-    // 3. Torque from Bungee Cord
-    // Assume bungee attaches near the top-center of the capsule.
-    // Vector from center of mass (state.position) to attachment point in local coords: (0, -bodyHeight/2)
-    // Rotate this vector by state.angle to get world-space offset vector r_world
     const cosAngle = Math.cos(state.angle);
     const sinAngle = Math.sin(state.angle);
-    const attachmentOffsetY_local = -bodyHeight / 2; // Relative to body center (0,0)
-    const r_world_x = -attachmentOffsetY_local * sinAngle; // -( -h/2 * sin) = h/2 * sin
-    const r_world_y = attachmentOffsetY_local * cosAngle; // -h/2 * cos
+    const attachmentOffsetY_local = -bodyHeight / 2;
+    const r_world_x = -attachmentOffsetY_local * sinAngle;
+    const r_world_y = attachmentOffsetY_local * cosAngle;
 
-    // Torque = r x F = r_world_x * F_y - r_world_y * F_x
-    // Use the bungee spring force calculated earlier (springForceX, springForceY)
     const bungeeTorque = r_world_x * springForceY - r_world_y * springForceX;
-    // Optional: Scale bungee torque if it feels too strong/weak
-    const bungeeTorqueFactor = config.playerBungeeTorqueFactor ?? 1.0; // Default to 1 if not in config
+    const bungeeTorqueFactor = config.playerBungeeTorqueFactor ?? 1.0;
 
-    // (Ignoring collision torque for now)
     const totalTorque = uprightingTorque + dampingTorque + (bungeeTorque * bungeeTorqueFactor);
-
-    // Angular acceleration = Torque / Inertia
     const angularAcceleration = totalTorque / inertia;
-
-    // Update angular velocity
     state.angularVelocity += angularAcceleration * deltaTime;
-
-    // Apply angular damping (Alternative: using pow like linear damping)
-    // const angularDampingFactor = config.playerRotationalDampingFactor ?? 0.98; // Needs a different config value
-    // state.angularVelocity *= Math.pow(angularDampingFactor, deltaTime * 60);
-
-    // Update angle
     state.angle += state.angularVelocity * deltaTime;
 
-    // Normalize angle to stay within -PI to PI (optional, but can prevent large numbers)
-    // state.angle = (state.angle + Math.PI) % (2 * Math.PI) - Math.PI;
-
-
     // --- Level Collision Check and Response (Body) ---
-    // TODO: Collision response *should* ideally affect angular velocity too, but that's complex.
-    handlePlayerLevelCollision(state);
+    // Disable level collision for spectators
+    if (!presence.isSpectating) {
+        handlePlayerLevelCollision(state);
+    }
 
     // --- Constraints (Post-Collision) ---
-    // Max Length Constraint for Bungee (applied AFTER potential level collision adjustment)
-    // ... (Max length constraint code remains the same) ...
+    // Max Length Constraint for Bungee
     const finalDx = anchorPos.x - state.position.x;
     const finalDy = anchorPos.y - state.position.y;
     const finalDistance = Math.sqrt(finalDx * finalDx + finalDy * finalDy);
@@ -234,12 +225,11 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     }
 
     // --- Update Limb Physics ---
-    // Pass the final, collision-adjusted body position AND angle to limb physics calculations
+    // Limbs still dangle even in spectate mode
     state.limbs.forEach(limb => {
         updateLimbPhysics(limb, state.position, state.angle, deltaTime);
-        // TODO: Add limb-level collision later if desired
     });
 
-    // Update the state in the map (state object was modified by reference throughout)
+    // Update the state in the map
     setPlayerPhysicsState(clientId, state);
 }

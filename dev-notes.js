@@ -25,7 +25,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
       - Modify \`main.js\` so that when a player initially joins (\`room.updatePresence\` call in \`initGame\`), they start with \`isSpectating: true\`.
       - Modify \`respawn-manager.js\` so that when a player respawns (after loss or manual rejoin), \`isSpectating\` is set to \`false\`.
 
-  - ⏳ 2. **Create Spectate Module & Anchor Logic:**
+  - ✅ 2. **Create Spectate Module & Anchor Logic:**
       - Create a new file \`spectate-mode.js\`.
       - Inside \`spectate-mode.js\`, create a function \`getSpectatorAnchorPosition(clientId, deltaTime)\` that:
           - Takes the client ID and delta time.
@@ -38,8 +38,9 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
           - Check the player's \`presence.isSpectating\` flag.
           - If \`true\`, call \`getSpectatorAnchorPosition\` from \`spectate-mode.js\` to get the anchor position *instead* of using \`presence.x\` and \`presence.y\`.
           - If \`false\`, use the existing logic (\`presence.x\`, \`presence.y\`).
+      - Add cleanup for spectator state in \`peer-manager.js\` and \`respawn-manager.js\`.
 
-  - 🔲 3. **ESC Key Toggle:**
+  - ⏳ 3. **ESC Key Toggle:**
       - In \`main.js\`, add a global keydown listener for the 'Escape' key.
       - When ESC is pressed, check the current \`isSpectating\` state of the local player.
       - If currently spectating, call the "rejoin/respawn" logic (similar to clicking, see Step 5).

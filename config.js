@@ -123,4 +123,10 @@ export default {
 
     // Level Settings
     levelCycleTime: 90000, // Time in milliseconds between level changes (90 seconds)
+
+    // Spectator Mode Settings
+    spectatorAnchorMarginY: 10,   // Y position of the anchor point from the top edge
+    spectatorMaxSpeed: 150,       // Maximum horizontal speed of the anchor point
+    spectatorForceMagnitude: 2000,// Magnitude of the random force applied
+    spectatorDampingFactor: 0.95, // Damping factor for horizontal movement
 };
