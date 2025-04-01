@@ -18,7 +18,7 @@ async function initGame() {
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
     const initialRoomStateUpdates = {};
-    let initialLevelStateNeeded = false; // Flag to track if level state needs init
+    let hostNeedsToInitialize = false;
 
     if (room.roomState.droplets === undefined) { // Check for undefined specifically
         initialRoomStateUpdates.droplets = {};
@@ -56,15 +56,26 @@ async function initGame() {
         const newHostId = getLowestClientId(room.peers);
         if (newHostId === room.clientId) { // Only the new host updates state
             initialRoomStateUpdates.hostClientId = newHostId;
-            initialLevelStateNeeded = true; // Need to set initial level
+            hostNeedsToInitialize = true; // Need to set initial level/time
             console.log(`Elected self (${room.clientId}) as new host.`);
         }
-    } else if (room.roomState.currentLevelId === undefined || room.roomState.nextLevelChangeTime === undefined) {
-        // Host exists, but level state is missing (shouldn't happen often, but good recovery)
-        if (room.roomState.hostClientId === room.clientId) initialLevelStateNeeded = true;
+    } else if (room.clientId === room.roomState.hostClientId) {
+        // Host exists and it's me, check if level state is missing
+        if (room.roomState.currentLevelId === undefined || room.roomState.nextLevelChangeTime === undefined) {
+            console.log("Host found level state missing, initializing...");
+            hostNeedsToInitialize = true;
+        }
     }
+
+    // If this client is the host and needs to initialize level state
+    if (hostNeedsToInitialize) {
+        initialRoomStateUpdates.currentLevelId = allLevels[0].id; // Default to first level
+        initialRoomStateUpdates.nextLevelChangeTime = Date.now() + config.levelCycleTime;
+        console.log(`Host initializing level to ${initialRoomStateUpdates.currentLevelId}, next change at ${new Date(initialRoomStateUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
+    }
+
     if (Object.keys(initialRoomStateUpdates).length > 0) {
-        console.log("Initializing room state:", initialRoomStateUpdates);
+        console.log("Initializing/Updating room state:", initialRoomStateUpdates);
         room.updateRoomState(initialRoomStateUpdates);
     }
 
@@ -75,17 +86,18 @@ async function initGame() {
         return;
     }
     canvas.addEventListener('mousemove', (e) => {
-        // Host Election Check on Mouse Move (simple trigger)
+        // Re-check host election on mouse move (simple trigger)
         // If no host or host left, the lowest ID client claims host role
         if (room.roomState.hostClientId === undefined || !room.peers[room.roomState.hostClientId]) {
             const currentLowestId = getLowestClientId(room.peers);
             if (currentLowestId === room.clientId) {
-                // If this client is now the lowest ID, claim host and initialize level if needed
-                const hostUpdate = { hostClientId: room.clientId };
-                if (!room.roomState.currentLevelId || !room.roomState.nextLevelChangeTime) {
-                    hostUpdate.currentLevelId = allLevels[0].id; // Default to first level
-                    hostUpdate.nextLevelChangeTime = Date.now() + config.levelCycleTime;
-                }
+                // If this client is now the lowest ID, claim host and initialize level state
+                const hostUpdate = {
+                    hostClientId: room.clientId,
+                    currentLevelId: allLevels[0].id, // Default to first level
+                    nextLevelChangeTime: Date.now() + config.levelCycleTime
+                };
+                console.log(`Claiming host status on mouse move, initializing level.`);
                 room.updateRoomState(hostUpdate);
             }
         }
@@ -161,7 +173,7 @@ async function initGame() {
             const currentCanState = room.roomState.paintCans?.[currentlyOwnedCanId];
             // Check if the can is still owned and currently charging
             if (currentCanState && currentCanState.ownerId === room.clientId && currentCanState.isCharging) {
-                console.log(`Mouse Up (Fallback): Stopping charge for can ${currentlyOwnedCanId}`);
+                // console.log(`Mouse Up (Fallback): Stopping charge for can ${currentlyOwnedCanId}`);
                 room.updateRoomState({
                     paintCans: {
                         [currentlyOwnedCanId]: { isCharging: false }
@@ -214,7 +226,8 @@ async function initGame() {
         }
 
         // Send updates IF this client detects the need (can race condition exist? Yes, but low impact)
-        if (Object.keys(availableCansToAdd).length > 0) {
+        // Only the host should ideally be responsible for cleaning up disconnected players' items
+        if (Object.keys(availableCansToAdd).length > 0 && room.clientId === room.roomState.hostClientId) {
             room.updateRoomState({
                 paintCans: ownedCansToRemove,
                 availablePaintCans: availableCansToAdd
@@ -224,24 +237,24 @@ async function initGame() {
 
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
-        console.log(`Received presence update request from ${fromClientId}:`, updateRequest);
+        // console.log(`Received presence update request from ${fromClientId}:`, updateRequest);
         const localPresence = room.presence[room.clientId];
         if (!localPresence) return; // Shouldn't happen if initialized
 
         if (updateRequest.type === 'dropCan') {
             // Check if we actually have a can to drop (prevents errors if request is late)
             if (localPresence.currentCanId) {
-                console.log(`Processing request: Dropping can ${localPresence.currentCanId}`);
+                // console.log(`Processing request: Dropping can ${localPresence.currentCanId}`);
                 room.updatePresence({ currentCanId: null });
             } else {
-                console.log(`Processing request: Already have no can.`);
+                // console.log(`Processing request: Already have no can.`);
             }
         } else if (updateRequest.type === 'incrementScore') {
             // Handle score increment request
             const currentScore = localPresence.score || 0;
             const amount = updateRequest.amount || 1;
-            room.updatePresence({ 
-                score: currentScore + amount 
+            room.updatePresence({
+                score: currentScore + amount
             });
         }
         // Handle other request types here if needed

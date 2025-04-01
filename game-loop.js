@@ -21,14 +21,15 @@ import { getPlayerPhysicsState } from './playerState.js';
 import { handleLocalPlayerInteractions } from './playerInteractions.js';
 import { checkCollisionsWithPlayer } from './collisionHandler.js';
 import { handlePlayerCollisions } from './collision-system.js';
-import { spawnPaintCans } from './can-manager.js';
 import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js'; // Updated peer manager function
 import { addNotification } from './notification-manager.js'; // Import addNotification directly
 // Power-up Modules
-import { spawnPowerUps, checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js'; // Import power-up functions
+import { checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js'; // Import remaining power-up functions
+// Host Logic Module
+import { handleHostTasks } from './host-logic.js'; // Import host logic handler
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -201,14 +202,18 @@ function gameLoop(timestamp) {
         }
     });
 
-    // --- REMOVED: Global Owned Can Physics Update ---
-    // This calculation is now handled within updatePlayerAndCan for the local player only.
-
     // --- Global Updates & Checks (Local Client Authority) ---
     let allDropletRemovals = {};
     let presenceRequests = [];
-    let allPowerUpUpdates = {}; // Store power-up updates (both spawns and removals)
+    let allPowerUpUpdates = {}; // Store power-up updates (spawns and removals)
     let powerUpsToRemoveFromState = {}; // Store removals for room state update
+    let levelUpdates = {}; // Store level change updates
+
+    // Handle Host Tasks (Spawning, Level Cycling)
+    const hostTaskResults = handleHostTasks(roomInstance, deltaTime, now, canvas.width, canvas.height);
+    allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...hostTaskResults.availablePaintCanUpdates };
+    allPowerUpUpdates = { ...allPowerUpUpdates, ...hostTaskResults.powerUpUpdates };
+    levelUpdates = { ...levelUpdates, ...hostTaskResults.levelUpdates };
 
     // Player-Player Collisions (Stealing)
     const stealCollisionResults = handlePlayerCollisions(localClientId, roomInstance);
@@ -220,15 +225,6 @@ function gameLoop(timestamp) {
          // Check for undefined to handle cases where currentCanId becomes null
         Object.assign(roomInstance.presence[localClientId], stealCollisionResults.localPresenceUpdates);
     }
-
-
-    // Spawn New Cans
-    const newCanUpdates = spawnPaintCans(deltaTime, now, roomInstance.roomState.availablePaintCans || {}, canvas.width, canvas.height);
-    allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...newCanUpdates };
-
-    // Spawn New Power-ups
-    const newPowerUpSpawns = spawnPowerUps(deltaTime, now, roomInstance.roomState.powerUps || {}, canvas.width, canvas.height);
-    allPowerUpUpdates = { ...allPowerUpUpdates, ...newPowerUpSpawns };
 
     // --- Local Player Specific Updates (Post-Interaction, Pre-Collision) ---
     // Use presence potentially updated by interactions, respawn, stealing, or powerup expiration
@@ -286,6 +282,11 @@ function gameLoop(timestamp) {
     const finalPowerUpUpdates = { ...allPowerUpUpdates, ...powerUpsToRemoveFromState };
     if (Object.keys(finalPowerUpUpdates).length > 0) {
         roomStateUpdates.powerUps = finalPowerUpUpdates;
+    }
+    // Include level updates (currentLevelId, nextLevelChangeTime)
+    if (Object.keys(levelUpdates).length > 0) {
+        // Merge level updates into the main updates object
+        Object.assign(roomStateUpdates, levelUpdates);
     }
 
     // Send room state updates if any occurred
