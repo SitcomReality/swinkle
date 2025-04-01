@@ -12,6 +12,7 @@ import { addNotification } from './notification-manager.js';
 /**
  * Executes host-specific tasks like spawning items and managing level changes.
  * Selects the next level randomly, avoiding the current level if possible.
+ * Also clears available paint cans when the level changes.
  * @param {object} room - The WebsimSocket room instance.
  * @param {number} deltaTime - Time since last frame in seconds.
  * @param {number} now - Current timestamp (Date.now()).
@@ -59,7 +60,9 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
         if (nextLevel) {
             updates.levelUpdates.currentLevelId = nextLevel.id;
             updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
-            console.log(`Host: Changing level to ${nextLevel.name} (${nextLevel.id}). Next change at ${new Date(updates.levelUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
+            updates.levelUpdates.availablePaintCans = {}; // Clear available cans on level change
+
+            console.log(`Host: Changing level to ${nextLevel.name} (${nextLevel.id}). Clearing available cans. Next change at ${new Date(updates.levelUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
             // Notify locally, level-transition handles the visual update for all clients via roomState subscription
             addNotification(`Changing level to: ${nextLevel.name}`, 'info', 5000);
         } else {
@@ -84,6 +87,8 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
 
     // --- Spawning Logic ---
     // Spawn New Cans (using game area dimensions)
+    // Note: This runs even if levelUpdates just cleared the cans, which is fine.
+    // Spawning will check the (now potentially empty) availableCans count.
     const newCanUpdates = spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gameAreaHeight);
     updates.availablePaintCanUpdates = { ...updates.availablePaintCanUpdates, ...newCanUpdates };
 

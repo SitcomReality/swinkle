@@ -31,6 +31,7 @@ export const notes = `
 *   Notification Combination Effect
 *   Random Level Selection
 *   Decoupled Palettes from Levels (Random Palette Selection)
+*   Cleared available paint cans on level change.
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects. (Requires audio capabilities)
