@@ -19,28 +19,47 @@ import { removeSpectatorState } from './spectate-mode.js'; // Import spectator s
 export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWidth, gameAreaHeight) {
     // Check for respawn timer completion
     if (localPresence.lost && localPresence.respawnTime && now >= localPresence.respawnTime) {
-        console.log(`Respawning player ${localClientId}`);
+        console.log(`Respawning player ${localClientId} after loss`);
 
         // Get username for notification
         const username = room.peers[localClientId]?.username || 'Player';
         addNotification(`${username} respawned!`, 'info', 3000);
 
-        // Spawn in the middle of the defined game area
-        const spawnX = gameAreaWidth / 2;
-        const spawnY = gameAreaHeight / 2;
-
-        // Clean up spectator state upon respawn
-        removeSpectatorState(localClientId);
-
-        return {
-            lost: false,
-            paintedData: {},
-            respawnTime: null,
-            currentCanId: null, // Ensure no can on respawn
-            x: spawnX, // Reset anchor position
-            y: spawnY,
-            isSpectating: false // Player is no longer spectating after respawn
-        };
+        // Generate and return the respawn presence update object
+        return triggerManualRespawn(localClientId, gameAreaWidth, gameAreaHeight);
     }
     return {};
+}
+
+/**
+ * Generates the presence update object needed for a player to respawn or rejoin manually.
+ * Resets relevant state and places the player in the center.
+ * Also cleans up spectator state.
+ * @param {string} clientId - The ID of the client respawning.
+ * @param {number} gameAreaWidth - Width of the game area from config.
+ * @param {number} gameAreaHeight - Height of the game area from config.
+ * @returns {object} Presence updates for respawn/rejoin.
+ */
+export function triggerManualRespawn(clientId, gameAreaWidth, gameAreaHeight) {
+    console.log(`Manually triggering respawn/rejoin for player ${clientId}`);
+
+    // Spawn in the middle of the defined game area
+    const spawnX = gameAreaWidth / 2;
+    const spawnY = gameAreaHeight / 2;
+
+    // Clean up spectator state upon respawn/rejoin
+    removeSpectatorState(clientId);
+
+    // Return the presence update object
+    return {
+        lost: false,            // No longer lost
+        paintedData: {},        // Clear paint
+        respawnTime: null,      // Clear respawn timer
+        currentCanId: null,     // Ensure no can on respawn/rejoin
+        x: spawnX,              // Reset anchor position to center
+        y: spawnY,
+        isSpectating: false,    // Player is no longer spectating
+        // Keep score, potentially reset other power-up states if necessary?
+        // For now, only reset core respawn-related fields.
+    };
 }

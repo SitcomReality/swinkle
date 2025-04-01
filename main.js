@@ -12,6 +12,8 @@ import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializ
 import { initializeLevelManager, getLowestClientId, allLevels } from './level-manager.js'; // Import level manager initializer + helper + level data
 // Import the burst droplet helper
 import { createBurstDroplets } from './playerInteractions.js';
+// Import respawn helper for manual rejoin
+import { triggerManualRespawn } from './respawn-manager.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
 
@@ -210,9 +212,62 @@ async function initGame() {
         }
     });
 
+    // --- Global Key Listener for Spectate Toggle ---
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const localPresence = room.presence[room.clientId];
+            if (!localPresence) return; // Player state not yet available
+
+            if (localPresence.isSpectating) {
+                // --- Leave Spectate Mode ---
+                console.log("ESC pressed: Leaving spectate mode.");
+                // Get respawn updates (resets lost, paintedData, sets isSpectating: false etc.)
+                const respawnUpdates = triggerManualRespawn(
+                    room.clientId,
+                    config.gameAreaWidth,
+                    config.gameAreaHeight
+                );
+                room.updatePresence(respawnUpdates);
+
+            } else {
+                // --- Enter Spectate Mode ---
+                console.log("ESC pressed: Entering spectate mode.");
+                const presenceUpdate = { isSpectating: true };
+                let roomStateUpdate = {};
+
+                // If holding a can, drop it
+                const currentCanId = localPresence.currentCanId;
+                if (currentCanId && room.roomState.paintCans?.[currentCanId]) {
+                    console.log(`Dropping can ${currentCanId} due to entering spectate mode.`);
+                    presenceUpdate.currentCanId = null; // Remove from presence
+
+                    // Make the can available in room state
+                    const canState = room.roomState.paintCans[currentCanId];
+                    roomStateUpdate = {
+                        paintCans: { [currentCanId]: null }, // Remove from owned
+                        availablePaintCans: { // Add to available
+                            [currentCanId]: {
+                                ...canState,
+                                ownerId: null,
+                                vx: 0, vy: 0, // Reset physics
+                                isCharging: false, accumulatedDroplets: 0,
+                                isMega: canState.isMega || false // Preserve mega status
+                            }
+                        }
+                    };
+                }
+
+                // Send updates
+                room.updatePresence(presenceUpdate);
+                if (Object.keys(roomStateUpdate).length > 0) {
+                    room.updateRoomState(roomStateUpdate);
+                }
+            }
+        }
+    });
+
     // Initial presence update with a default color and new state fields
     // Spawn player in the middle of the defined game area
-    // Start in spectating mode
     room.updatePresence({
         x: config.gameAreaWidth / 2,
         y: config.gameAreaHeight / 2,
