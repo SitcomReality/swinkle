@@ -1,4 +1,8 @@
 export default {
+    // World boundaries
+    gameAreaWidth: 1600,        // Fixed width of the playable area
+    gameAreaHeight: 900,       // Fixed height of the playable area
+
     defaultPlayerColor: '#FFFFFF', // Default color if presence doesn't specify
     cursorSize: 8, // Radius of the player anchor point
     nameColor: '#DDDDDD', // Color for player names

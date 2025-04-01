@@ -5,14 +5,8 @@
  * interactions, collisions, rendering, and state management. Avoid adding complex game logic directly here.
  */
 import config from 'config';
-// Rendering Modules
-import { renderPlayer } from './playerRenderer.js';
-import { renderPaintCan } from './paintCan.js';
-import { renderDroplets } from './dropletRenderer.js';
-import { updateAndRenderEffects, clearEffects, addEffect } from './effectsRenderer.js';
-import { renderLevel } from './level-renderer.js'; // Import level renderer
-import { renderPowerUp } from './power-ups/power-up-renderer.js'; // Import power-up renderer
-import { renderNotifications, updateNotifications } from './notification-manager.js'; // Import notification rendering/update
+// Rendering Coordinator Module (NEW)
+import { renderScene, initializeRenderer } from './renderer.js';
 // Physics & State Modules
 import { updatePlayerPhysics } from './playerPhysics.js';
 import { updatePaintCanPhysics } from './paintCan.js';
@@ -25,11 +19,13 @@ import { checkExpiredDroplets } from './droplet-manager.js';
 import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js'; // Updated peer manager function
-import { addNotification } from './notification-manager.js'; // Import addNotification directly
+import { addNotification, updateNotifications } from './notification-manager.js'; // Import addNotification/updateNotifications directly
 // Power-up Modules
 import { checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js'; // Import remaining power-up functions
 // Host Logic Module
 import { handleHostTasks } from './host-logic.js'; // Import host logic handler
+// Effects Module (needed for addEffect call during collision check)
+import { addEffect, clearEffects } from './effectsRenderer.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -163,8 +159,8 @@ function gameLoop(timestamp) {
         localClientId,
         localPresenceBeforeUpdate,
         now,
-        canvas.width,
-        canvas.height
+        config.gameAreaWidth, // Use game area config
+        config.gameAreaHeight // Use game area config
     );
     // Apply respawn updates immediately to local cache
     if (Object.keys(localPresenceUpdates).length > 0 && roomInstance.presence[localClientId]) {
@@ -210,7 +206,13 @@ function gameLoop(timestamp) {
     let levelUpdates = {}; // Store level change updates
 
     // Handle Host Tasks (Spawning, Level Cycling)
-    const hostTaskResults = handleHostTasks(roomInstance, deltaTime, now, canvas.width, canvas.height);
+    const hostTaskResults = handleHostTasks(
+        roomInstance,
+        deltaTime,
+        now,
+        config.gameAreaWidth, // Use game area config
+        config.gameAreaHeight // Use game area config
+    );
     allAvailablePaintCanUpdates = { ...allAvailablePaintCanUpdates, ...hostTaskResults.availablePaintCanUpdates };
     allPowerUpUpdates = { ...allPowerUpUpdates, ...hostTaskResults.powerUpUpdates };
     levelUpdates = { ...levelUpdates, ...hostTaskResults.levelUpdates };
@@ -302,41 +304,15 @@ function gameLoop(timestamp) {
         roomInstance.requestPresenceUpdate(req.targetId, req.update);
     });
 
-    // --- Render Scene ---
-    renderLevel(ctx); // Render static level geometry first
-
-    updateAndRenderEffects(ctx, deltaTime, now); // Render effects (often background elements)
-
-    const dropletsToRender = roomInstance.roomState.droplets || {};
-    renderDroplets(ctx, dropletsToRender, now);
-
-    const availableCansToRender = roomInstance.roomState.availablePaintCans || {};
-    Object.values(availableCansToRender).forEach(canState => {
-        if (canState) renderPaintCan(ctx, canState);
-    });
-
-    // Render Active Power-ups
-    const powerUpsToRender = roomInstance.roomState.powerUps || {};
-    Object.values(powerUpsToRender).forEach(powerUpState => {
-        if (powerUpState) renderPowerUp(ctx, powerUpState, now);
-    });
-
-    const ownedCansToRender = roomInstance.roomState.paintCans || {}; // Needed for rendering held cans
-    Object.entries(roomInstance.peers).forEach(([clientId, peer]) => {
-        const presence = roomInstance.presence[clientId];
-        if (presence) { // Ensure presence exists before rendering
-            // Pass the synchronized roomState owned cans for rendering
-            renderPlayer(ctx, clientId, localClientId, presence, peer, ownedCansToRender);
-        }
-    });
-
-    // --- Render Notifications (On top of everything else) ---
-    renderNotifications(ctx, now);
+    // --- Render Scene (Call the Coordinator) ---
+    renderScene(ctx, roomInstance, localClientId, now, deltaTime);
 
     // --- Update UI ---
     // Use the final local presence after all updates this frame
     const finalLocalPresenceForUI = roomInstance.presence[localClientId];
-    updatePaintLevelIndicator(localClientId, finalLocalPresenceForUI, ownedCansToRender);
+    // Pass owned cans state from roomState for indicator
+    const ownedCansForUI = roomInstance.roomState.paintCans || {};
+    updatePaintLevelIndicator(localClientId, finalLocalPresenceForUI, ownedCansForUI);
 
     // --- Request Next Frame ---
     requestAnimationFrame(gameLoop);
@@ -352,6 +328,7 @@ export function startGameLoop(room) {
     console.log("Starting game loop...");
 
     initializeUI(); // Initialize UI elements
+    initializeRenderer(); // Initialize Renderer related things (if any)
     lastTimestamp = 0;
     // Initialize previousPeerData with a copy of current peers
     previousPeerData = { ...(room.peers || {}) };

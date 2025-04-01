@@ -12,11 +12,11 @@ import { room } from '../main.js'; // Import room to access peers
  * @param {number} deltaTime - Time since last frame in seconds
  * @param {number} now - Current timestamp
  * @param {object} activePowerUps - Current active power-ups from roomState
- * @param {number} canvasWidth - Width of the game canvas
- * @param {number} canvasHeight - Height of the game canvas
+ * @param {number} gameAreaWidth - Width of the game area from config
+ * @param {number} gameAreaHeight - Height of the game area from config
  * @returns {object} New power-up updates
  */
-export function spawnPowerUps(deltaTime, now, activePowerUps, canvasWidth, canvasHeight) {
+export function spawnPowerUps(deltaTime, now, activePowerUps, gameAreaWidth, gameAreaHeight) {
     const updates = {};
     
     // Check how many active power-ups are present
@@ -31,10 +31,11 @@ export function spawnPowerUps(deltaTime, now, activePowerUps, canvasWidth, canva
             const powerUpDef = getRandomPowerUpDefinition();
             const powerUpId = `powerup-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
             
-            // Position randomly on the screen with margin
+            // Position randomly within the game area with margin
             const margin = 150;
-            const x = margin + Math.random() * (canvasWidth - margin * 2);
-            const y = margin + Math.random() * (canvasHeight - margin * 2);
+            // Use gameAreaWidth and gameAreaHeight for spawning boundaries
+            const x = margin + Math.random() * (gameAreaWidth - margin * 2);
+            const y = margin + Math.random() * (gameAreaHeight - margin * 2);
             
             updates[powerUpId] = {
                 id: powerUpId,

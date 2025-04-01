@@ -33,8 +33,9 @@ async function initGame() {
             const canId = `can-initial-${i}-${Date.now()}`;
             const colorIndex = Math.floor(Math.random() * config.paintCanColors.length);
             const margin = 150; // Avoid edges
-            const x = margin + Math.random() * (window.innerWidth - margin * 2);
-            const y = margin + Math.random() * (window.innerHeight - margin * 2);
+            // Spawn within defined game area
+            const x = margin + Math.random() * (config.gameAreaWidth - margin * 2);
+            const y = margin + Math.random() * (config.gameAreaHeight - margin * 2);
             // Note: Can physics (vx, vy) are not set here, as they are only relevant when held
             initialCans[canId] = {
                 id: canId, ownerId: null,
@@ -105,9 +106,19 @@ async function initGame() {
         // Don't update position if player is lost - prevents moving while waiting to respawn
         const currentPresence = room.presence[room.clientId];
         if (!currentPresence || !currentPresence.lost) {
+            // Clamp mouse coordinates to game area boundaries before sending
+            let mouseX = e.clientX;
+            let mouseY = e.clientY;
+
+            // Note: This assumes the game world coordinates map directly to screen pixels
+            // within the defined area. A camera system would require converting
+            // screen coordinates to world coordinates before clamping.
+            mouseX = Math.max(0, Math.min(config.gameAreaWidth, mouseX));
+            mouseY = Math.max(0, Math.min(config.gameAreaHeight, mouseY));
+
             room.updatePresence({
-                x: e.clientX,
-                y: e.clientY,
+                x: mouseX,
+                y: mouseY,
             });
         }
     });
@@ -185,9 +196,10 @@ async function initGame() {
     });
 
     // Initial presence update with a default color and new state fields
+    // Spawn player in the middle of the defined game area
     room.updatePresence({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
+        x: config.gameAreaWidth / 2,
+        y: config.gameAreaHeight / 2,
         color: config.defaultPlayerColor || '#FFFFFF', // Base player color
         paintedData: {}, // Initialize empty painted data
         currentCanId: null, // Initialize with no paint can

@@ -7,6 +7,10 @@ body {
     background-color: #0a0a1e;
     color: #e0e0e0;
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 #dev-notes-container {
@@ -31,17 +35,10 @@ body {
     pointer-events: none;
 }
 
-#dev-notes-container:hover {
-    opacity: 1;
-}
-
 #game-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+    border: 1px solid #555;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
 }
 
 #scoreboard {
@@ -133,7 +130,6 @@ body {
     box-shadow: 0 0 4px #f0f;
 }
 
-/* Paint Level Indicator */
 #paint-level-indicator {
     position: fixed;
     bottom: 20px;
@@ -187,7 +183,6 @@ body {
     font-size: 1.1em;
 }
 
-/* Notification container (dynamically added) */
 #notifications-container {
     pointer-events: none;
     position: fixed;
