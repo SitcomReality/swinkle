@@ -13,7 +13,7 @@ export default {
 
     // Bungee Physics settings (Player -> Cursor)
     bungeeRestLength: 8,        // Natural length of the player's bungee cord
-    bungeeSpringConstant: 5,     // Stiffness of the player's bungee cord
+    bungeeSpringConstant: 8,     // Stiffness of the player's bungee cord
     bungeeDampingFactor: 0.98,   // Damping factor for player's bungee (Less damping = more swing)
     gravityAcceleration: 1200,   // Force of gravity pulling the player body down
     playerBodyMass: 0.8,         // Mass affects how forces influence player acceleration
@@ -22,7 +22,7 @@ export default {
     bungeeMaxLengthMultiplier: 50, // Max stretch factor for player bungee relative to rest length
 
     // Limb Physics & Appearance Settings
-    numberOfLimbs: 4,            // How many limbs the character has
+    numberOfLimbs: 2,            // How many limbs the character has
     limbLength: 20,             // Natural resting length of a limb segment
     limbWidth: 3,               // Thickness of the limb line
     limbColor: 'rgba(255, 170, 187, 0.8)', // Slightly transparent body color
@@ -36,7 +36,7 @@ export default {
     playerRotationalInertia: 1.2, // Resistance to angular acceleration (Increased from 0.5 to slow down rotation)
     playerUprightingStrength: 10, // Torque strength pulling player upright (Decreased from 10)
     playerRotationalDamping: 20.0, // Damping torque coefficient (Increased from 5.0 to dampen faster)
-    playerBungeeTorqueFactor: 0.5, // Multiplier for torque applied by the main bungee (1.0 = normal)
+    playerBungeeTorqueFactor: 0.2, // Multiplier for torque applied by the main bungee (1.0 = normal)
 
     // Droplet settings (Formerly Squirt)
     dropletColor: '#00FFFF', // Default color for droplets if not from a can
