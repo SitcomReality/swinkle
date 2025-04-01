@@ -6,6 +6,7 @@ import { addNotification } from './notification-manager.js'; // Import notificat
 import { room } from './main.js'; // Import room to access peers
 import config from 'config'; // Import config for spawn coordinates
 import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
+import { addEffect } from './effectsRenderer.js'; // Import addEffect
 
 /**
  * Checks if a player should respawn based on timer and generates presence updates
@@ -34,7 +35,7 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
 /**
  * Generates the presence update object needed for a player to respawn or rejoin manually.
  * Resets relevant state and places the player in the center.
- * Also cleans up spectator state.
+ * Also cleans up spectator state and adds a visual effect.
  * @param {string} clientId - The ID of the client respawning.
  * @param {number} gameAreaWidth - Width of the game area from config.
  * @param {number} gameAreaHeight - Height of the game area from config.
@@ -49,6 +50,9 @@ export function triggerManualRespawn(clientId, gameAreaWidth, gameAreaHeight) {
 
     // Clean up spectator state upon respawn/rejoin
     removeSpectatorState(clientId);
+
+    // Add respawn visual effect
+    addEffect('respawnSparkle', { x: spawnX, y: spawnY });
 
     // Return the presence update object
     return {

@@ -9,7 +9,7 @@ let effectCounter = 0; // Simple unique ID generation
 
 /**
  * Adds a new visual effect to be rendered.
- * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark', 'blockSpark').
+ * @param {string} type - The type of effect (e.g., 'splat', 'stealSpark', 'blockSpark', 'respawnSparkle').
  * @param {object} properties - Properties specific to the effect (x, y, color, etc.).
  */
 export function addEffect(type, properties) {
@@ -26,6 +26,9 @@ export function addEffect(type, properties) {
             break;
         case 'blockSpark': // For shield blocks
              duration = config.blockSparkEffectDuration || 250;
+             break;
+        case 'respawnSparkle': // For player respawn
+             duration = 600; // Slightly longer duration for respawn
              break;
         default:
             console.warn(`Unknown effect type: ${type}`);
@@ -91,6 +94,9 @@ export function updateAndRenderEffects(ctx, deltaTime, now) {
                 break;
             case 'blockSpark':
                  renderBlockSpark(ctx, effect, progress);
+                 break;
+            case 'respawnSparkle':
+                 renderRespawnSparkle(ctx, effect, progress);
                  break;
             // Add other types here
         }
@@ -189,6 +195,50 @@ function renderBlockSpark(ctx, effect, progress) {
     }
     ctx.globalAlpha = 1.0; // Reset alpha
     ctx.lineCap = 'butt'; // Reset line cap
+}
+
+/**
+ * Renders a respawn sparkle effect (e.g., multiple outward moving particles).
+ * @private
+ * @param {CanvasRenderingContext2D} ctx - The drawing context.
+ * @param {object} effect - The respawn sparkle effect object.
+ * @param {number} progress - The normalized age of the effect (0 to 1).
+ */
+function renderRespawnSparkle(ctx, effect, progress) {
+    const particleCount = 8;
+    const maxRadius = 40; // How far particles travel
+    const startSize = 5;
+    const endSize = 1;
+    const color = '#FFFFFF';
+
+    // Ease-out progress for movement, linear for alpha/size fade
+    const movementProgress = Math.sin(progress * Math.PI / 2);
+    const fadeProgress = progress;
+
+    const currentRadius = maxRadius * movementProgress;
+    const currentSize = startSize + (endSize - startSize) * fadeProgress;
+    const currentAlpha = 1.0 - fadeProgress;
+
+    if (currentSize <= 0 || currentAlpha <= 0) return;
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = Math.max(0, currentAlpha);
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = color;
+
+    for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 2;
+        const particleX = effect.x + Math.cos(angle) * currentRadius;
+        const particleY = effect.y + Math.sin(angle) * currentRadius;
+
+        ctx.beginPath();
+        ctx.arc(particleX, particleY, Math.max(0.1, currentSize), 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0; // Reset global alpha explicitly
 }
 
 /**
