@@ -51,21 +51,23 @@ export function handlePlayerCollisions(localClientId, room) {
         localPresenceUpdates: {},
         presenceRequests: []
     };
-    
+
     const localPlayerPhysics = getPlayerPhysicsState(localClientId);
     const localPlayerBox = getPlayerBoundingBox(localPlayerPhysics);
     const localPresence = room.presence[localClientId];
 
-    // Only check if local player exists, has a hitbox, is not lost, and doesn't currently have a can
-    if (!localPlayerBox || !localPresence || localPresence.lost || localPresence.currentCanId) {
+    // Only check if local player exists, has a hitbox, is not lost, doesn't have a can, AND is not spectating
+    if (!localPlayerBox || !localPresence || localPresence.lost || localPresence.currentCanId || localPresence.isSpectating) {
         return updates;
     }
 
     Object.entries(room.peers).forEach(([otherClientId, otherPeer]) => {
-        // Skip self, skip if other player doesn't exist or is lost
+        // Skip self
         if (otherClientId === localClientId) return;
+
         const otherPresence = room.presence[otherClientId];
-        if (!otherPresence || otherPresence.lost) return;
+        // Skip if other player doesn't exist, is lost, or is spectating
+        if (!otherPresence || otherPresence.lost || otherPresence.isSpectating) return;
 
         // Check if the other player HAS a can
         const canIdToSteal = otherPresence.currentCanId;
@@ -85,9 +87,9 @@ export function handlePlayerCollisions(localClientId, room) {
                 updates.localPresenceUpdates.currentCanId = canIdToSteal;
 
                 // 2. Request the other player drops the can
-                updates.presenceRequests.push({ 
-                    targetId: otherClientId, 
-                    update: { type: 'dropCan' } 
+                updates.presenceRequests.push({
+                    targetId: otherClientId,
+                    update: { type: 'dropCan' }
                 });
 
                 // 3. Update the can's ownership in roomState
@@ -100,9 +102,9 @@ export function handlePlayerCollisions(localClientId, room) {
                 };
 
                 // Optional: Add a visual/audio cue for the steal
-                addEffect('stealSpark', { 
-                    x: localPlayerPhysics.position.x, 
-                    y: localPlayerPhysics.position.y 
+                addEffect('stealSpark', {
+                    x: localPlayerPhysics.position.x,
+                    y: localPlayerPhysics.position.y
                 });
             }
         }

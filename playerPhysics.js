@@ -198,10 +198,8 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.angle += state.angularVelocity * deltaTime;
 
     // --- Level Collision Check and Response (Body) ---
-    // Disable level collision for spectators
-    if (!presence.isSpectating) {
-        handlePlayerLevelCollision(state);
-    }
+    // Pass presence to check if spectating inside the collision handler
+    handlePlayerLevelCollision(state, presence);
 
     // --- Constraints (Post-Collision) ---
     // Max Length Constraint for Bungee

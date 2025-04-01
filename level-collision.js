@@ -135,11 +135,16 @@ function resolveCollision(objectState, obstacle, collisionInfo) {
 /**
  * Checks and resolves collisions between the player's body and level obstacles.
  * Modifies the player's physics state directly if a collision occurs.
+ * Skips checks if player is spectating.
  * @param {object} playerState - The player's full physics state object.
+ * @param {object} presence - The player's presence data (needed to check isSpectating).
  */
-export function handlePlayerLevelCollision(playerState) {
+export function handlePlayerLevelCollision(playerState, presence) {
     const levelData = getCurrentLevel();
-    if (!levelData || !levelData.obstacles || !playerState) return;
+    // Skip if no level, no state, or if the player is spectating
+    if (!levelData || !levelData.obstacles || !playerState || presence?.isSpectating) {
+        return;
+    }
 
     // Using half-width as a rough radius for collision detection/response
     const playerRadius = config.playerBodyWidth / 2;

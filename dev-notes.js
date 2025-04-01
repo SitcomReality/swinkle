@@ -73,13 +73,13 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
           - Apply a simple pulsating effect (e.g., changing alpha or size slightly over time using \`Math.sin(Date.now() * speed)\`).
       - Call this function from the main \`renderScene\` in \`renderer.js\`.
 
-  - **8. --> Disable Collisions for Spectators:**
+  - **8. [DONE] Disable Collisions for Spectators:**
       - Modify \`collisionHandler.js\` (\`checkCollisionsWithPlayer\`): Add a check at the start to return immediately if \`currentPresence.isSpectating\` is true.
       - Modify \`collision-system.js\` (\`handlePlayerCollisions\`): Add checks to ensure neither the local player nor the other player is spectating before attempting a steal collision.
       - Modify \`power-ups/power-up-manager.js\` (\`checkPowerUpCollisions\`): Add a check at the start to return immediately if \`currentPresence.isSpectating\` is true.
-      - Modify \`level-collision.js\` (\`handlePlayerLevelCollision\`): Add a check to return immediately if \`playerState.isSpectating\` is true (we might need to pass presence or add the flag to the physics state temporarily - **Pass presence**).
+      - Modify \`level-collision.js\` (\`handlePlayerLevelCollision\`): Add a check to return immediately if \`presence?.isSpectating\` is true (passed presence in).
 
-  - **9. Disable Interactions for Spectators:**
+  - **9. [DONE] Disable Interactions for Spectators:**
       - Modify \`playerInteractions.js\` (\`handleLocalPlayerInteractions\`): Add a check at the beginning. If \`presence.isSpectating\` is true, return empty update objects immediately, preventing pickup/charging/dropping actions.
 
 

@@ -13,28 +13,31 @@ import { addNotification } from './notification-manager.js'; // Import notificat
  * Updates the player's painted data when hit by another player's droplet.
  * Records a loss event when the player reaches the loss threshold.
  * Accounts for the 'shield' power-up.
+ * Skips collision checks if the player is spectating.
  *
  * @param {object} playerBodyPos - The body position of the local player {x, y}.
  * @param {object} droplets - The current droplets in the room state.
  * @param {string} localClientId - The ID of the local client.
- * @param {object} currentPresence - The player's current presence data (including paintedData, lost, shielded).
+ * @param {object} currentPresence - The player's current presence data (including paintedData, lost, shielded, isSpectating).
  * @param {number} now - The current timestamp (Date.now()).
  * @returns {{ dropletsToRemove: object, collisionPoints: Array<object> }} - Droplets to remove and points where collisions occurred.
  */
 export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId, currentPresence, now) {
     const dropletsToRemove = {};
     const collisionPoints = []; // Store { x, y, color } for splat effects
+    
+    // --- Skip checks if presence is missing, player is already lost, or spectating ---
+    if (!currentPresence || currentPresence.lost || currentPresence.isSpectating) {
+        return { dropletsToRemove, collisionPoints };
+    }
+    
     let paintedUpdates = {};
     let paintingOccurred = false;
-    const currentPaintedData = currentPresence?.paintedData || {};
-    const alreadyLost = currentPresence?.lost || false;
-    const isShielded = currentPresence?.shielded || false; // Check for shield power-up
-    
+    const currentPaintedData = currentPresence.paintedData || {};
+    const isShielded = currentPresence.shielded || false; // Check for shield power-up
+
     // Track painting players for score updates
     const paintingPlayers = new Set(); // Keep track of unique players who painted this player
-
-    // If already lost, don't process further collisions or record losses again
-    if (alreadyLost) return { dropletsToRemove: {}, collisionPoints: [] };
 
     // Simple rectangular hitbox for the player capsule
     const bodyWidth = config.playerBodyWidth;
@@ -87,7 +90,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                 const incrementAmount = config.paintIncrementPerDroplet || 2;
                 paintedUpdates[droplet.color] = currentPercentage + incrementAmount;
                 paintingOccurred = true;
-                
+
                 // Store the player ID who painted this player (for score update)
                 if (droplet.ownerId) {
                     paintingPlayers.add(droplet.ownerId);
@@ -169,7 +172,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
 
         // Send presence update only if something changed (paint or loss state)
         room.updatePresence(updateData);
-        
+
         // Give points to players who painted this player
         if (paintingPlayers.size > 0) {
             paintingPlayers.forEach(painterId => {
@@ -180,18 +183,18 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
                         type: 'incrementScore',
                         amount: incrementAmount
                     });
-                    
+
                     // Get painter's username for notification
                     const painterUsername = room.peers[painterId]?.username || 'Player';
                     const localUsername = room.peers[localClientId]?.username || 'Player';
-                    
+
                     // Notify about score increase
                     if (justLost) {
                         addNotification(`${painterUsername} scored ${incrementAmount} points for painting out ${localUsername}!`, 'success', 4000);
                     } else if (Math.random() < 0.2) { // Only show occasional notifications for regular hits to avoid spam
                         addNotification(`${painterUsername} scored a point for painting ${localUsername}`, 'info', 2000);
                     }
-                    
+
                     // Optional: Log for debug
                     console.log(`Player ${painterId} gets ${incrementAmount} points for painting ${localClientId}`);
                 }
