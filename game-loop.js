@@ -22,7 +22,6 @@ import { addEffect, clearEffects } from './effectsRenderer.js';
 import { updateLevelTransition } from './level-transition.js';
 import { getLastSignificantMoveTime } from './main.js';
 import { enterSpectateMode } from './spectate-mode.js';
-import { shouldShowInstructions, toggleInstructions } from './instructions/instructions.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; 
@@ -43,8 +42,7 @@ function handleTimingAndSetup(timestamp, canvas, ctx) {
 function handleLocalPlayerChecks(now, localClientId) {
     let localPresenceUpdates = {};
     const localPresenceBeforeUpdate = { ...(roomInstance.presence[localClientId] || {}) };
-    toggleInstructions(localPresenceBeforeUpdate.isSpectating);
-    
+
     const respawnUpdates = checkPlayerRespawn(
         localClientId,
         localPresenceBeforeUpdate,

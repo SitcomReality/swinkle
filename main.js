@@ -23,6 +23,8 @@ import { exposeDebugUtils } from './debug-utils.js';
 import { addNotification } from './notification-manager.js';
 // Import notification broadcaster
 import { broadcastNotification, handleNotificationRequest } from './notification-broadcaster.js';
+// Import instructions initializer and toggle
+import { initializeInstructions, toggleInstructions } from './instructions/instructions.js';
 
 export const room = new WebsimSocket();
 
@@ -40,6 +42,7 @@ export function getLastSignificantMoveTime() {
 async function initGame() {
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
+    initializeInstructions(); // Initialize the instructions UI
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -198,6 +201,7 @@ async function initGame() {
             console.log(`Click detected while spectating at (${clickX.toFixed(0)}, ${clickY.toFixed(0)}): Respawning player.`);
             const now = Date.now(); // Get current time for animation end time
             // Use triggerManualRespawn, passing the specific click coordinates
+            // Note: triggerManualRespawn now also calls toggleInstructions(false)
             const respawnUpdates = triggerManualRespawn(
                 localClientId,
                 localPresence,
@@ -305,6 +309,7 @@ async function initGame() {
                 console.log("ESC pressed: Leaving spectate mode.");
                 const now = Date.now(); // Get current time for animation end time
                 // Respawn at the *current* anchor position when using ESC
+                // Note: triggerManualRespawn now also calls toggleInstructions(false)
                 const respawnUpdates = triggerManualRespawn(
                     localClientId,
                     localPresence,
@@ -326,6 +331,7 @@ async function initGame() {
 
             } else {
                 // --- Enter Spectate Mode ---
+                // Note: enterSpectateMode now calls toggleInstructions(true)
                 enterSpectateMode(localClientId, room);
             }
         }
@@ -343,12 +349,14 @@ async function initGame() {
         currentCanId: null,
         lost: false,
         score: 0,
-        isSpectating: true,
+        isSpectating: true, // Start in spectate mode
         respawnAnimEndTime: null // Initialize respawn animation timer state
     });
     // Set initial known position for idle timer
     lastKnownPosition = { x: initialX, y: initialY };
     lastSignificantMoveTime = Date.now();
+    // Show instructions initially since starting in spectate mode
+    toggleInstructions(true);
 
 
     // Subscribe to presence update requests (e.g., for being forced to drop a can)

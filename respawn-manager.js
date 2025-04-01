@@ -11,6 +11,8 @@ import { addEffect } from './effectsRenderer.js'; // Import addEffect
 // Import utility to calculate paint percentage
 import { calculateTotalPaintPercentage } from './colorUtils.js';
 import { broadcastNotification } from './notification-broadcaster.js'; // Add import
+// Import instructions toggle function
+import { toggleInstructions } from './instructions/instructions.js';
 
 // Duration for the respawn fade-in animation
 const RESPAWN_ANIM_DURATION = 500; // milliseconds
@@ -31,8 +33,9 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
         console.log(`Player ${localClientId} respawn time reached - entering spectate mode`);
 
         // Instead of respawning automatically, enter spectate mode
+        // Note: enterSpectateMode now calls toggleInstructions(true)
         enterSpectateMode(localClientId, room);
-        
+
         // Return empty updates - enterSpectateMode handles the presence changes
         return {};
     }
@@ -44,8 +47,8 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
  * Resets relevant state and places the player at their last cursor location (or center as fallback),
  * *or* at specific coordinates if provided (e.g., from a click event).
  * Conditionally resets paintedData based on whether the player was fully painted out.
- * Also cleans up spectator state and adds a visual effect using the player's base color.
- * Sets the animation end time for the fade-in effect.
+ * Also cleans up spectator state, adds a visual effect using the player's base color,
+ * hides the instructions panel, and sets the animation end time.
  * Does NOT send notification (callers should handle that).
  * @param {string} clientId - The ID of the client respawning.
  * @param {object} currentPresence - The presence data of the player *before* respawning.
@@ -114,6 +117,11 @@ export function triggerManualRespawn(clientId, currentPresence, gameAreaWidth, g
         respawnUpdates.paintedData = {}; // Clear paint
     } else {
         respawnUpdates.paintedData = currentPresence?.paintedData || {};
+    }
+
+    // Hide instructions for the local player leaving spectate mode
+    if (clientId === room.clientId) {
+        toggleInstructions(false);
     }
 
     return respawnUpdates;

@@ -7,7 +7,9 @@ import config from 'config';
 import { room } from './main.js';
 // Import notification manager
 import { addNotification } from './notification-manager.js';
-import { broadcastNotification } from './notification-broadcaster.js'; // Add import
+import { broadcastNotification } from './notification-broadcaster.js'; 
+// Import instructions toggle function
+import { toggleInstructions } from './instructions/instructions.js';
 
 // Stores state for each spectator: { x: number, vx: number }
 const spectatorStates = new Map();
@@ -78,7 +80,8 @@ export function removeSpectatorState(clientId) {
 
 /**
  * Handles the logic for a player entering spectator mode.
- * Updates presence, drops the currently held can (if any), and sends a notification.
+ * Updates presence, drops the currently held can (if any), sends a notification,
+ * and shows the instructions panel.
  * @param {string} clientId - The ID of the client entering spectator mode.
  * @param {object} roomInstance - The WebsimSocket room instance.
  */
@@ -120,6 +123,11 @@ export function enterSpectateMode(clientId, roomInstance) {
     roomInstance.updatePresence(presenceUpdate);
     if (Object.keys(roomStateUpdate).length > 0) {
         roomInstance.updateRoomState(roomStateUpdate);
+    }
+
+    // Show instructions for the local player entering spectate mode
+    if (clientId === roomInstance.clientId) {
+        toggleInstructions(true);
     }
 }
 
