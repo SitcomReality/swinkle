@@ -6,6 +6,7 @@
  * Background and Obstacle colors are now determined by the selected palette in level-manager.js.
  */
 import config from '../config.js'; // Import config to potentially use gameAreaWidth/Height if needed later
+import { generateLevelName } from '../level-namer.js';  // Add this import
 
 // --- Level Definitions ---
 
@@ -177,7 +178,7 @@ export const level3 = {
 
 export const level4 = {
     id: 'level-04',
-    name: 'Hurricane Stadium',
+    name: generateLevelName(),  // Use generated name
     // Design: Curved outer walls, open center, some angled platforms
     obstacles: [
         // Bottom Floor
@@ -256,6 +257,13 @@ export const level4 = {
     ]
 };
 
+export function addRandomLevel() {
+    const name = generateLevelName();  // Use the new naming system
+    const level = levelGenerate(levelGenConfig);
+    level.name = name;
+    allLevels.push(level);
+    return level;
+}
 
 // Combine levels into an array or object for easy selection
 export const allLevels = [level1, level2, level3, level4]; // Add level4
