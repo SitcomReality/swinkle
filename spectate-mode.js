@@ -9,14 +9,10 @@ import { room } from './main.js';
 // Stores state for each spectator: { x: number, vx: number }
 const spectatorStates = new Map();
 
-const TOP_MARGIN = config.spectatorAnchorMarginY || 10; // Fixed Y position
-const MAX_SPEED = config.spectatorMaxSpeed || 150; // Max horizontal speed
-const FORCE_MAGNITUDE = config.spectatorForceMagnitude || 2000; // Random force strength
-const DAMPING_FACTOR = config.spectatorDampingFactor || 0.95; // Damping
-
 /**
  * Calculates and returns the anchor position for a spectator player.
  * The anchor moves randomly along the top edge of the game area.
+ * Uses constants defined in config.js
  * @param {string} clientId - The ID of the spectator client.
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  * @returns {object} The calculated anchor position { x, y }.
@@ -32,17 +28,23 @@ export function getSpectatorAnchorPosition(clientId, deltaTime) {
 
     const state = spectatorStates.get(clientId);
 
+    // Use config values for physics parameters
+    const forceMagnitude = config.spectatorForceMagnitude;
+    const dampingFactor = config.spectatorDampingFactor;
+    const maxSpeed = config.spectatorMaxSpeed;
+    const topMargin = config.spectatorAnchorMarginY;
+
     // Apply a random horizontal force occasionally
     if (Math.random() < 0.05) { // ~5% chance per frame to apply force
-        const randomForce = (Math.random() - 0.5) * 2 * FORCE_MAGNITUDE; // Random force between -MAG and +MAG
+        const randomForce = (Math.random() - 0.5) * 2 * forceMagnitude; // Random force between -MAG and +MAG
         state.vx += randomForce * deltaTime;
     }
 
-    // Apply damping
-    state.vx *= Math.pow(DAMPING_FACTOR, deltaTime * 60);
+    // Apply damping (using Math.pow for frame rate independence)
+    state.vx *= Math.pow(dampingFactor, deltaTime * 60);
 
     // Clamp velocity
-    state.vx = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, state.vx));
+    state.vx = Math.max(-maxSpeed, Math.min(maxSpeed, state.vx));
 
     // Update position
     state.x += state.vx * deltaTime;
@@ -57,7 +59,7 @@ export function getSpectatorAnchorPosition(clientId, deltaTime) {
     // Return the fixed Y and calculated X
     return {
         x: state.x,
-        y: TOP_MARGIN,
+        y: topMargin,
     };
 }
 
