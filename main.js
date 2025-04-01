@@ -14,10 +14,22 @@ import { initializeLevelManager, getLowestClientId, allLevels } from './level-ma
 import { createBurstDroplets } from './playerInteractions.js';
 // Import respawn helper for manual rejoin
 import { triggerManualRespawn } from './respawn-manager.js';
+// Import spectate helper for entering mode
+import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
 
 export const room = new WebsimSocket();
+
+// --- State for Idle Timer ---
+let lastSignificantMoveTime = Date.now();
+let lastKnownPosition = { x: 0, y: 0 }; // Initialize to prevent immediate idle on load
+
+// Export a getter for the game loop to check the idle time
+export function getLastSignificantMoveTime() {
+    return lastSignificantMoveTime;
+}
+// ---------------------------
 
 // Initialize multiplayer connection and game state
 async function initGame() {
@@ -136,6 +148,16 @@ async function initGame() {
                 x: clampedX,
                 y: clampedY,
             });
+
+            // --- Update Idle Timer State ---
+            const dx = clampedX - lastKnownPosition.x;
+            const dy = clampedY - lastKnownPosition.y;
+            const distSq = dx*dx + dy*dy;
+            if (distSq > config.idleMoveThresholdSq) {
+                lastSignificantMoveTime = Date.now();
+                lastKnownPosition = { x: clampedX, y: clampedY };
+            }
+            // ---------------------------
         }
     });
 
@@ -228,49 +250,26 @@ async function initGame() {
                     config.gameAreaHeight
                 );
                 room.updatePresence(respawnUpdates);
+                // Reset idle timer on rejoin
+                lastSignificantMoveTime = Date.now();
+                lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
+
 
             } else {
                 // --- Enter Spectate Mode ---
-                console.log("ESC pressed: Entering spectate mode.");
-                const presenceUpdate = { isSpectating: true };
-                let roomStateUpdate = {};
-
-                // If holding a can, drop it
-                const currentCanId = localPresence.currentCanId;
-                if (currentCanId && room.roomState.paintCans?.[currentCanId]) {
-                    console.log(`Dropping can ${currentCanId} due to entering spectate mode.`);
-                    presenceUpdate.currentCanId = null; // Remove from presence
-
-                    // Make the can available in room state
-                    const canState = room.roomState.paintCans[currentCanId];
-                    roomStateUpdate = {
-                        paintCans: { [currentCanId]: null }, // Remove from owned
-                        availablePaintCans: { // Add to available
-                            [currentCanId]: {
-                                ...canState,
-                                ownerId: null,
-                                vx: 0, vy: 0, // Reset physics
-                                isCharging: false, accumulatedDroplets: 0,
-                                isMega: canState.isMega || false // Preserve mega status
-                            }
-                        }
-                    };
-                }
-
-                // Send updates
-                room.updatePresence(presenceUpdate);
-                if (Object.keys(roomStateUpdate).length > 0) {
-                    room.updateRoomState(roomStateUpdate);
-                }
+                // Use the centralized function from spectate-mode.js
+                enterSpectateMode(room.clientId, room);
             }
         }
     });
 
     // Initial presence update with a default color and new state fields
     // Spawn player in the middle of the defined game area
+    const initialX = config.gameAreaWidth / 2;
+    const initialY = config.gameAreaHeight / 2;
     room.updatePresence({
-        x: config.gameAreaWidth / 2,
-        y: config.gameAreaHeight / 2,
+        x: initialX,
+        y: initialY,
         color: config.defaultPlayerColor || '#FFFFFF', // Base player color
         paintedData: {}, // Initialize empty painted data
         currentCanId: null, // Initialize with no paint can
@@ -278,6 +277,10 @@ async function initGame() {
         score: 0, // Initialize with zero score
         isSpectating: true // Start in spectator mode
     });
+    // Set initial known position for idle timer
+    lastKnownPosition = { x: initialX, y: initialY };
+    lastSignificantMoveTime = Date.now();
+
 
     // Setup presence subscription for handling disconnections
     room.subscribePresence((presence) => {

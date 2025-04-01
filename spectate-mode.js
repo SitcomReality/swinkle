@@ -3,6 +3,8 @@
  * Handles logic related to the spectator mode, primarily anchor point movement.
  */
 import config from 'config';
+// Import room directly ONLY for spectate entry logic to drop cans. Avoid elsewhere.
+import { room } from './main.js';
 
 // Stores state for each spectator: { x: number, vx: number }
 const spectatorStates = new Map();
@@ -67,4 +69,47 @@ export function getSpectatorAnchorPosition(clientId, deltaTime) {
 export function removeSpectatorState(clientId) {
     spectatorStates.delete(clientId);
     // console.log(`Removed spectator state for client ${clientId}`);
+}
+
+/**
+ * Handles the logic for a player entering spectator mode.
+ * Updates presence and drops the currently held can, if any.
+ * @param {string} clientId - The ID of the client entering spectator mode.
+ * @param {object} roomInstance - The WebsimSocket room instance.
+ */
+export function enterSpectateMode(clientId, roomInstance) {
+    const localPresence = roomInstance.presence[clientId];
+    if (!localPresence || localPresence.isSpectating) return; // Already spectating or no presence
+
+    console.log(`Player ${clientId} entering spectate mode.`);
+    const presenceUpdate = { isSpectating: true };
+    let roomStateUpdate = {};
+
+    // If holding a can, drop it
+    const currentCanId = localPresence.currentCanId;
+    if (currentCanId && roomInstance.roomState.paintCans?.[currentCanId]) {
+        console.log(`Dropping can ${currentCanId} due to entering spectate mode.`);
+        presenceUpdate.currentCanId = null; // Remove from presence
+
+        // Make the can available in room state
+        const canState = roomInstance.roomState.paintCans[currentCanId];
+        roomStateUpdate = {
+            paintCans: { [currentCanId]: null }, // Remove from owned
+            availablePaintCans: { // Add to available
+                [currentCanId]: {
+                    ...canState,
+                    ownerId: null,
+                    vx: 0, vy: 0, // Reset physics
+                    isCharging: false, accumulatedDroplets: 0,
+                    isMega: canState.isMega || false // Preserve mega status
+                }
+            }
+        };
+    }
+
+    // Send updates
+    roomInstance.updatePresence(presenceUpdate);
+    if (Object.keys(roomStateUpdate).length > 0) {
+        roomInstance.updateRoomState(roomStateUpdate);
+    }
 }

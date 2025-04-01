@@ -46,12 +46,12 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
       - If currently spectating, call the "rejoin/respawn" logic using a helper function in \`respawn-manager.js\`.
       - If *not* currently spectating, update the local player's presence to set \`isSpectating: true\` and drop their current can (if any).
 
-  - ⏳ 4. **Idle Timer Activation:**
+  - ✅ 4. **Idle Timer Activation:**
       - In \`main.js\` or \`game-loop.js\`, track the last time the local player's cursor position (\`presence.x\`, \`presence.y\`) changed *significantly* (add a small threshold to ignore minor jitter).
       - In the game loop, check if the time since the last significant change exceeds the idle threshold (e.g., 20 seconds).
       - If the player is idle and *not* already spectating, update their presence to set \`isSpectating: true\`.
 
-  - 🔲 5. **Click to Rejoin/Respawn:**
+  - ✅ 5. **Click to Rejoin/Respawn:**
       - In \`main.js\`, modify the existing canvas click listener (\`mousedown\` might be better).
       - Inside the listener, first check if the local player's \`presence.isSpectating\` is \`true\`.
       - If it is, trigger the respawn logic:

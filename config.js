@@ -129,4 +129,6 @@ export default {
     spectatorMaxSpeed: 150,       // Maximum horizontal speed of the anchor point
     spectatorForceMagnitude: 2000,// Magnitude of the random force applied
     spectatorDampingFactor: 0.95, // Damping factor for horizontal movement
+    idleThreshold: 20000,       // Time in milliseconds before entering spectate mode (20 seconds)
+    idleMoveThresholdSq: 25,    // Squared pixel distance threshold to consider movement significant (5*5)
 };
