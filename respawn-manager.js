@@ -16,6 +16,7 @@ import config from 'config'; // Import config for spawn coordinates
  * @returns {object} Presence updates for respawn
  */
 export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWidth, gameAreaHeight) {
+    // Check for respawn timer completion
     if (localPresence.lost && localPresence.respawnTime && now >= localPresence.respawnTime) {
         console.log(`Respawning player ${localClientId}`);
 
@@ -33,9 +34,15 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
             respawnTime: null,
             currentCanId: null, // Ensure no can on respawn
             x: spawnX, // Reset anchor position
-            y: spawnY
+            y: spawnY,
+            isSpectating: false // Player is no longer spectating after respawn
         };
     }
+
+    // Potential manual respawn trigger (e.g., from spectate mode click - Step 5)
+    // We check if lost is false BUT spectating is true, which might happen if player manually entered spectate via ESC
+    // In the final implementation (Step 5), this logic might be triggered by a click event handler in main.js
+    // For now, this function only handles the timer-based respawn.
 
     return {};
 }

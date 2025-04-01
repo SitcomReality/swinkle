@@ -127,9 +127,9 @@ async function initGame() {
 
         // --- Update Presence ---
         // Send only anchor position. Other presence updates are event-driven.
-        // Don't update position if player is lost - prevents moving while waiting to respawn
+        // Don't update position if player is lost or spectating - prevents moving while waiting to respawn/or spectating
         const currentPresence = room.presence[room.clientId];
-        if (!currentPresence || !currentPresence.lost) {
+        if (!currentPresence || (!currentPresence.lost && !currentPresence.isSpectating)) {
             room.updatePresence({
                 x: clampedX,
                 y: clampedY,
@@ -145,7 +145,8 @@ async function initGame() {
     // Handle mouse down/up for paint charging
     canvas.addEventListener('mousedown', (e) => {
         const localPresence = room.presence[room.clientId];
-        if (localPresence && localPresence.currentCanId && !localPresence.lost) { // Prevent interaction if lost
+        // Prevent interaction if lost or spectating
+        if (localPresence && localPresence.currentCanId && !localPresence.lost && !localPresence.isSpectating) {
             const canId = localPresence.currentCanId;
             // Check if can still exists and is owned by us (prevent race condition errors)
             const canState = room.roomState.paintCans?.[canId];
@@ -161,8 +162,8 @@ async function initGame() {
     });
     canvas.addEventListener('mouseup', (e) => {
         const localPresence = room.presence[room.clientId];
-        // Don't burst if lost, even if mouseup happens after loss
-        if (localPresence && localPresence.currentCanId && !localPresence.lost) {
+        // Don't burst if lost or spectating, even if mouseup happens after loss/spectate start
+        if (localPresence && localPresence.currentCanId && !localPresence.lost && !localPresence.isSpectating) {
             const canId = localPresence.currentCanId;
             const canState = room.roomState.paintCans?.[canId];
 
@@ -191,7 +192,7 @@ async function initGame() {
                 room.updateRoomState(updates);
             }
         }
-        // Also stop charging if mouse is released outside the canvas or if player lost the can meanwhile
+        // Also stop charging if mouse is released outside the canvas or if player lost the can meanwhile or started spectating
         // This ensures charging stops even if the initial `if` condition fails
         const currentlyOwnedCanId = room.presence[room.clientId]?.currentCanId;
         if (currentlyOwnedCanId) {
@@ -211,6 +212,7 @@ async function initGame() {
 
     // Initial presence update with a default color and new state fields
     // Spawn player in the middle of the defined game area
+    // Start in spectating mode
     room.updatePresence({
         x: config.gameAreaWidth / 2,
         y: config.gameAreaHeight / 2,
@@ -218,7 +220,8 @@ async function initGame() {
         paintedData: {}, // Initialize empty painted data
         currentCanId: null, // Initialize with no paint can
         lost: false, // Initialize with not lost state
-        score: 0 // Initialize with zero score
+        score: 0, // Initialize with zero score
+        isSpectating: true // Start in spectator mode
     });
 
     // Setup presence subscription for handling disconnections
