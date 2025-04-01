@@ -206,10 +206,12 @@ function renderBlockSpark(ctx, effect, progress) {
  * @param {number} progress - The normalized age of the effect (0 to 1).
  */
 function renderRespawnSparkle(ctx, effect, progress) {
-    const particleCount = 16; // More particles
-    const maxRadius = 70;    // Travel further
-    const startSize = 7;     // Start bigger
+    // Increased parameters for larger effect
+    const particleCount = 24; // More particles
+    const maxRadius = 140;    // Travel further (doubled)
+    const startSize = 14;     // Start bigger (doubled)
     const endSize = 0;       // Fade to nothing
+    const glowAmount = 12;   // More glow
     const color = effect.baseColor || '#FFFFFF'; // Use player's base color
 
     // Ease-out progress for movement (starts fast, slows down)
@@ -227,7 +229,7 @@ function renderRespawnSparkle(ctx, effect, progress) {
     ctx.save();
     ctx.fillStyle = color;
     ctx.globalAlpha = Math.max(0, currentAlpha);
-    ctx.shadowBlur = 8; // Increase glow
+    ctx.shadowBlur = glowAmount; // Use increased glow
     ctx.shadowColor = color;
 
     for (let i = 0; i < particleCount; i++) {
