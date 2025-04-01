@@ -167,12 +167,18 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // Calculate total paint percentage (capped at loss threshold)
     const totalPaintPercentage = calculateTotalPaintPercentage(paintedData, config.lossThreshold);
 
-    // --- Render Paint Fill Background ---
+    // --- Draw Base Body Color FIRST ---
+    // This fills the entire capsule shape with the base color.
+    ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
+    ctx.fill(); // Fill the capsule path
+
+    // --- Render Paint Fill Background OVER the base color ---
     if (totalPaintPercentage > 0) {
         ctx.save(); // Save context before clipping
 
         // Apply the capsule path as a clipping region
-        ctx.clip(); // Clip to the capsule path created above
+        // Note: The path is already defined from drawing the base color
+        ctx.clip(); // Clip to the capsule path
 
         // Calculate fill properties
         const fillRatio = Math.min(1, totalPaintPercentage / config.lossThreshold); // Ratio 0 to 1
@@ -181,24 +187,18 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         // Starts from the bottom (bodyHeight / 2) and goes up
         const fillTopYRelative = (bodyHeight / 2) - fillHeightAbsolute;
 
-        // *** CHANGE: Use paint-only blend for the fill ***
+        // Use paint-only blend for the fill
         const blendedFillColor = calculatePaintOnlyBlendedColor(paintedData);
 
         // Draw the fill rectangle covering the bottom portion within the clip
         ctx.fillStyle = blendedFillColor;
         // Draw from the calculated top edge down to slightly below the bottom edge to ensure coverage
-        // Use bodyWidth (not radius) for the width
         ctx.fillRect(-radius - 1, fillTopYRelative, bodyWidth + 2, fillHeightAbsolute + 2);
 
         ctx.restore(); // Restore context (removes the clip)
     }
     // --- END Paint Fill Background ---
 
-    // --- Draw Base Body Color ---
-    // This now draws the *underlying* body color BEFORE the paint fill is drawn on top
-    // (Fill was drawn inside a clipped region, this fills the whole capsule)
-    ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
-    ctx.fill(); // Fill the original capsule path
 
     // --- Draw Blended Stroke ---
     // The stroke color should still blend with the original stroke color
@@ -233,7 +233,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         ctx.strokeStyle = '#88FFFF'; // Shield color
         ctx.lineWidth = 2;
         // Use current global alpha (which might be 0.25 if spectating)
-        const baseAlpha = isSpectating ? 0.25 : 1.0; // Use the new alpha value
+        const baseAlpha = isSpectating ? 0.25 : 1.0; // Use the current alpha value
         ctx.globalAlpha = baseAlpha * (0.6 + 0.3 * Math.sin(Date.now() * shieldPulseSpeed)); // Pulsating alpha relative to base alpha
         ctx.shadowBlur = glowBlur;
         ctx.shadowColor = '#00FFFF';
