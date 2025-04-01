@@ -17,44 +17,18 @@ export const notes = `
 
 **Next Steps:**
 
-**Enhanced Respawn Animation (Incremental Plan):**
-Goal: Create a more visually appealing respawn sequence beyond the current basic sparkle. We'll implement this in stages to minimize errors. *Note: This should NOT involve \`level-transition.js\`.*
-
-  - **1. [DONE] Refine Existing Effect:**
-    - Enhanced the current 'respawnSparkle' effect in \`effectsRenderer.js\`. Made it a brighter, quicker burst of particles using the player's base color.
-    - Updated \`respawn-manager.js\` to pass the player's color when calling \`addEffect\`.
-    - *Files Modified: \`effectsRenderer.js\`, \`respawn-manager.js\`*
-
-  - **2. Player Fade-In:**
-    - Add a temporary state to player presence indicating they are in the 'respawning animation' phase.
-        - **2a. [DONE] Add Presence State (\`respawnAnimEndTime\`):**
-            - Updated \`respawn-manager.js\` (\`triggerManualRespawn\`) to set \`respawnAnimEndTime = now + DURATION\`.
-            - Updated \`main.js\` to initialize \`respawnAnimEndTime: null\` in presence and pass \`now\` to \`triggerManualRespawn\` on click/escape respawns.
-            - Updated \`game-loop.js\` to check if \`respawnAnimEndTime\` exists and \`now >= respawnAnimEndTime\`, setting it to \`null\` in presence updates if true.
-            - *Files Modified: \`respawn-manager.js\`, \`main.js\`, \`game-loop.js\`*
-        - **2b. [DONE] Update Renderer:**
-            - Modified \`playerRenderer.js\` to check for \`respawnAnimEndTime\`. If present, calculate the remaining animation time and progress (0 to 1, where 1 is start and 0 is end). Render the player capsule, limbs, name, and held can/bungee with opacity based on this progress (fade from 0 to 1).
-            - The opacity is combined with the spectator mode opacity. Anchor point is unaffected.
-            - *Files Modified: \`playerRenderer.js\`*
-
-  - **3. [DONE] Hide Player During Initial Burst:**
-    - Modified \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (first \`RESPAWN_INITIAL_HIDE_DURATION\` = 150ms), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b starts *after* this initial particle burst window.
-    - Defined constants (\`RESPAWN_ANIM_DURATION\`, \`RESPAWN_INITIAL_HIDE_DURATION\`, \`RESPAWN_FADE_IN_DURATION\`) and updated opacity calculation logic.
-    - *Files Modified: \`playerRenderer.js\`*
-
-  - **4. (Optional) Sound Effect:**
-    - Once audio is available, trigger a respawn sound effect in \`respawn-manager.js\` when the respawn occurs.
+  - Debug notifications. 
+  - Player loss/paint-out effect. "Painted out" - Currently all that happens is the player freezes and we get the "Painted Out" text on screen, and they stay frozen for a few seconds, and then they respawn. This is terrifically boring. Once their more interesting demise is animated, they should enter spectate mode.
+  - Add more levels.
+    
 
 **Other Planned Features:**
 
-- **[DONE] Spectate Mode Implementation:** (Details omitted for brevity)
-- **[DONE] Better Score Tracking:** (Details omitted for brevity)
-- **[DONE] Respawn Paint Persistence:** Painted % persists unless respawning from 100%.
-
 - **Sound effects.** (Requires audio capabilities)
+   - Once audio is available, trigger a respawn sound effect in \`respawn-manager.js\` when the respawn occurs.
 
 - **More visual effects:**
-   - Player loss/paint-out effect.
+   
    - Can pickup/steal effect improvement.
 
 - **Future Ideas/Stretch Goals:**
