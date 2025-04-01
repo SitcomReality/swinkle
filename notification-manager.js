@@ -8,7 +8,9 @@ import { room } from './main.js';
 
 // Store active notifications: { id: { id, message, type, startTime, duration, element, count, recordId? } }
 const activeNotifications = new Map();
-// Store IDs of global notification records already displayed to prevent duplicates
+// Store IDs of global notification records *currently being displayed or fading out*
+// This prevents rapid re-adding if the subscription fires multiple times quickly for the same record.
+// IDs are removed once the notification is fully gone (after fade-out).
 const displayedGlobalNotificationIds = new Set();
 let notificationCounter = 0;
 
@@ -60,7 +62,8 @@ function getNotificationsContainer() {
 
 /**
  * Internal function to add or update a notification in the DOM.
- * Handles duplicate checking and combining.
+ * Handles duplicate checking and combining for *active* notifications.
+ * Prevents re-adding global notifications that are currently active or fading out.
  * @param {string} message - The text content.
  * @param {string} type - Notification type.
  * @param {number} duration - Duration in ms.
@@ -81,31 +84,43 @@ function addNotificationInternal(message, type, duration, recordId = null, start
         duration = DEFAULT_DURATION;
     }
 
-    // --- Check for Identical Active Notification ---
-    let foundMatch = false;
+    // --- Check for Identical ACTIVE Notification ---
+    let foundActiveMatch = false;
     activeNotifications.forEach(existingNotification => {
         // Match local notifications by message/type, or global ones by recordId
         const isMatch = (recordId && existingNotification.recordId === recordId) ||
                         (!recordId && !existingNotification.recordId && existingNotification.message === message && existingNotification.type === type);
 
-        if (!foundMatch && isMatch) {
-            existingNotification.count = (existingNotification.count || 1) + 1; // Increment count
+        if (!foundActiveMatch && isMatch) {
+            // Don't increment count if it's the *exact same record ID* coming in again while active
+            // Only increment count for local duplicates or potentially different records with same global ID? Let's stick to local for now.
+             if (!recordId || existingNotification.recordId !== recordId) {
+                 existingNotification.count = (existingNotification.count || 1) + 1; // Increment count
+             }
             existingNotification.startTime = startTime; // Reset timer
             existingNotification.duration = duration; // Update duration
             // If it's a global notification reappearing, ensure we track it as displayed again
             if (recordId) displayedGlobalNotificationIds.add(recordId);
-            foundMatch = true;
+            foundActiveMatch = true;
             updateAndRenderNotifications(now); // Trigger update
         }
     });
 
-    if (foundMatch) return; // Don't add a new one if we combined it
+    if (foundActiveMatch) return; // Don't add a new one if we combined it with an *active* one
 
-    // If it's a global notification, check if we've *ever* displayed it
+    // --- Check if this GLOBAL notification ID is already being displayed or fading out ---
+    // This prevents adding the same global record again if the subscription fires quickly
+    // while the previous instance is still visible or animating out.
     if (recordId && displayedGlobalNotificationIds.has(recordId)) {
-         // console.log(`Skipping already displayed global notification: ${recordId}`);
-         return;
+        // console.log(`Skipping global notification ${recordId} as it's currently displayed/fading.`);
+        return;
     }
+    // --- REMOVED: Duplicate check based on *ever* having seen the record ID ---
+    // // If it's a global notification, check if we've *ever* displayed it
+    // if (recordId && displayedGlobalNotificationIds.has(recordId)) {
+    //      // console.log(`Skipping already displayed global notification: ${recordId}`);
+    //      return;
+    // }
 
     // Add new notification
     const id = `notif-${notificationCounter++}`;
@@ -120,12 +135,12 @@ function addNotificationInternal(message, type, duration, recordId = null, start
         recordId // Store the record ID if it's a global notification
     });
 
-    // If it's a global notification, mark it as displayed
+    // If it's a global notification, mark it as currently displayed/fading
     if (recordId) {
         displayedGlobalNotificationIds.add(recordId);
         // Simple pruning: Occasionally clear very old IDs to prevent memory leak
+        // This part remains the same.
         if (displayedGlobalNotificationIds.size > 500) { // Arbitrary limit
-            // This is basic; a time-based cleanup might be better
             const oldIds = Array.from(displayedGlobalNotificationIds).slice(0, 100);
             oldIds.forEach(oldId => displayedGlobalNotificationIds.delete(oldId));
             console.log("Pruned old displayed global notification IDs.");
@@ -176,24 +191,22 @@ export async function addGlobalNotification(message, type = 'info', duration = D
 export function updateNotifications(now) {
     const notificationsToRemove = [];
     activeNotifications.forEach(notification => {
+        // Check if notification has lived past its duration + fade out time
         if (now >= notification.startTime + notification.duration + NOTIFICATION_CONFIG.fadeOutTime) {
             notificationsToRemove.push(notification.id);
-            // If this was a global notification, allow it to be displayed again if the record reappears later
-            // Note: We might want a longer timeout before removing from displayedGlobalNotificationIds
-            //       to handle network lag or brief disconnects more gracefully.
-            //       For now, remove immediately when it fades out locally.
+            // If this was a global notification, remove it from the set tracking *currently displayed* ones.
+            // This allows it to be shown again if the record reappears later in the subscription.
             if (notification.recordId) {
-                // console.log(`Removing global notification ${notification.recordId} from displayed set.`);
-                // Keep it in the set for a bit longer? Maybe 30s after fade?
-                // setTimeout(() => displayedGlobalNotificationIds.delete(notification.recordId), 30000);
-                // Or remove immediately:
                 displayedGlobalNotificationIds.delete(notification.recordId);
             }
         }
     });
 
     notificationsToRemove.forEach(id => activeNotifications.delete(id));
-    updateAndRenderNotifications(now); // Update the DOM
+    // Only call render if something actually changed
+    if (notificationsToRemove.length > 0) {
+        updateAndRenderNotifications(now); // Update the DOM
+    }
 }
 
 /**
@@ -235,7 +248,13 @@ function updateAndRenderNotifications(now) {
                         container.removeChild(element);
                     }
                     // Also ensure removed from activeNotifications if somehow still there
-                    activeNotifications.delete(id);
+                     activeNotifications.delete(id);
+                     // Ensure removed from displayed set too, although should have happened in updateNotifications
+                     const removedNotif = Array.from(activeNotifications.values()).find(n => n.id === id);
+                     if (removedNotif?.recordId) {
+                         displayedGlobalNotificationIds.delete(removedNotif.recordId);
+                     }
+
                 }, NOTIFICATION_CONFIG.fadeOutTime);
             }
         }
@@ -340,10 +359,14 @@ export function removeNotification(id) {
                  if (notification.element.parentElement === getNotificationsContainer()) {
                      getNotificationsContainer().removeChild(notification.element);
                  }
+                 // Remove from displayedGlobalNotificationIds when fadeout completes
+                 if (notification.recordId) {
+                    displayedGlobalNotificationIds.delete(notification.recordId);
+                 }
              }, NOTIFICATION_CONFIG.fadeOutTime);
          }
     }
-    activeNotifications.delete(id);
+    activeNotifications.delete(id); // Remove from active map immediately
 }
 
 /**
@@ -356,6 +379,7 @@ export function clearNotifications() {
         }
     });
     activeNotifications.clear();
+    displayedGlobalNotificationIds.clear(); // Clear the tracking set as well
     const container = getNotificationsContainer();
     if (container) container.innerHTML = ''; // Clear container just in case
 }
@@ -391,5 +415,5 @@ export function cleanupNotifications() {
     console.log("Cleaning up notification subscriptions...");
     unsubscribeGlobalNotifications();
     clearNotifications();
-    displayedGlobalNotificationIds.clear();
+    // displayedGlobalNotificationIds is cleared in clearNotifications
 }
