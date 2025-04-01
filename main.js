@@ -18,6 +18,8 @@ import { triggerManualRespawn } from './respawn-manager.js';
 import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
+// Import notification manager
+import { addNotification } from './notification-manager.js';
 
 export const room = new WebsimSocket();
 
@@ -179,6 +181,10 @@ async function initGame() {
             // Send the presence update to rejoin the game
             room.updatePresence(respawnUpdates);
 
+            // Send notification
+            const username = room.peers[localClientId]?.username || 'Player';
+            addNotification(`${username} respawned!`, 'info', 3000);
+
             // Reset idle timer state immediately upon rejoining
             lastSignificantMoveTime = Date.now();
             lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
@@ -256,7 +262,8 @@ async function initGame() {
     // --- Global Key Listener for Spectate Toggle ---
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const localPresence = room.presence[room.clientId];
+            const localClientId = room.clientId;
+            const localPresence = room.presence[localClientId];
             if (!localPresence) return; // Player state not yet available
 
             if (localPresence.isSpectating) {
@@ -264,11 +271,16 @@ async function initGame() {
                 console.log("ESC pressed: Leaving spectate mode.");
                 // Get respawn updates (resets lost, paintedData, sets isSpectating: false etc.)
                 const respawnUpdates = triggerManualRespawn(
-                    room.clientId,
+                    localClientId,
                     config.gameAreaWidth,
                     config.gameAreaHeight
                 );
                 room.updatePresence(respawnUpdates);
+
+                // Send notification
+                const username = room.peers[localClientId]?.username || 'Player';
+                addNotification(`${username} respawned!`, 'info', 3000);
+
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
                 lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
@@ -277,7 +289,7 @@ async function initGame() {
             } else {
                 // --- Enter Spectate Mode ---
                 // Use the centralized function from spectate-mode.js
-                enterSpectateMode(room.clientId, room);
+                enterSpectateMode(localClientId, room);
             }
         }
     });
@@ -304,7 +316,8 @@ async function initGame() {
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
         // console.log(`Received presence update request from ${fromClientId}:`, updateRequest);
-        const localPresence = room.presence[room.clientId];
+        const localClientId = room.clientId;
+        const localPresence = room.presence[localClientId];
         if (!localPresence) return; // Shouldn't happen if initialized
 
         if (updateRequest.type === 'dropCan') {

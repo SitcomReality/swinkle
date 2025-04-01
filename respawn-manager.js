@@ -3,13 +3,15 @@
  * Handles player respawn logic
  */
 import { addNotification } from './notification-manager.js'; // Import notification function
-import { room } from './main.js'; // Import room to access peers
+// Import room to access peers for username lookup
+import { room } from './main.js';
 import config from 'config'; // Import config for spawn coordinates
 import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
 import { addEffect } from './effectsRenderer.js'; // Import addEffect
 
 /**
- * Checks if a player should respawn based on timer and generates presence updates
+ * Checks if a player should respawn based on timer and generates presence updates.
+ * Also sends a notification upon automatic respawn.
  * @param {string} localClientId - The ID of the local client
  * @param {object} localPresence - The local player's presence data
  * @param {number} now - Current timestamp
@@ -27,6 +29,7 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
         addNotification(`${username} respawned!`, 'info', 3000);
 
         // Generate and return the respawn presence update object
+        // triggerManualRespawn handles the effect and spectator cleanup
         return triggerManualRespawn(localClientId, gameAreaWidth, gameAreaHeight);
     }
     return {};
@@ -36,13 +39,14 @@ export function checkPlayerRespawn(localClientId, localPresence, now, gameAreaWi
  * Generates the presence update object needed for a player to respawn or rejoin manually.
  * Resets relevant state and places the player in the center.
  * Also cleans up spectator state and adds a visual effect.
+ * Does NOT send notification (callers should handle that).
  * @param {string} clientId - The ID of the client respawning.
  * @param {number} gameAreaWidth - Width of the game area from config.
  * @param {number} gameAreaHeight - Height of the game area from config.
  * @returns {object} Presence updates for respawn/rejoin.
  */
 export function triggerManualRespawn(clientId, gameAreaWidth, gameAreaHeight) {
-    console.log(`Manually triggering respawn/rejoin for player ${clientId}`);
+    console.log(`Generating respawn/rejoin presence update for player ${clientId}`);
 
     // Spawn in the middle of the defined game area
     const spawnX = gameAreaWidth / 2;
