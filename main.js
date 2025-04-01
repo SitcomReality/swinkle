@@ -11,10 +11,8 @@ import { removePlayerPhysicsState } from './playerState.js';
 import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
 // Import level manager initializer + helper + level data + palette getter
 import { initializeLevelManager, getLowestClientId, allLevels, getCurrentPalette } from './level-manager.js';
-// Import the burst droplet helper (used in manual burst logic before refactor)
-// import { createBurstDroplets } from './paint-burst.js'; // Now handled in burst-handler.js
-// Import burst handler (will be used after refactor)
-// import { handleManualBurst } from './burst-handler.js'; // Placeholder for future refactor
+// Import burst handler for manual burst
+import { handleManualBurst } from './burst-handler.js';
 // Import respawn helper for manual rejoin
 import { triggerManualRespawn } from './respawn-manager.js';
 // Import spectate helper for entering mode
@@ -24,7 +22,7 @@ import { exposeDebugUtils } from './debug-utils.js';
 // Import notification manager
 import { addNotification } from './notification-manager.js';
 // Import notification broadcaster
-import { broadcastNotification, handleNotificationRequest } from './notification-broadcaster.js'; // Fix import path
+import { broadcastNotification, handleNotificationRequest } from './notification-broadcaster.js';
 
 export const room = new WebsimSocket();
 
@@ -249,54 +247,34 @@ async function initGame() {
             // Only proceed if the can exists, is owned by us
             if (canState && canState.ownerId === localClientId) {
 
-                // --- START: Manual Burst Logic (To be refactored into burst-handler.js) ---
-                // Note: This section is temporarily duplicated logic until refactoring is complete.
-                // It includes Big Burst check but relies on direct access to room/presence here.
-                const accumulated = canState.accumulatedDroplets || 0;
-                const isBigBurstActive = localPresence.bigBurstActive || false;
-                let finalNumDroplets = accumulated;
-                let finalSpreadRadius = config.burstSpreadRadius;
+                // --- START: Refactored Manual Burst Logic ---
+                // Call the handler function from burst-handler.js
+                const burstResult = handleManualBurst(
+                    localClientId,
+                    canState,
+                    localPresence, // Pass current presence for power-up checks
+                    Date.now()
+                );
 
-                if (isBigBurstActive) {
-                    finalNumDroplets = Math.round(accumulated * config.bigBurstDropletMultiplier);
-                    finalSpreadRadius = config.burstSpreadRadius * config.bigBurstRangeMultiplier;
-                    console.log(`Manual Burst: Big Burst active! Applying multipliers.`);
+                // Combine updates from burst handler
+                const roomUpdates = {};
+                if (Object.keys(burstResult.paintCanUpdates).length > 0) {
+                    roomUpdates.paintCans = { [canId]: burstResult.paintCanUpdates };
+                }
+                if (Object.keys(burstResult.newDroplets).length > 0) {
+                    roomUpdates.droplets = burstResult.newDroplets;
                 }
 
-                const updates = {
-                    paintCans: {
-                        [canId]: {
-                            isCharging: false,
-                            accumulatedDroplets: 0
-                        }
-                    }
-                };
-
-                if (finalNumDroplets > 0) {
-                     console.log(`Mouse Up: Releasing manual burst of ${finalNumDroplets} droplets from ${canId}`);
-                     // Import and call the actual creator function
-                     import('./paint-burst.js').then(({ createBurstDroplets }) => {
-                         const burstData = createBurstDroplets(localClientId, canState, finalNumDroplets, finalSpreadRadius, Date.now());
-                         updates.droplets = burstData; // Add droplets to the update
-                         room.updateRoomState(updates); // Send combined update
-
-                         // Consume Big Burst power-up if it was used
-                         if (isBigBurstActive) {
-                            const presenceUpdates = { bigBurstActive: false };
-                            if (localPresence.activePowerUps && localPresence.activePowerUps['bigBurst']) {
-                                presenceUpdates.activePowerUps = { ...(localPresence.activePowerUps || {}) };
-                                delete presenceUpdates.activePowerUps['bigBurst'];
-                            }
-                             room.updatePresence(presenceUpdates); // Send presence update separately
-                             console.log("Consumed Big Burst power-up after manual burst.");
-                         }
-                     }).catch(err => console.error("Error importing createBurstDroplets for manual burst:", err));
-
-                } else {
-                     // If no droplets to burst, just send the can state update
-                     room.updateRoomState(updates);
+                // Send room state updates (can + droplets)
+                if (Object.keys(roomUpdates).length > 0) {
+                    room.updateRoomState(roomUpdates);
                 }
-                // --- END: Manual Burst Logic ---
+
+                // Send presence updates (for consuming power-ups)
+                if (Object.keys(burstResult.presenceUpdates).length > 0) {
+                    room.updatePresence(burstResult.presenceUpdates);
+                }
+                // --- END: Refactored Manual Burst Logic ---
 
             }
         }
@@ -304,6 +282,7 @@ async function initGame() {
         const currentlyOwnedCanId = room.presence[room.clientId]?.currentCanId;
         if (currentlyOwnedCanId) {
             const currentCanState = room.roomState.paintCans?.[currentlyOwnedCanId];
+            // Only send stop charging if it was actually charging (prevent redundant updates)
             if (currentCanState && currentCanState.ownerId === room.clientId && currentCanState.isCharging) {
                 room.updateRoomState({
                     paintCans: {

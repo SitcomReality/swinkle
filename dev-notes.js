@@ -15,19 +15,21 @@ export const notes = `
 - **Performance & Networking:** Prioritize smoothness, client-side prediction where feasible. Use roomState for shared objects, presence for player-specific state.
 - **Developer Notes:** Update this file outlining planned steps. Remember to escape all backticks!
 
-**Implementing Power-Ups - Current Phase: 'Big Burst'**
-*Goal: Finish implementing the 'Big Burst' power-up.*
+**Implementing Power-Ups - Current Phase: 'Big Burst' & 'Short Rope'**
+*Goal: Finish implementing the 'Big Burst' & 'Short Rope' power-ups.*
 
-**Remaining Steps:**
+**Completed Steps:**
 
 1.  **Refactor Burst Logic:**
-    1.1. Move burst-on-empty logic from \`playerInteractions.js\` to \`burst-handler.js\`. *(DONE)*
-    1.2. Move manual burst logic (on mouseup) from \`main.js\` to \`burst-handler.js\`. (Because \`main.js\` is at max length). Update \`main.js\` to call the new handler.
+    1.1. Moved burst-on-empty logic from \`playerInteractions.js\` to \`burst-handler.js\`. *(DONE)*
+    1.2. Moved manual burst logic (on mouseup) from \`main.js\` to \`burst-handler.js\`. *(DONE)*
 
 2.  **Implement Big Burst Trigger Logic:**
-    2.1. Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE for burst-on-empty)*
-    2.2. Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE for burst-on-empty)*
-    2.3. Add logic to consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE for burst-on-empty in \`playerInteractions.js\`; need to add for manual burst in \`burst-handler.js\` after refactor)*
+    2.1. Check \`bigBurstActive\` flag in \`burst-handler.js\` (in both burst-on-empty and manual burst). *(DONE)*
+    2.2. Apply multipliers (\`config.bigBurstDropletMultiplier\`, \`config.bigBurstRangeMultiplier\`) when calling \`createBurstDroplets\` if flag is active. *(DONE)*
+    2.3. Consume the \`bigBurstActive\` flag (update presence) after a big burst occurs (in both scenarios). *(DONE)*
+
+**Remaining Steps:**
 
 3.  **Add Power-Up Icons:**
     *   Create rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`.
@@ -39,8 +41,7 @@ export const notes = `
 
 **Next Steps:**
 
-1.2 Implement **Manual Burst Refactor**: Move manual burst logic (mouseup) from \`main.js\` to \`burst-handler.js\`. Update \`main.js\` call.
-2.1, 2.2, 2.3 Implement **Big Burst Logic for Manual Burst**: Add the check, multiplier application, and consumption logic to the new manual burst handler in \`burst-handler.js\`.
+Step 3: Implement **Power-Up Icons** in \`power-ups/power-up-renderer.js\`.
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects.
