@@ -8,52 +8,52 @@ export const notes = `
 ## Developer Notes - SWINKLE: Swing! Ink! Sprinkle!
 
 **Design Goals & Considerations:**
-- **Core Gameplay:** Players swing around on bungee cords attached to their cursor. They acquire and carry a separate 'paint can' object, also attached via bungee to their player capsule. This can is used to automatically drop paint droplets or release bursts of paint. Players try to paint each other by maneuvering so their opponents collide with their droplets. Collision with another player's droplet adds that color to the victim's capsule outline. Reaching 100% painted is a loss condition. Players respawn after a delay. Level geometry provides obstacles.
-- **Theme:** 'xtreme 90s cyberpunk grungewave desperately nostalgic for 60s-70s retrofuturistic neon disco optimism' (Dark background, neon highlights). Apply this to characters, paint cans, paint droplets, UI elements.
-- **Character Design:** Player capsule with big expressive eyes, dangling from a bungee cord attached to the cursor. Physics-based limbs enhance the dangle effect. A paint can dangles from the player capsule via another bungee cord. The capsule rotates in response to forces, trying to stay upright.
-- **Modularity:** Keep logic separated (physics, rendering, game loop, networking, interactions, UI).
-- **Performance & Networking:** Prioritize perceived smoothness. Trust clients for collision detection and state reporting. Use client-side prediction/rendering where possible (droplet expiration, maybe can physics). Rely on 'roomState' for authoritative positions of cans, droplets, and power-ups, and 'presence' for player anchor/painted state/active power-ups.
-- **Developer Notes:** Update this file outlining planned steps and key questions. Remember to escape all backticks in these notes!
+- **Core Gameplay:** Players swing on bungee cords, carry paint cans, drop/burst paint to cover opponents. 100% painted = loss.
+- **Theme:** 'xtreme 90s cyberpunk grungewave...' (Dark background, neon highlights).
+- **Character Design:** Physics-based capsule with limbs, dangling can.
+- **Modularity:** Separate physics, rendering, game loop, networking, interactions, UI.
+- **Performance & Networking:** Prioritize smoothness, client-side prediction where feasible. Use roomState for shared objects, presence for player-specific state.
+- **Developer Notes:** Update this file outlining planned steps. Remember to escape all backticks!
 
+**Implementing Power-Ups - Current Phase: 'Big Burst'**
+*Goal: Finish implementing the 'Big Burst' power-up.*
 
-**Implementing New Power-Ups (Incremental Plan)**
-*Goal: Add 'Short Rope' and 'Big Burst' power-ups incrementally.*
+**Remaining Steps:**
 
-0.   ~~**(Done)** Defined 'shortRope' and 'bigBurst' power-up data structures and placeholder effects in \`power-ups/power-up-data.js\`. ~~
-1.   ~~**(Done)** **Defined Power-Up Data:** Added 'shortRope' and 'bigBurst' definitions to \`power-ups/power-up-data.js\`. Include ID, name, description, duration, visual properties (color, icon ID), rarity, and *placeholder* \`effect\` functions.~~
-2.1  ~~**(Done)** **Implement Short Rope Physics:** Added config values, modified \`playerPhysics.js\` to check presence flag and apply multipliers.~~
-2.2 ~~**(Done)** **Handle Short Rope Activation/Expiration:** Updated 'shortRope' effect to set flag, updated \`processActivePowerUps\` to unset flag.~~
-3.   ~~**(Done)** **Refactor Burst Logic:**~~
-    *   ~~**(Done)** Moved the \`createBurstDroplets\` function from \`playerInteractions.js\` into \`paint-burst.js\`. ~~
-    *   ~~**(Done)** Updated imports and function calls in \`playerInteractions.js\` to use the new file. (\`collisionHandler.js\` was not affected).~~
-4.  **Implement Big Burst Logic:**
-    4.1 ~~**(Done)** Add new config values to \`config.js\` for \`bigBurstDropletMultiplier\`, \`bigBurstRangeMultiplier\`, and \`bigBurstDuration\`. Update the duration in \`power-up-data.js\` to match.~~
-    4.2 * Modify the \`createBurstDroplets\` function (in \`paint-burst.js\`) to accept droplet count and spread radius arguments.
-    4.3 * Modify the relevant function in \`playerInteractions.js\` (likely \`handleCanChargingAndDropping\` or its caller) to check for a new presence flag (\`bigBurstActive\`) and pass the appropriate multipliers (or 1.0) to the burst creation function. **Note:** \`playerInteractions.js\` is long, this might require refactoring first.
-    4.4 ~~**(Done)** Update the 'bigBurst' \`effect\` function in \`power-ups/power-up-data.js\` to set \`bigBurstActive: true\` in presence (in addition to adding to \`activePowerUps\`).~~
-    4.5 ~~**(Done)** Update \`power-ups/power-up-manager.js\` (\`processActivePowerUps\`) to handle the expiration of 'bigBurst', setting \`bigBurstActive: false\`. ~~
-5.  **Add Power-Up Icons:**
-    *   Create new icon rendering functions (e.g., \`drawRopeIcon\`, \`drawBurstIcon\`) in \`power-ups/power-up-renderer.js\`.
-    *   Update the \`switch\` statement in \`renderPowerUp\` to call the new functions based on the icon IDs defined in step 1.
-6.  **Add Player Visual Effects (Optional/Stretch):**
-    *   Consider refactoring power-up effect rendering from \`playerRenderer.js\` into a separate module/function.
-    *   Add visual cues in the player renderer for active 'shortRope' (visually shorter bungee?) and 'bigBurst' (sparkling can? glowing effect?).
+1.  **Update Burst Function Signature & Calls:**
+    1.1. Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept a \`spreadRadius\` argument alongside \`numDroplets\`.
+    1.2. Update the call site in \`collisionHandler.js\` (\`createPaintBurst\`) to pass the default \`config.paintOutBurstRadius\`. (Note: Paint-out burst has separate config).
+    1.3. Update the call site(s) within \`playerInteractions.js\` (for manual burst release on mouse up AND burst-on-empty while charging) to pass the default \`config.burstSpreadRadius\` for now.
 
+2.  **Implement Big Burst Trigger Logic:**
+    2.1. **Refactor Burst Release:** Extract the logic for releasing a burst (both on mouse up and when a can empties while charging) from \`playerInteractions.js\` into a new, dedicated function or module (e.g., \`burstHandler.js\`). This is necessary because \`playerInteractions.js\` is at its maximum length. Update \`playerInteractions.js\` to call this new function.
+    2.2. **Check Power-Up:** In the *new* burst release logic, check the player's presence for the \`bigBurstActive\` flag.
+    2.3. **Apply Multipliers:** If \`bigBurstActive\` is true, calculate the number of droplets and spread radius using \`config.bigBurstDropletMultiplier\` and \`config.bigBurstRangeMultiplier\`. Otherwise, use the default values (\`canState.accumulatedDroplets\` and \`config.burstSpreadRadius\`).
+    2.4. **Call Creation:** Pass the calculated (or default) \`numDroplets\` and \`spreadRadius\` to the updated \`createBurstDroplets\` function.
+
+3.  **Add Power-Up Icons:**
+    *   Create rendering functions for new icons ('rope', 'burst') in \`power-ups/power-up-renderer.js\`.
+    *   Update the \`switch\` statement in \`renderPowerUp\` to call the new functions.
+
+4.  **Add Player Visual Effects (Optional/Stretch):**
+    *   Consider refactoring power-up effect rendering from \`playerRenderer.js\`.
+    *   Add visual cues in the player renderer for active 'shortRope' and 'bigBurst'.
 
 **Next Steps:**
 
-4.2 Implement **Big Burst Arguments**: Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept \`numDroplets\` and \`spreadRadius\` arguments. Update the call site in \`collisionHandler.js\` (\`createPaintBurst\`) to pass default values for now.
-4.3 Implement **Big Burst Trigger**: Modify \`playerInteractions.js\` (or a refactored module) to check \`bigBurstActive\` and pass multipliers to \`createBurstDroplets\` on mouse up.
+1.1 Implement **Burst Function Signature**: Modify \`createBurstDroplets\` in \`paint-burst.js\` to accept \`spreadRadius\`.
+1.2 Implement **Collision Handler Call Update**: Update the call in \`collisionHandler.js\` (\`createPaintBurst\`).
+1.3 Implement **Player Interactions Call Updates**: Update the calls in \`playerInteractions.js\` (mouse up burst, burst-on-empty).
 
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects.
-*   More visual effects (improved pickup, etc.).
+*   More visual effects.
 *   Environmental hazards? Polygon obstacles?
-*   Optimize rendering and physics. Continue tuning player rotation. Collision-based torque?
-*   Occasional whimsical/tip messages.
+*   Optimize rendering/physics.
+*   Whimsical/tip messages.
 *   More social features (chat?).
-*   Get 'paint cans are removed on level change' working
+*   Fix: 'paint cans are removed on level change'.
 
 `;
 
@@ -62,7 +62,7 @@ export function loadDevNotes() {
     if (container) {
         // Use textContent to avoid HTML injection issues
         // Replace escaped backticks with single quotes for display
-        container.textContent = notes.replace(/\\\\\\\`/g, "'");
+        container.textContent = notes.replace(/\\`/g, "'"); 
         console.log("Dev notes loaded.");
     } else {
         console.error("Dev notes container not found!");
