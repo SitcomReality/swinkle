@@ -107,16 +107,16 @@ export default {
     // Power-up settings
     maxActivePowerUps: 3,         // Maximum number of power-ups active in the world
     powerUpCollectDistance: 30,   // Distance to collect a power-up
-    powerUpDuration: 10000,       // Default duration for power-ups (10 seconds)
-    powerUpSpawnInterval: 20000,  // Average time between power-up spawns (20 seconds)
+    powerUpDuration: 8000,       // Default duration for power-ups (10 seconds)
+    powerUpSpawnInterval: 5000,  // Average time between power-up spawns (20 seconds)
 
     // Power-up effect parameters
     shieldEffectiveness: 100,     // Percentage of paint blocked by shield (Currently binary: block or not block)
     springyBungeeMultiplier: 1.8, // How much springier the bungee gets
     megaCanCapacityMultiplier: 2, // How much larger mega cans are
-    megaCanVisualSizeMultiplier: 1.2, // How much bigger mega cans look
+    megaCanVisualSizeMultiplier: 1.5, // How much bigger mega cans look
     megaCanIndicatorColor: '#FFFF00', // Color for the mega can indicator (e.g., star)
-    shortRopeMultiplier: 0.2,     // Bungee length multiplier for short rope (e.g., 0.2 = 20% of normal)
+    shortRopeMultiplier: 0.5,     // Bungee length multiplier for short rope (e.g., 0.2 = 20% of normal)
     shortRopeDuration: 7000,      // Duration of short rope effect in milliseconds (matches power-up-data.js)
     bigBurstDropletMultiplier: 2.5, // Multiplier for the number of droplets in a big burst (e.g., 2.5x)
     bigBurstRangeMultiplier: 1.5,  // Multiplier for the spread radius of a big burst (e.g., 1.5x)
@@ -124,7 +124,7 @@ export default {
 
 
     // Level Settings
-    levelCycleTime: 90000, // Time in milliseconds between level changes (90 seconds)
+    levelCycleTime: 60000, // Time in milliseconds between level changes (90 seconds)
 
     // Spectator Mode Settings
     spectatorAnchorMarginY: 10,   // Y position of the anchor point from the top edge
