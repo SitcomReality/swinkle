@@ -12,6 +12,9 @@ import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 
 // Duration for the respawn fade-in animation (MUST match respawn-manager.js)
 const RESPAWN_ANIM_DURATION = 500; // milliseconds
+// Duration to hide the player at the start of the respawn animation (allows sparkle effect)
+const RESPAWN_INITIAL_HIDE_DURATION = 150; // milliseconds
+const RESPAWN_FADE_IN_DURATION = RESPAWN_ANIM_DURATION - RESPAWN_INITIAL_HIDE_DURATION;
 
 // Helper function to draw a star (reused for mega can indicator)
 // Could be moved to a utils file later
@@ -48,80 +51,89 @@ function drawStarIcon(ctx, x, y, size, spikes = 5, innerFactor = 0.5) {
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
  */
 export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPaintCansState) {
-    if (!presence) {
-        return; // Basic presence check
+    // --- Calculate Opacity and Visibility based on Respawn/Spectate ---
+    const now = Date.now();
+    const respawnAnimEndTime = presence.respawnAnimEndTime;
+    const isSpectating = presence.isSpectating || false;
+    let isHiddenDuringRespawn = false;
+    let respawnOpacity = 1.0;
+
+    if (respawnAnimEndTime && now < respawnAnimEndTime) {
+        const timeRemaining = respawnAnimEndTime - now;
+        const elapsedTime = RESPAWN_ANIM_DURATION - timeRemaining;
+
+        if (elapsedTime < RESPAWN_INITIAL_HIDE_DURATION) {
+            // Initial phase: Player is hidden, only anchor visible
+            isHiddenDuringRespawn = true;
+            respawnOpacity = 0.0; // Explicitly 0 during hide phase
+        } else if (RESPAWN_FADE_IN_DURATION > 0) {
+            // Fade-in phase
+            const timeIntoFade = elapsedTime - RESPAWN_INITIAL_HIDE_DURATION;
+            const fadeInProgress = Math.min(1.0, timeIntoFade / RESPAWN_FADE_IN_DURATION);
+            respawnOpacity = fadeInProgress;
+        } else {
+             // Fallback if durations are misconfigured, snap to full opacity
+             respawnOpacity = 1.0;
+        }
+        // Clamp opacity just in case
+        respawnOpacity = Math.max(0, Math.min(1, respawnOpacity));
     }
+
+    const baseAlpha = isSpectating ? 0.25 : 1.0;
+    // Final combined alpha for elements affected by spectator/respawn state
+    const combinedAlpha = baseAlpha * respawnOpacity;
 
     // --- Get Player Physics State ---
     const physicsState = getPlayerPhysicsState(clientId);
     if (!physicsState) {
-        // Don't warn if spectating, physics state might be cleaned up
-        if (!presence.isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
-        return; // Cannot render body/limbs/anchor without physics state
+        if (!isSpectating) console.warn(`No physics state found for client ${clientId} during render.`);
+        return;
     }
-    // Use the anchor position that was used for the last physics update
     const anchorX = physicsState.lastAnchorPos.x;
     const anchorY = physicsState.lastAnchorPos.y;
 
-    // Check if coordinates are valid before proceeding with rendering
     if (typeof anchorX !== 'number' || typeof anchorY !== 'number') {
         console.warn(`Invalid anchor coordinates in physics state for ${clientId}:`, physicsState.lastAnchorPos);
-        return; // Don't render if anchor is invalid
+        return;
     }
 
     const baseColor = presence.color || config.defaultPlayerColor || '#FFF';
     const paintedData = presence.paintedData || {};
     const glowBlur = config.neonGlowBlur || 10;
     const anchorGlowColor = config.anchorPointGlowColor || 'rgba(255, 255, 255, 0.7)';
-    const isSpringy = presence.springyBungee || false; // Check for springy power-up
-    const isShielded = presence.shielded || false; // Check for shield power-up
-    const hasMegaCanPowerup = presence.activePowerUps?.['megaCan']; // Check for active mega can powerup
-    const isSpectating = presence.isSpectating || false; // Check spectating state
+    const isSpringy = presence.springyBungee || false;
+    const isShielded = presence.shielded || false;
+    const hasMegaCanPowerup = presence.activePowerUps?.['megaCan'];
 
     // --- Render Anchor Point (Cursor/Spectator Anchor) ---
-    // Anchor is always fully opaque, even for spectators or during respawn
+    // Anchor is always fully opaque and visible
     ctx.save();
     ctx.shadowBlur = glowBlur;
-    ctx.shadowColor = anchorGlowColor; // White/Translucent glow for anchor
-
+    ctx.shadowColor = anchorGlowColor;
     ctx.beginPath();
     ctx.arc(anchorX, anchorY, config.cursorSize || 8, 0, Math.PI * 2);
     ctx.fillStyle = baseColor;
     ctx.fill();
-
-    // Draw a less prominent stroke over the glow
-    ctx.shadowBlur = 0; // Turn off shadow for the stroke
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.restore(); // Restore shadow settings etc.
+    ctx.restore();
 
-    // --- Calculate Combined Opacity (Spectator + Respawn) ---
-    const now = Date.now(); // Need current time
-    const respawnAnimEndTime = presence.respawnAnimEndTime;
-    let respawnOpacity = 1.0;
-
-    if (respawnAnimEndTime && now < respawnAnimEndTime) {
-        const timeRemaining = respawnAnimEndTime - now;
-        // Progress goes from 1 (start) down to 0 (end)
-        const progressRemaining = Math.max(0, Math.min(1, timeRemaining / RESPAWN_ANIM_DURATION));
-        // Opacity goes from 0 (start) up to 1 (end)
-        respawnOpacity = 1.0 - progressRemaining;
-        // Clamp opacity just in case
-        respawnOpacity = Math.max(0, Math.min(1, respawnOpacity));
+    // --- Exit early if hidden during respawn ---
+    // Don't render bungee, body, limbs, name, can if hidden
+    if (isHiddenDuringRespawn) {
+        return;
     }
 
-    const baseAlpha = isSpectating ? 0.25 : 1.0;
-    const combinedAlpha = baseAlpha * respawnOpacity; // Combine spectator alpha and respawn fade
-
     // --- Apply Combined Opacity and Render Rest of Player ---
-    ctx.save(); // Save before applying combined alpha
-    ctx.globalAlpha = combinedAlpha;
+    // combinedAlpha is calculated above
+    ctx.save();
+    ctx.globalAlpha = combinedAlpha; // Apply combined fade/spectator alpha
 
-    // Extract physics state variables needed below
     const bodyX = physicsState.position.x;
     const bodyY = physicsState.position.y;
-    const bodyAngle = physicsState.angle || 0; // Get the angle from physics state
+    const bodyAngle = physicsState.angle || 0;
 
     // --- Render Player Bungee Cord (Anchor -> Body) ---
     ctx.save(); // Save context for potential bungee modifications

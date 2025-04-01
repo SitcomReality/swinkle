@@ -37,9 +37,9 @@ Goal: Create a more visually appealing respawn sequence beyond the current basic
             - The opacity is combined with the spectator mode opacity. Anchor point is unaffected.
             - *Files Modified: \`playerRenderer.js\`*
 
-  - **3. Hide Player During Initial Burst:**
-    - Modify \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (e.g., first 150-200ms, coordinated with Step 1 effect timing), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b should only start *after* this initial particle burst window.
-    - We'll need to coordinate the timing constant (e.g., \`RESPAWN_SPARKLE_DURATION\`) with the fade-in logic.
+  - **3. [DONE] Hide Player During Initial Burst:**
+    - Modified \`playerRenderer.js\` again. During the first part of the 'respawnSparkle' effect (first \`RESPAWN_INITIAL_HIDE_DURATION\` = 150ms), *do not* render the player capsule, limbs, name, or can at all (only the anchor point should be visible). The fade-in from Step 2b starts *after* this initial particle burst window.
+    - Defined constants (\`RESPAWN_ANIM_DURATION\`, \`RESPAWN_INITIAL_HIDE_DURATION\`, \`RESPAWN_FADE_IN_DURATION\`) and updated opacity calculation logic.
     - *Files Modified: \`playerRenderer.js\`*
 
   - **4. (Optional) Sound Effect:**
