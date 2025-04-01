@@ -175,6 +175,7 @@ async function initGame() {
             // Use triggerManualRespawn to get the correct presence update object
             const respawnUpdates = triggerManualRespawn(
                 localClientId,
+                localPresence,
                 config.gameAreaWidth,
                 config.gameAreaHeight
             );
@@ -200,7 +201,6 @@ async function initGame() {
             // Check if can still exists and is owned by us (prevent race condition errors)
             const canState = room.roomState.paintCans?.[canId];
             if (canState && canState.ownerId === room.clientId) {
-                // console.log(`Starting charge for can ${canId}`);
                 room.updateRoomState({
                     paintCans: {
                         [canId]: { isCharging: true }
@@ -222,8 +222,8 @@ async function initGame() {
                 const updates = {
                     paintCans: {
                         [canId]: {
-                            isCharging: false, // Stop charging on mouseup
-                            accumulatedDroplets: 0 // Reset accumulation regardless of burst amount
+                            isCharging: false, 
+                            accumulatedDroplets: 0 
                         }
                     }
                 };
@@ -232,27 +232,22 @@ async function initGame() {
                 if (dropletsToBurst > 0) {
                     console.log(`Mouse Up: Releasing burst of ${dropletsToBurst} droplets from ${canId}`);
                     const burstData = createBurstDroplets(room.clientId, canState, dropletsToBurst, Date.now());
-                    updates.droplets = burstData; // Add generated droplets to the update
-                } else {
-                    // console.log(`Mouse Up: No accumulated droplets for ${canId}, just stopping charge.`);
-                }
+                    updates.droplets = burstData; 
+                } 
 
                 // Send the combined update (stop charge, reset accum, add burst droplets if any)
                 room.updateRoomState(updates);
             }
         }
         // Also stop charging if mouse is released outside the canvas or if player lost the can meanwhile or started spectating
-        // This ensures charging stops even if the initial `if` condition fails
         const currentlyOwnedCanId = room.presence[room.clientId]?.currentCanId;
         if (currentlyOwnedCanId) {
             const currentCanState = room.roomState.paintCans?.[currentlyOwnedCanId];
             // Check if the can is still owned and currently charging
             if (currentCanState && currentCanState.ownerId === room.clientId && currentCanState.isCharging) {
-                // console.log(`Mouse Up (Fallback): Stopping charge for can ${currentlyOwnedCanId}`);
                 room.updateRoomState({
                     paintCans: {
                         [currentlyOwnedCanId]: { isCharging: false }
-                        // Don't reset accumulated here, only on successful burst trigger
                     }
                 });
             }
@@ -264,14 +259,14 @@ async function initGame() {
         if (e.key === 'Escape') {
             const localClientId = room.clientId;
             const localPresence = room.presence[localClientId];
-            if (!localPresence) return; // Player state not yet available
+            if (!localPresence) return; 
 
             if (localPresence.isSpectating) {
                 // --- Leave Spectate Mode ---
                 console.log("ESC pressed: Leaving spectate mode.");
-                // Get respawn updates (resets lost, paintedData, sets isSpectating: false etc.)
                 const respawnUpdates = triggerManualRespawn(
                     localClientId,
+                    localPresence, 
                     config.gameAreaWidth,
                     config.gameAreaHeight
                 );
@@ -288,7 +283,6 @@ async function initGame() {
 
             } else {
                 // --- Enter Spectate Mode ---
-                // Use the centralized function from spectate-mode.js
                 enterSpectateMode(localClientId, room);
             }
         }
@@ -301,12 +295,12 @@ async function initGame() {
     room.updatePresence({
         x: initialX,
         y: initialY,
-        color: config.defaultPlayerColor || '#FFFFFF', // Base player color
-        paintedData: {}, // Initialize empty painted data
-        currentCanId: null, // Initialize with no paint can
-        lost: false, // Initialize with not lost state
-        score: 0, // Initialize with zero score
-        isSpectating: true // Start in spectator mode
+        color: config.defaultPlayerColor || '#FFFFFF', 
+        paintedData: {}, 
+        currentCanId: null, 
+        lost: false, 
+        score: 0, 
+        isSpectating: true 
     });
     // Set initial known position for idle timer
     lastKnownPosition = { x: initialX, y: initialY };
@@ -315,33 +309,26 @@ async function initGame() {
 
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
-        // console.log(`Received presence update request from ${fromClientId}:`, updateRequest);
         const localClientId = room.clientId;
         const localPresence = room.presence[localClientId];
-        if (!localPresence) return; // Shouldn't happen if initialized
+        if (!localPresence) return; 
 
         if (updateRequest.type === 'dropCan') {
-            // Check if we actually have a can to drop (prevents errors if request is late)
             if (localPresence.currentCanId) {
-                // console.log(`Processing request: Dropping can ${localPresence.currentCanId}`);
                 room.updatePresence({ currentCanId: null });
             } else {
-                // console.log(`Processing request: Already have no can.`);
             }
         } else if (updateRequest.type === 'incrementScore') {
-            // Handle score increment request
             const currentScore = localPresence.score || 0;
             const amount = updateRequest.amount || 1;
             room.updatePresence({
                 score: currentScore + amount
             });
         }
-        // Handle other request types here if needed
     });
 
     // Subscribe to room state changes (optional, for debugging or complex logic)
     room.subscribeRoomState((currentRoomState) => {
-        // console.log("Room state updated:", currentRoomState);
     });
 
     // Start rendering loop, passing the room instance
