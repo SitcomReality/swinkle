@@ -118,6 +118,9 @@ export default {
     megaCanIndicatorColor: '#FFFF00', // Color for the mega can indicator (e.g., star)
     shortRopeMultiplier: 0.2,     // Bungee length multiplier for short rope (e.g., 0.2 = 20% of normal)
     shortRopeDuration: 7000,      // Duration of short rope effect in milliseconds (matches power-up-data.js)
+    bigBurstDropletMultiplier: 2.5, // Multiplier for the number of droplets in a big burst (e.g., 2.5x)
+    bigBurstRangeMultiplier: 1.5,  // Multiplier for the spread radius of a big burst (e.g., 1.5x)
+    bigBurstDuration: 10000,      // Duration of big burst readiness in ms (matches power-up-data.js)
 
 
     // Level Settings

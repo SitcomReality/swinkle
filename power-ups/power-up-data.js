@@ -2,6 +2,7 @@
  * power-up-data.js
  * Defines the data structure for all power-ups in the game.
  */
+import config from '../config.js'; // Import config to use duration value
 
 /**
  * Power-up definitions with their properties and effects
@@ -95,7 +96,7 @@ export const powerUpDefinitions = {
         id: 'shortRope',
         name: 'Short Rope',
         description: 'Temporarily shortens your bungee cord',
-        duration: 7000, // 7 seconds
+        duration: config.shortRopeDuration, // Use duration from config
         color: '#FFA500', // Orange
         glowColor: '#FF8C00', // Darker Orange
         icon: 'rope', // New icon ID - need to add rendering later
@@ -114,7 +115,7 @@ export const powerUpDefinitions = {
         id: 'bigBurst',
         name: 'Big Burst',
         description: 'Your next paint burst is bigger and wider',
-        duration: 10000, // 10 seconds or until next burst
+        duration: config.bigBurstDuration, // Use duration from config
         color: '#FF4500', // OrangeRed
         glowColor: '#FF6347', // Tomato
         icon: 'burst', // New icon ID - need to add rendering later
