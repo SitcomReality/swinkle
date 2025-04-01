@@ -30,6 +30,7 @@ export const notes = `
 *   Scoreboard Distinction for Spectators
 *   Notification Combination Effect
 *   Random Level Selection
+*   Decoupled Palettes from Levels (Random Palette Selection)
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects. (Requires audio capabilities)

@@ -4,31 +4,54 @@
  */
 import { allLevels } from './levels/level-data.js'; // Import all levels
 import { startLevelTransition, isTransitionActive } from './level-transition.js'; // Import transition functions
-import { palettes, getPaletteByIndex } from '../paletteData.js'; // Import palettes
+// Import palettes and random palette getter
+import { palettes, getRandomPalette } from './paletteData.js'; // Import palettes and getRandomPalette
 
 // Store the currently loaded level data and palette
 let currentLevelData = null;
-let currentPalette = null;
+let currentPalette = null; // Track the currently active palette
 let nextPalette = null; // Store palette for the level being transitioned TO
 let levelRoom = null; // Store the room instance
 let unsubscribeRoomState = () => {};
 
+
 /**
- * Determines the palette to use for a given level ID.
- * Uses the level's index in the allLevels array.
- * @param {string} levelId - The ID of the level.
+ * Selects a random palette that is different from the current one, if possible.
+ * @param {object | null} current - The currently active palette object.
  * @returns {object} The selected palette object.
  */
-function getPaletteForLevel(levelId) {
-    const levelIndex = allLevels.findIndex(level => level.id === levelId);
-    if (levelIndex === -1 || palettes.length === 0) {
-        console.warn(`Could not find level index for ${levelId} or no palettes defined. Using default palette.`);
-        return getPaletteByIndex(0); // Fallback to the first palette
+function selectNextRandomPalette(current) {
+    if (!palettes || palettes.length === 0) {
+        console.warn("No palettes defined. Using default fallback.");
+        // Define a default fallback palette inline if palettes array is empty
+        return { paint1: '#FF00FF', paint2: '#00FFFF', backgroundBase: '#0a0a1e' };
     }
-    // Use modulo to wrap around the available palettes
-    const paletteIndex = levelIndex % palettes.length;
-    return getPaletteByIndex(paletteIndex);
+    if (palettes.length === 1) {
+        return palettes[0]; // Only one choice
+    }
+
+    let potentialNext;
+    let attempts = 0;
+    const maxAttempts = palettes.length * 2; // Avoid infinite loop in unlikely scenarios
+
+    do {
+        potentialNext = getRandomPalette();
+        attempts++;
+    } while (
+        current && // Only check for difference if a current palette exists
+        potentialNext.paint1 === current.paint1 && // Simple check based on first paint color for difference
+        potentialNext.paint2 === current.paint2 &&
+        potentialNext.backgroundBase === current.backgroundBase &&
+        attempts < maxAttempts // Safety break
+    );
+
+    if (attempts >= maxAttempts) {
+        console.warn("Could not find a different random palette after multiple attempts. Repeating palette.");
+    }
+
+    return potentialNext;
 }
+
 
 /**
  * Sets the current level data. Called internally or by level-transition.js.
@@ -43,14 +66,22 @@ function setInternalLevelData(levelObject) {
     }
     currentLevelData = levelObject;
     // Update currentPalette synchronously when the level data is set internally
-    // If nextPalette was set (meaning a transition just ended), use that. Otherwise, calculate it.
+    // If nextPalette was set (meaning a transition just ended), use that.
     if (nextPalette) {
         currentPalette = nextPalette;
         nextPalette = null; // Clear nextPalette after using it
+        console.log(`Internal level set to ${levelObject.id}. Current palette updated after transition. Paint1: ${currentPalette?.paint1}`);
     } else {
-        currentPalette = getPaletteForLevel(levelObject.id);
+         // This case should only happen on initial load before any transitions
+         // If currentPalette is already set (initial random selection), keep it.
+         // If not, select a random one.
+         if (!currentPalette) {
+              currentPalette = selectNextRandomPalette(null); // Select initial random palette
+              console.warn(`Internal level set to ${levelObject.id}, but nextPalette was null. Setting initial random palette. Paint1: ${currentPalette?.paint1}`);
+         } else {
+              console.log(`Internal level set to ${levelObject.id}. Keeping existing palette. Paint1: ${currentPalette?.paint1}`);
+         }
     }
-    console.log(`Internal level set to ${levelObject.id}, current palette paint1: ${currentPalette?.paint1}`);
 }
 
 /**
@@ -80,14 +111,19 @@ export function initializeLevelManager(room) {
 
     console.log("Initializing level manager...");
 
-    // Initial level load based on current room state (no transition on first load)
+    // --- Initial Setup ---
+    // Select initial random palette FIRST
+    currentPalette = selectNextRandomPalette(null); // Select the very first palette randomly
+    console.log(`Initial palette selected randomly. Paint1: ${currentPalette?.paint1}`);
+
+    // Then determine initial level based on room state
     const initialLevelId = room.roomState?.currentLevelId;
     const initialLevelObject = allLevels.find(level => level.id === initialLevelId) || allLevels[0];
 
     if (!initialLevelId) {
         console.warn("No initial level ID found in room state, loading default level.");
     }
-    // Set initial level data and palette immediately
+    // Set initial level data (this will keep the already selected currentPalette)
     setInternalLevelData(initialLevelObject);
 
     // Set initial background color based on the initial palette
@@ -108,10 +144,10 @@ export function initializeLevelManager(room) {
             console.log(`Room state changed: New level ID detected - ${newLevelId}`);
             const newLevelObject = allLevels.find(level => level.id === newLevelId);
             if (newLevelObject) {
-                // Determine the palettes for old and new levels
-                const oldPalette = currentPalette; // Get the currently active palette
-                nextPalette = getPaletteForLevel(newLevelId); // Determine and store the palette for the incoming level
-                console.log(`Transitioning to level ${newLevelId}, next palette paint1: ${nextPalette?.paint1}`);
+                // Select the *next* palette randomly, ensuring it's different from the current one
+                nextPalette = selectNextRandomPalette(currentPalette); // Pass current palette
+                const oldPalette = currentPalette; // The palette we are transitioning FROM
+                console.log(`Transitioning to level ${newLevelId}. Old palette P1: ${oldPalette?.paint1}, New palette P1: ${nextPalette?.paint1}`);
 
                 // Start transition, passing level data AND palette data
                 startLevelTransition(currentLevelData, newLevelObject, oldPalette, nextPalette);
