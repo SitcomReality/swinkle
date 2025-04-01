@@ -26,6 +26,8 @@ import { checkPowerUpCollisions, processActivePowerUps } from './power-ups/power
 import { handleHostTasks } from './host-logic.js'; // Import host logic handler
 // Effects Module (needed for addEffect call during collision check)
 import { addEffect, clearEffects } from './effectsRenderer.js';
+// Level Transition Module
+import { updateLevelTransition } from './level-transition.js'; // Import level transition updater
 
 let roomInstance = null;
 let lastTimestamp = 0; // For calculating delta time
@@ -139,11 +141,15 @@ function gameLoop(timestamp) {
     if (!lastTimestamp) lastTimestamp = timestamp;
     const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Limit max delta time
     lastTimestamp = timestamp;
-    if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
+    if (canvas.width !== config.gameAreaWidth || canvas.height !== config.gameAreaHeight) {
+        canvas.width = config.gameAreaWidth;
+        canvas.height = config.gameAreaHeight;
     }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear before rendering
+
+    // --- Update Level Transition ---
+    // This handles background color changes and transition state updates
+    updateLevelTransition(deltaTime, now);
 
     // --- State Updates & Cleanup ---
     // Update notifications before peer checks
@@ -305,6 +311,7 @@ function gameLoop(timestamp) {
     });
 
     // --- Render Scene (Call the Coordinator) ---
+    // Pass canvas context, room instance, client ID, time info
     renderScene(ctx, roomInstance, localClientId, now, deltaTime);
 
     // --- Update UI ---

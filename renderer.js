@@ -9,7 +9,7 @@ import { renderPlayer } from './playerRenderer.js';
 import { renderPaintCan } from './paintCan.js';
 import { renderDroplets } from './dropletRenderer.js';
 import { updateAndRenderEffects } from './effectsRenderer.js';
-import { renderLevel } from './level-renderer.js';
+import { renderLevel } from './level-renderer.js'; // Now handles transitions internally
 import { renderPowerUp } from './power-ups/power-up-renderer.js';
 import { renderNotifications } from './notification-manager.js';
 import { renderBoundaries } from './boundary-renderer.js'; // Import boundary renderer
@@ -30,15 +30,12 @@ export function initializeRenderer() {
  * @param {number} deltaTime - Time elapsed since the last frame in seconds.
  */
 export function renderScene(ctx, roomInstance, localClientId, now, deltaTime) {
-    // Set canvas size to fixed game area dimensions
-    ctx.canvas.width = config.gameAreaWidth;
-    ctx.canvas.height = config.gameAreaHeight;
+    // Canvas size is set in game loop before clearing
 
-    // Clear canvas (done in game-loop)
-
-    // --- Render Static Background Elements ---
-    renderLevel(ctx);
+    // --- Render Background Elements ---
+    // Background color is handled by level-transition.js updating body style
     renderBoundaries(ctx); // Render the game boundaries
+    renderLevel(ctx); // Render level obstacles (handles transitions internally)
 
     // --- Render Dynamic Game Elements ---
     updateAndRenderEffects(ctx, deltaTime, now); // Render effects (e.g., splats)
@@ -67,5 +64,5 @@ export function renderScene(ctx, roomInstance, localClientId, now, deltaTime) {
     });
 
     // --- Render Overlay Elements ---
-    renderNotifications(ctx, now); // Render notifications on top
+    renderNotifications(ctx, now); // Render notifications on top (now uses DOM)
 }
