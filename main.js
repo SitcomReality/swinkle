@@ -18,8 +18,8 @@ import { triggerManualRespawn } from './respawn-manager.js';
 import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
-// Import notification manager
-import { addNotification } from './notification-manager.js';
+// Import notification manager and specific functions
+import { initializeNotificationManager, addNotification, cleanupNotifications } from './notification-manager.js';
 
 export const room = new WebsimSocket();
 
@@ -37,6 +37,7 @@ export function getLastSignificantMoveTime() {
 async function initGame() {
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
+    initializeNotificationManager(); // Initialize local UI and subscribe to global notifications
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -139,7 +140,6 @@ async function initGame() {
         // Clamp the canvas-relative coordinates to the defined game area
         const clampedX = Math.max(0, Math.min(config.gameAreaWidth, canvasX));
         const clampedY = Math.max(0, Math.min(config.gameAreaHeight, canvasY));
-
 
         // --- Update Presence ---
         // Send only anchor position. Other presence updates are event-driven.
@@ -298,8 +298,6 @@ async function initGame() {
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
                 lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
-
-
             } else {
                 // --- Enter Spectate Mode ---
                 enterSpectateMode(localClientId, room);
@@ -325,7 +323,6 @@ async function initGame() {
     // Set initial known position for idle timer
     lastKnownPosition = { x: initialX, y: initialY };
     lastSignificantMoveTime = Date.now();
-
 
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
@@ -364,3 +361,8 @@ async function initGame() {
 // Initialize the app
 loadDevNotes();
 initGame().catch(console.error);
+
+// Optional: Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    cleanupNotifications(); // Unsubscribe from global notifications
+});

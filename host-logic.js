@@ -7,7 +7,8 @@ import config from 'config';
 import { spawnPaintCans } from './can-manager.js';
 import { spawnPowerUps } from './power-ups/power-up-manager.js';
 import { allLevels } from './levels/level-data.js';
-import { addNotification } from './notification-manager.js';
+// Use global notification for level change
+import { addGlobalNotification } from './notification-manager.js';
 
 /**
  * Executes host-specific tasks like spawning items and managing level changes.
@@ -26,7 +27,6 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
         levelUpdates: {}
     };
 
-    // Only proceed if this client is the designated host
     if (room.clientId !== room.roomState.hostClientId) {
         return updates;
     }
@@ -48,29 +48,25 @@ export function handleHostTasks(room, deltaTime, now, gameAreaWidth, gameAreaHei
             updates.levelUpdates.currentLevelId = nextLevel.id;
             updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
             console.log(`Host: Changing level to ${nextLevel.name} (${nextLevel.id}). Next change at ${new Date(updates.levelUpdates.nextLevelChangeTime).toLocaleTimeString()}`);
-            addNotification(`Changing level to: ${nextLevel.name}`, 'info', 5000);
+            // Use addGlobalNotification for level change announcement
+            addGlobalNotification(`Changing level to: ${nextLevel.name}`, 'info', 5000)
+                .catch(err => console.error("Error sending global level change notification:", err));
         } else {
             console.error(`Host: Could not find next level at index ${nextLevelIndex}`);
-            // Reset timer to try again later? Or keep current level? Resetting timer.
-             updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
+            updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
         }
     } else if (typeof nextLevelChangeTime !== 'number') {
-        // If time is somehow missing, reset it
         console.warn("Host: nextLevelChangeTime missing, resetting cycle.");
         updates.levelUpdates.nextLevelChangeTime = now + config.levelCycleTime;
-         // Optionally set a default level ID if it's also missing
          if (!currentRoomState.currentLevelId) {
              updates.levelUpdates.currentLevelId = allLevels[0].id;
          }
     }
 
-
     // --- Spawning Logic ---
-    // Spawn New Cans (using game area dimensions)
     const newCanUpdates = spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gameAreaHeight);
     updates.availablePaintCanUpdates = { ...updates.availablePaintCanUpdates, ...newCanUpdates };
 
-    // Spawn New Power-ups (using game area dimensions)
     const newPowerUpSpawns = spawnPowerUps(deltaTime, now, activePowerUps, gameAreaWidth, gameAreaHeight);
     updates.powerUpUpdates = { ...updates.powerUpUpdates, ...newPowerUpSpawns };
 
