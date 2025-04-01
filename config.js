@@ -121,7 +121,7 @@ export default {
     bigBurstDropletMultiplier: 2.5, // Multiplier for the number of droplets in a big burst (e.g., 2.5x)
     bigBurstRangeMultiplier: 1.5,  // Multiplier for the spread radius of a big burst (e.g., 1.5x)
     bigBurstDuration: 10000,      // Duration of big burst readiness in ms (matches power-up-data.js)
-
+    powerUpItemLifetime: 15000,    // Time in ms before a power-up item despawns if not collected
 
     // Level Settings
     levelCycleTime: 60000, // Time in milliseconds between level changes (90 seconds)

@@ -43,13 +43,36 @@ export function spawnPowerUps(deltaTime, now, activePowerUps, gameAreaWidth, gam
                 typeId: powerUpDef.id,
                 x: x,
                 y: y,
-                createdAt: now
+                createdAt: now // Ensure createdAt timestamp is set on spawn
             };
             console.log(`Spawning power-up ${powerUpDef.id} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
         }
     }
 
     return updates;
+}
+
+/**
+ * Checks for expired power-up items in the world and returns updates to remove them.
+ * @param {object} activePowerUps - Current active power-ups from roomState.powerUps
+ * @param {number} now - Current timestamp
+ * @returns {object} Updates to remove expired power-up items (e.g., { powerUpId: null })
+ */
+export function checkExpiredPowerUpItems(activePowerUps, now) {
+    const expiredPowerUps = {};
+    const lifetime = config.powerUpItemLifetime || 15000; // Use config value or default
+
+    Object.entries(activePowerUps || {}).forEach(([id, powerUp]) => {
+        if (!powerUp || typeof powerUp.createdAt !== 'number') return; // Skip null/invalid entries
+
+        const age = now - powerUp.createdAt;
+        if (age > lifetime) {
+            expiredPowerUps[id] = null; // Mark for removal
+            console.log(`Power-up item ${id} (${powerUp.typeId}) expired after ${age}ms.`);
+        }
+    });
+
+    return expiredPowerUps;
 }
 
 /**

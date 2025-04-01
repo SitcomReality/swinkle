@@ -16,7 +16,7 @@ import { checkPlayerRespawn } from './respawn-manager.js';
 import { initializeUI, updatePaintLevelIndicator, updateScoreboardStyle } from './ui-manager.js';
 import { cleanupAndNotifyPeers } from './peer-manager.js';
 import { addNotification, updateNotifications } from './notification-manager.js';
-import { checkPowerUpCollisions, processActivePowerUps } from './power-ups/power-up-manager.js';
+import { checkPowerUpCollisions, processActivePowerUps, checkExpiredPowerUpItems } from './power-ups/power-up-manager.js';
 import { handleHostTasks } from './host-logic.js';
 import { addEffect, clearEffects } from './effectsRenderer.js';
 import { updateLevelTransition } from './level-transition.js';
@@ -173,6 +173,7 @@ function handleLocalCollisionsAndCleanup(now, localClientId) {
     let powerUpCollisionResults = { powerUpsToRemove: {}, presenceUpdates: {} };
     let dropletCollisionResults = { dropletsToRemove: {}, collisionPoints: [], newDroplets: {} }; 
     let expiredDroplets = {};
+    let expiredPowerUpItems = {}; 
 
     const finalLocalPresence = roomInstance.presence[localClientId];
     const finalLocalPlayerPhysics = getPlayerPhysicsState(localClientId);
@@ -205,10 +206,13 @@ function handleLocalCollisionsAndCleanup(now, localClientId) {
 
     expiredDroplets = checkExpiredDroplets(roomInstance.roomState.droplets || {}, now);
 
+    expiredPowerUpItems = checkExpiredPowerUpItems(roomInstance.roomState.powerUps || {}, now);
+
     return {
         powerUpCollisions: powerUpCollisionResults,
         dropletCollisions: dropletCollisionResults,
-        expiredDroplets: expiredDroplets
+        expiredDroplets: expiredDroplets,
+        expiredPowerUpItems: expiredPowerUpItems 
     };
 }
 
@@ -229,7 +233,15 @@ function sendBatchedUpdates(updates) {
     }
     const finalPowerUpUpdates = { ...powerUpUpdates, ...powerUpsToRemoveFromState };
     if (Object.keys(finalPowerUpUpdates).length > 0) {
-        roomStateUpdates.powerUps = finalPowerUpUpdates;
+        const validUpdates = Object.entries(finalPowerUpUpdates).reduce((acc, [key, value]) => {
+            if (value !== undefined) { 
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+        if (Object.keys(validUpdates).length > 0) {
+             roomStateUpdates.powerUps = validUpdates;
+        }
     }
     if (Object.keys(levelUpdates).length > 0) {
         Object.assign(roomStateUpdates, levelUpdates);
@@ -277,7 +289,10 @@ function gameLoop(timestamp) {
         localPresenceUpdates: { ...playerUpdateResults.localPresenceUpdates, ...globalUpdateResults.stealCollisions.localPresenceUpdates, ...collisionCleanupResults.powerUpCollisions.presenceUpdates },
         presenceRequests: [...globalUpdateResults.stealCollisions.presenceRequests],
         powerUpUpdates: { ...globalUpdateResults.hostTasks.powerUpUpdates },
-        powerUpsToRemoveFromState: { ...collisionCleanupResults.powerUpCollisions.powerUpsToRemove },
+        powerUpsToRemoveFromState: {
+            ...collisionCleanupResults.powerUpCollisions.powerUpsToRemove,
+            ...collisionCleanupResults.expiredPowerUpItems 
+        },
         levelUpdates: { ...globalUpdateResults.hostTasks.levelUpdates },
         burstDropletsToAdd: { ...collisionCleanupResults.dropletCollisions.newDroplets } 
     };
