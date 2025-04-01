@@ -26,21 +26,26 @@ export const notes = `
 3.   ~~**(Done)** **Refactor Burst Logic:**~~
     *   ~~**(Done)** Moved the `createBurstDroplets` function from `playerInteractions.js` into `paint-burst.js`. ~~
     *   ~~**(Done)** Updated imports and function calls in `playerInteractions.js` to use the new file. (`collisionHandler.js` was not affected).~~
-
-**Next Steps:**
-
-4.  **(This Step)** **Implement Big Burst Logic:**
-    4.1 * Add new config values to `config.js` for `bigBurstDropletMultiplier` (e.g., 1.5), `bigBurstRangeMultiplier` (e.g., 1.5), and `bigBurstDuration`.
+4.  **Implement Big Burst Logic:**
+    4.1 * Add new config values to `config.js` for `bigBurstDropletMultiplier`, `bigBurstRangeMultiplier`, and `bigBurstDuration`.
     4.2 * Modify the `createBurstDroplets` function (in `paint-burst.js`) to accept droplet count and spread radius arguments.
-    4.3 * Modify the relevant function in `playerInteractions.js` (likely `handleCanChargingAndDropping` or its caller) to check for a new presence flag (e.g., `bigBurstActive`) and pass the appropriate multipliers (or 1.0) to the burst creation function.
-    4.4 * Update the 'bigBurst' `effect` function in `power-ups/power-up-data.js` to set `bigBurstActive: true` in presence (in addition to adding to `activePowerUps`).
-    4.5 * Update `power-ups/power-up-manager.js` (`processActivePowerUps`) to handle the expiration of 'bigBurst', setting `bigBurstActive: false`.
+    4.3 * Modify the relevant function in `playerInteractions.js` (likely `handleCanChargingAndDropping` or its caller) to check for a new presence flag (`bigBurstActive`) and pass the appropriate multipliers (or 1.0) to the burst creation function. **Note:** `playerInteractions.js` is long, this might require refactoring first.
+    4.4 ~~**(Done)** Update the 'bigBurst' `effect` function in `power-ups/power-up-data.js` to set `bigBurstActive: true` in presence (in addition to adding to `activePowerUps`).~~
+    4.5 ~~**(Done)** Update `power-ups/power-up-manager.js` (`processActivePowerUps`) to handle the expiration of 'bigBurst', setting `bigBurstActive: false`. ~~
 5.  **Add Power-Up Icons:**
     *   Create new icon rendering functions (e.g., `drawRopeIcon`, `drawBurstIcon`) in `power-ups/power-up-renderer.js`.
     *   Update the `switch` statement in `renderPowerUp` to call the new functions based on the icon IDs defined in step 1.
 6.  **Add Player Visual Effects (Optional/Stretch):**
     *   Consider refactoring power-up effect rendering from `playerRenderer.js` into a separate module/function.
     *   Add visual cues in the player renderer for active 'shortRope' (visually shorter bungee?) and 'bigBurst' (sparkling can? glowing effect?).
+
+
+**Next Steps:**
+
+4.1 Implement **Big Burst Config Values**: Add `bigBurstDropletMultiplier`, `bigBurstRangeMultiplier`, and update `bigBurstDuration` in `config.js`. Update the duration in `power-up-data.js` to match.
+4.2 Implement **Big Burst Arguments**: Modify `createBurstDroplets` in `paint-burst.js` to accept `numDroplets` and `spreadRadius` arguments. Update the call site in `collisionHandler.js` (`createPaintBurst`) to pass default values for now.
+4.3 Implement **Big Burst Trigger**: Modify `playerInteractions.js` (or a refactored module) to check `bigBurstActive` and pass multipliers to `createBurstDroplets` on mouse up.
+
 
 **Future Ideas/Stretch Goals:**
 *   Sound effects.

@@ -121,12 +121,10 @@ export const powerUpDefinitions = {
         size: 26,
         rarity: 3,
         effect: (clientId, presence) => {
-            console.log(`Big Burst effect applied to ${clientId} (Placeholder)`);
-            // Placeholder: Actual effect implemented in later step
-            // Need to add 'bigBurstActive: true' and 'bigBurstEndTime'
-            // For now, just return an empty object or track in activePowerUps
+            console.log(`Big Burst effect applied to ${clientId}`);
+            // Actual effect: Set flag in presence
             return {
-                // bigBurstActive: true, // Add this in the next step
+                bigBurstActive: true, // Set the flag for interaction check
                 // Note: activePowerUps tracking is handled by checkPowerUpCollisions automatically for timed effects
             };
         }

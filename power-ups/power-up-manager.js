@@ -176,8 +176,11 @@ export function processActivePowerUps(clientId, presence, now) {
                         // but having a timeout is a good backup. We'll refine this in 1.9.5.
                         updates.megaCanPowerup = false;
                         break;
-                    case 'shortRope': 
+                    case 'shortRope':
                         updates.shortRopeActive = false;
+                        break;
+                    case 'bigBurst': // Handle Big Burst expiration
+                        updates.bigBurstActive = false;
                         break;
                     // Add cases for other timed power-ups here
                 }
