@@ -18,9 +18,9 @@ export function createPaintBurst(playerId, playerPos, paintedData, now) {
     const burstDroplets = {};
     
     // Get parameters from config or use updated defaults
-    const numDroplets = config.paintOutBurstParticles || 120;
-    const maxSpeed = config.paintOutBurstSpeed || 10;
-    const spreadRadius = config.paintOutBurstRadius || 100;
+    const numDroplets = config.paintOutBurstParticles || 120; // Significantly increased droplets
+    const maxSpeed = config.paintOutBurstSpeed || 300; // Keep speed the same for now
+    const spreadRadius = config.paintOutBurstRadius || 500; // Significantly increased radius
     
     // Calculate weighted color based on the painted data
     const blendedColor = calculatePaintOnlyBlendedColor(paintedData);

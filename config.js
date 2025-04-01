@@ -105,7 +105,7 @@ export default {
     // Paint Out Burst Effect settings
     paintOutBurstParticles: 120, // Number of droplets to create when painted out (Increased from 60)
     paintOutBurstSpeed: 300,    // Maximum initial speed for paint burst particles
-    paintOutBurstRadius: 500,   // Maximum distance particles can travel (Increased from 150)
+    paintOutBurstRadius: 200,   // Maximum distance particles can travel
 
     // Theme & Glow Settings
     neonGlowBlur: 10,           // Intensity of the glow effect for neon elements
