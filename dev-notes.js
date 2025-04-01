@@ -28,19 +28,18 @@ Goal: Implement a system where each level uses a distinct color palette consisti
 
 2.  **[DONE] Palette Selection Logic:**
     *   In \`level-manager.js\`, imported \`getPaletteByIndex\` from \`paletteData.js\` and the full \`palettes\` array.
-    *   Added state within \`level-manager.js\` to store the \`currentPalette\`.
+    *   Added state within \`level-manager.js\` to store the \`currentPalette\` and \`nextPalette\`.
     *   Created \`getPaletteForLevel\` helper to select a palette based on level index (modulo).
-    *   Modified the level loading/transition logic in \`initializeLevelManager\` and the \`subscribeRoomState\` callback to select a palette using \`getPaletteForLevel\` when a level *starts* loading or is identified for transition. Stored the selected palette in \`currentPalette\` *after* the transition completes (via \`setCurrentLevelDataFromTransition\`).
-    *   Stored the palette for the *next* level (\`nextPalette\`) when a transition is initiated.
+    *   Modified the level loading/transition logic in \`initializeLevelManager\` and the \`subscribeRoomState\` callback to select palettes for current/next levels. Stored the selected palette in \`currentPalette\` *after* the transition completes (via \`setCurrentLevelDataFromTransition\`).
     *   Added getter functions \`getCurrentPalette()\` and \`getNextPalette()\` to \`level-manager.js\`.
     *   Modified \`level-transition.js\` signature to accept palettes (\`startLevelTransition(oldData, newData, oldPaletteData, newPaletteData)\`) and store them. Added getters \`getOldPalette()\` and \`getNewPalette()\`.
     *   *(Files Modified: \`level-manager.js\`, \`level-transition.js\`, \`dev-notes.js\`)*
 
-3.  **Apply Background/Geometry Colors:**
-    *   Modify \`level-renderer.js\`: Import \`getCurrentPalette\` from \`level-manager.js\`. In \`renderStableObstacles\`, get the current palette. Use \`palette.backgroundBase\` to generate obstacle colors (e.g., directly, or create a slightly darker tint using \`colorUtils.js\` if needed). Remove the static \`obstacle.color\` usage.
-    *   Modify \`level-transition.js\`: Use \`getOldPalette()\` and \`getNewPalette()\` getters. Blend the \`backgroundBase\` colors instead of the static \`backgroundColor\` from level data. Update the \`document.body.style.backgroundColor\` accordingly during the transition.
-    *   Modify \`levels/level-data.js\`: Remove the static \`backgroundColor\` and \`obstacle.color\` properties from the level definitions.
-    *   *(Files To Modify: \`level-renderer.js\`, \`level-transition.js\`, \`levels/level-data.js\`, potentially \`colorUtils.js\`)*
+3.  **[DONE] Apply Background/Geometry Colors:**
+    *   Modified \`level-renderer.js\`: Imported \`getCurrentPalette\`, \`getOldPalette\`, \`getNewPalette\`. In \`renderStableObstacles\`, get current palette. Pass \`palette.backgroundBase\` to \`renderRectangleObstacle\`. Updated \`renderTransitioningObstacles\` to use palettes from \`getOldPalette()\` / \`getNewPalette()\` and pass the correct base color.
+    *   Modified \`level-transition.js\`: Verified that the background color blending logic already uses \`oldBgColor\` and \`newBgColor\` derived from palette \`backgroundBase\` properties. No changes needed.
+    *   Modified \`levels/level-data.js\`: Removed the static \`backgroundColor\` and \`obstacle.color\` properties from the level definitions.
+    *   *(Files Modified: \`level-renderer.js\`, \`levels/level-data.js\`, \`dev-notes.js\`)*
 
 4.  **Apply Paint Colors:**
     *   Modify \`can-manager.js\` (\`spawnPaintCans\`): Import \`getCurrentPalette\` from \`level-manager.js\`. Get the current palette. Instead of picking from the removed \`config.paintCanColors\`, randomly choose between \`currentPalette.paint1\` and \`currentPalette.paint2\` for the \`paintColor\` property of the new can.

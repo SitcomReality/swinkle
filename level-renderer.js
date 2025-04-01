@@ -2,9 +2,9 @@
  * level-renderer.js
  * Handles rendering the static level geometry (obstacles).
  */
-import { getCurrentLevel } from './level-manager.js';
+import { getCurrentLevel, getCurrentPalette } from './level-manager.js';
 // Import transition state checkers and getters
-import { isTransitionActive, getTransitionPhase, getOldLevelData, getNewLevelData, getProgress } from './level-transition.js';
+import { isTransitionActive, getTransitionPhase, getOldLevelData, getNewLevelData, getProgress, getOldPalette, getNewPalette } from './level-transition.js';
 
 /**
  * Renders the current level's obstacles onto the canvas, handling transitions.
@@ -14,10 +14,10 @@ export function renderLevel(ctx) {
     if (isTransitionActive()) {
         renderTransitioningObstacles(ctx);
     } else {
-        // When not transitioning, get the current level data from the manager
-        // This data should be the correct (new) level after the transition finishes
+        // When not transitioning, get the current level data and palette from the manager
         const levelData = getCurrentLevel();
-        renderStableObstacles(ctx, levelData);
+        const palette = getCurrentPalette(); // Get the current palette
+        renderStableObstacles(ctx, levelData, palette);
     }
 }
 
@@ -33,6 +33,8 @@ function renderTransitioningObstacles(ctx) {
 
     if (phase === 'fade_out') {
         const oldLevel = getOldLevelData();
+        const oldPalette = getOldPalette(); // Get old palette
+        const baseColor = oldPalette?.backgroundBase || '#222'; // Fallback color
         if (oldLevel?.obstacles) {
             // Fade out: Rapid flickering / fade alpha
             const alpha = 1.0 - progress; // Simple fade
@@ -45,13 +47,15 @@ function renderTransitioningObstacles(ctx) {
             if (ctx.globalAlpha > 0) {
                 oldLevel.obstacles.forEach(obstacle => {
                     if (obstacle.type === 'rectangle') {
-                        renderRectangleObstacle(ctx, obstacle, 1.0); // Render at normal scale
+                        renderRectangleObstacle(ctx, obstacle, baseColor, 1.0); // Render at normal scale, use old palette base color
                     }
                 });
             }
         }
     } else if (phase === 'fade_in') {
         const newLevel = getNewLevelData();
+        const newPalette = getNewPalette(); // Get new palette
+        const baseColor = newPalette?.backgroundBase || '#222'; // Fallback color
         if (newLevel?.obstacles) {
             // Fade in: Zoom/Scale effect
             // Ease-out scaling: Start fast, slow down
@@ -62,7 +66,7 @@ function renderTransitioningObstacles(ctx) {
 
             newLevel.obstacles.forEach(obstacle => {
                 if (obstacle.type === 'rectangle') {
-                    renderRectangleObstacle(ctx, obstacle, scale); // Render scaled
+                    renderRectangleObstacle(ctx, obstacle, baseColor, scale); // Render scaled, use new palette base color
                 }
             });
         }
@@ -75,19 +79,20 @@ function renderTransitioningObstacles(ctx) {
  * Renders obstacles when no transition is active.
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {object} levelData - The level data to render (obtained via getCurrentLevel).
+ * @param {object} palette - The current palette (obtained via getCurrentPalette).
  */
-function renderStableObstacles(ctx, levelData) {
-    if (!levelData || !levelData.obstacles) {
-        // console.warn("No stable level data or obstacles found to render."); // Reduce noise
+function renderStableObstacles(ctx, levelData, palette) {
+    if (!levelData || !levelData.obstacles || !palette) {
         return;
     }
+    const baseColor = palette.backgroundBase || '#222'; // Use palette background, fallback
 
     ctx.save(); // Save context state before drawing level
     ctx.globalAlpha = 1.0; // Ensure full opacity
 
     levelData.obstacles.forEach(obstacle => {
         if (obstacle.type === 'rectangle') {
-            renderRectangleObstacle(ctx, obstacle, 1.0); // Render at normal scale
+            renderRectangleObstacle(ctx, obstacle, baseColor, 1.0); // Render at normal scale, use current palette base color
         } else {
             console.warn(`Unsupported obstacle type: ${obstacle.type}`);
         }
@@ -99,13 +104,15 @@ function renderStableObstacles(ctx, levelData) {
 
 /**
  * Renders a single rectangular obstacle, handling optional rotation and scaling.
+ * Color is now passed in, derived from the current/transitioning palette's backgroundBase.
  * @private
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
- * @param {object} obstacle - The obstacle data object { x, y, width, height, color, angle }.
+ * @param {object} obstacle - The obstacle data object { x, y, width, height, angle }.
+ * @param {string} baseColor - The base color string (hex) to derive fill color from.
  * @param {number} scale - The scaling factor for the obstacle (1.0 for normal size).
  */
-function renderRectangleObstacle(ctx, obstacle, scale = 1.0) {
-    const { x, y, width, height, color, angle } = obstacle;
+function renderRectangleObstacle(ctx, obstacle, baseColor, scale = 1.0) {
+    const { x, y, width, height, angle } = obstacle;
     if (typeof x !== 'number' || typeof y !== 'number' || typeof width !== 'number' || typeof height !== 'number') {
         console.warn("Invalid dimensions for rectangle obstacle:", obstacle.id);
         return;
@@ -124,7 +131,9 @@ function renderRectangleObstacle(ctx, obstacle, scale = 1.0) {
     // Apply scaling (relative to the center)
     ctx.scale(scale, scale);
 
-    ctx.fillStyle = color || '#555577'; // Default color if none provided
+    // Use the provided baseColor for the fill
+    // TODO: Consider using colorUtils to make variations if needed (e.g., slightly darker/lighter)
+    ctx.fillStyle = baseColor;
     // Draw centered rectangle (relative to the translated, rotated, and scaled origin)
     ctx.fillRect(-width / 2, -height / 2, width, height);
 
@@ -136,5 +145,3 @@ function renderRectangleObstacle(ctx, obstacle, scale = 1.0) {
 
     ctx.restore(); // Restore context (removes translation, rotation, scaling)
 }
-
-// Potential future extension: renderCircleObstacle, renderPolygonObstacle, etc.

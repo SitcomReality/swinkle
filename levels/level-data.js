@@ -3,6 +3,7 @@
  * Defines the structure and data for game levels.
  * Note: All coordinates are relative to a game area defined in config.js (e.g., 1600x900).
  * The center of the game area is approximately (800, 450).
+ * Background and Obstacle colors are now determined by the selected palette in level-manager.js.
  */
 import config from '../config.js'; // Import config to potentially use gameAreaWidth/Height if needed later
 
@@ -11,7 +12,7 @@ import config from '../config.js'; // Import config to potentially use gameAreaW
 export const level1 = {
     id: 'level-01',
     name: 'Simple Arena',
-    backgroundColor: '#0a0a1e',
+    // backgroundColor property removed
     obstacles: [
         {
             id: 'platform-center',
@@ -22,7 +23,7 @@ export const level1 = {
             y: 450,
             width: 200,
             height: 30,
-            color: '#2a2a4a',
+            // color property removed
             properties: { friction: 0.8, restitution: 0.2 }
         },
         {
@@ -34,7 +35,7 @@ export const level1 = {
             y: 600,
             width: 50,
             height: 100,
-            color: '#333366',
+            // color property removed
             properties: { friction: 0.7, restitution: 0.3 }
         },
          {
@@ -46,7 +47,7 @@ export const level1 = {
             y: 300,
             width: 80,
             height: 40,
-            color: '#333366',
+            // color property removed
             properties: { friction: 0.9, restitution: 0.1 }
         },
     ]
@@ -55,7 +56,7 @@ export const level1 = {
 export const level2 = {
     id: 'level-02',
     name: 'Pillars',
-    backgroundColor: '#1a0a0e',
+    // backgroundColor property removed
     obstacles: [
         // Floor - Centered horizontally
         {
@@ -65,7 +66,7 @@ export const level2 = {
             y: 750, // Kept original low position
             width: 800,
             height: 50,
-            color: '#442222',
+            // color property removed
             properties: { friction: 0.9, restitution: 0.1 }
         },
         // Pillars - Shifted right to be symmetric around center
@@ -77,7 +78,7 @@ export const level2 = {
             y: 500, // Kept original Y
             width: 60,
             height: 400,
-            color: '#553333',
+            // color property removed
             properties: { friction: 0.7, restitution: 0.2 }
         },
         {
@@ -88,7 +89,7 @@ export const level2 = {
             y: 500, // Kept original Y
             width: 60,
             height: 400,
-            color: '#553333',
+            // color property removed
             properties: { friction: 0.7, restitution: 0.2 }
         },
         // Small floating platform - Centered horizontally
@@ -100,7 +101,7 @@ export const level2 = {
             y: 200, // Kept original Y
             width: 150,
             height: 25,
-            color: '#664444',
+            // color property removed
             properties: { friction: 0.8, restitution: 0.1 }
         }
     ]
@@ -109,7 +110,7 @@ export const level2 = {
 export const level3 = {
     id: 'level-03',
     name: 'Funnel',
-    backgroundColor: '#0a1a0e',
+    // backgroundColor property removed
     obstacles: [
         // Walls - Shifted right to be symmetric around center
         {
@@ -120,7 +121,7 @@ export const level3 = {
             y: 400, // Kept original Y
             width: 50,
             height: 600,
-            color: '#224422',
+            // color property removed
             properties: { friction: 0.5, restitution: 0.5 }
         },
         {
@@ -131,7 +132,7 @@ export const level3 = {
             y: 400, // Kept original Y
             width: 50,
             height: 600,
-            color: '#224422',
+            // color property removed
             properties: { friction: 0.5, restitution: 0.5 }
         },
         // Ramps - Shifted right to fit within the centered walls
@@ -144,7 +145,7 @@ export const level3 = {
             width: 300,
             height: 30,
             angle: -0.3,
-            color: '#335533',
+            // color property removed
             properties: { friction: 0.7, restitution: 0.2 }
         },
         {
@@ -156,7 +157,7 @@ export const level3 = {
             width: 300,
             height: 30,
             angle: 0.3,
-            color: '#335533',
+            // color property removed
             properties: { friction: 0.7, restitution: 0.2 }
         },
          // Center top block - Shifted right to be centered
@@ -168,7 +169,7 @@ export const level3 = {
             y: 200, // Kept original Y
             width: 100,
             height: 100,
-            color: '#446644',
+            // color property removed
             properties: { friction: 0.8, restitution: 0.1 }
         }
     ]
