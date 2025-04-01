@@ -19,8 +19,9 @@ import { enterSpectateMode } from './spectate-mode.js';
 // Import debug utilities
 import { exposeDebugUtils } from './debug-utils.js';
 // Import notification manager
-import { addNotification, broadcastNotification } from './notification-manager.js';
-import { handleNotificationRequest } from './notification-broadcaster.js'; // Add import
+import { addNotification } from './notification-manager.js';
+// Import notification broadcaster
+import { broadcastNotification, handleNotificationRequest } from './notification-broadcaster.js'; // Fix import path
 
 export const room = new WebsimSocket();
 
@@ -294,7 +295,7 @@ async function initGame() {
 
                 // Send notification
                 const username = room.peers[localClientId]?.username || 'Player';
-                broadcastNotification(`${username} respawned!`, 'info', 3000);
+                broadcastNotification(`${username} respawned!`, 'info', 3000); // Use broadcast
 
                 // Reset idle timer on rejoin
                 lastSignificantMoveTime = Date.now();
