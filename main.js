@@ -282,46 +282,6 @@ async function initGame() {
     lastSignificantMoveTime = Date.now();
 
 
-    // Setup presence subscription for handling disconnections
-    room.subscribePresence((presence) => {
-        // This subscription mainly handles making cans available when players leave.
-        // Other presence changes are handled reactively in the game loop or scoreboard.
-        const currentPeers = new Set(Object.keys(room.peers));
-        const localClientId = room.clientId;
-        const paintCans = room.roomState.paintCans || {};
-        let ownedCansToRemove = {};
-        let availableCansToAdd = {};
-
-        // Check for players who were present before but are not now
-        // The game loop approach using previousPeers is sufficient for physics cleanup.
-        // For can cleanup, we check all currently owned cans against the current peer list.
-
-        for (const [canId, canState] of Object.entries(paintCans)) {
-            // If a can has an owner who is no longer in peers, make it available
-            if (canState && canState.ownerId && !currentPeers.has(canState.ownerId)) {
-                console.log(`Player ${canState.ownerId} disconnected or left, making can ${canId} available`);
-                // Create an entry to add to availablePaintCans
-                availableCansToAdd[canId] = {
-                    ...canState,
-                    ownerId: null, // Mark as unowned
-                    // Reset dynamic state
-                    vx: 0, vy: 0, isCharging: false, accumulatedDroplets: 0
-                };
-                // Mark the owned can for removal
-                ownedCansToRemove[canId] = null;
-            }
-        }
-
-        // Send updates IF this client detects the need (can race condition exist? Yes, but low impact)
-        // Only the host should ideally be responsible for cleaning up disconnected players' items
-        if (Object.keys(availableCansToAdd).length > 0 && room.clientId === room.roomState.hostClientId) {
-            room.updateRoomState({
-                paintCans: ownedCansToRemove,
-                availablePaintCans: availableCansToAdd
-            });
-        }
-    });
-
     // Subscribe to presence update requests (e.g., for being forced to drop a can)
     room.subscribePresenceUpdateRequests((updateRequest, fromClientId) => {
         // console.log(`Received presence update request from ${fromClientId}:`, updateRequest);

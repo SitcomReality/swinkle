@@ -86,7 +86,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
 **Other Planned Features:**
 
 2. **Better Score Tracking:** Reward players for painting other players.
-   - 2.1: Add score tracking to player presence data structure and update scoreboard to show scores.
+   - 2.1: **[DONE]** Add score tracking to player presence data structure and update scoreboard to show scores.
    - 2.2: Modify collisionHandler.js to track who painted whom by storing ownerId with droplet hits.
    - 2.3: Update score increment logic in collisionHandler.js when droplet hits a player.
    - 2.4: Add visual feedback (notification and effects) when a player scores points.
@@ -99,6 +99,7 @@ We want players to enter a spectate mode on join/loss/idle/ESC. Spectators hang 
     - Optimize rendering and physics. Continue tuning player rotation physics (inertia, damping, uprighting strength, bungee torque factor) for desired feel. Collision-based torque could also be added.
     - Add logic for occasional whimsical/tip messages (maybe triggered randomly in the game loop or based on simple conditions like low paint)
     - More social features, like chat messages?
+
 `;
 
 export function loadDevNotes() {
