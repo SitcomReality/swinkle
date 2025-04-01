@@ -33,11 +33,11 @@ Goal: Make key game event notifications visible to all players, not just the cli
     - Updated \`global-notifier.js\` subscription logic to handle the \`'PLAYER_LOSS'\` event type and format the message for \`addNotification\`.
     - *Files Modified: \`collisionHandler.js\`, \`global-notifier.js\`*
 
-  - **3. Integrate Power-up Collection Notifications:**
-    - Modify \`power-up-manager.js\` (\`checkPowerUpCollisions\`): *Remove* the direct call to \`addNotification\` upon successful collection.
-    - Instead, call \`broadcastNotification('POWERUP_COLLECT', { collectorUsername: username, powerupName: powerUpDef.name })\`.
-    - Update \`global-notifier.js\` subscription logic to handle the \`'POWERUP_COLLECT'\` event type.
-    - *Files to Modify: \`power-up-manager.js\`, \`global-notifier.js\`*
+  - **3. [DONE] Integrate Power-up Collection Notifications:**
+    - Modified \`power-up-manager.js\` (\`checkPowerUpCollisions\`): *Removed* the direct call to \`addNotification\` upon successful collection.
+    - Instead, called \`broadcastNotification('POWERUP_COLLECT', { collectorUsername: username, powerupName: powerUpDef.name })\`.
+    - Updated \`global-notifier.js\` subscription logic to handle the \`'POWERUP_COLLECT'\` event type.
+    - *Files Modified: \`power-up-manager.js\`, \`global-notifier.js\`*
 
   - **4. Integrate Score Update Notifications:**
     - Modify \`collisionHandler.js\`: When points are awarded (\`painterId\` gets points), *remove* the direct call(s) to \`addNotification\` related to scoring.
