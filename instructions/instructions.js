@@ -8,9 +8,6 @@ let instructionsContainer;
 let titleElement;
 let instructionList;
 
-// Icon mapping - will be populated with images later
-const powerUpIcons = {};
-
 /**
  * Initializes the instructions system by creating DOM elements
  */
@@ -36,18 +33,19 @@ export function initializeInstructions() {
     instructionList = document.createElement('ul');
     instructionList.id = 'instructions-list';
 
-    // Add instruction items
+    // Add instruction items with keywords wrapped in spans
     const instructions = [
-        `<strong>INK Basics</strong>: Collect ink cans to spray opponents. Get their INK % to 100% to knock them out!`,
-        `<strong>Droplets</strong>: Ink droplets appear where you spray. They stay briefly before fading.`,
-        `<strong>Stealth</strong>: You can't see ink cans carried by other players - watch for their droplet trails!`,
-        `<strong>Bursts</strong>: Hold to charge, release for an <em>ink burst</em> of concentrated droplets.`,
-        `<strong>Power-ups</strong>: <span class="powerup-icon"></span> = Big Burst | <span class="powerup-icon"></span> = Short Rope | <span class="powerup-icon"></span> = Shield`
+        `<strong><span class="keyword">INK</span> Basics</strong>: Collect <span class="keyword">ink cans</span> to spray opponents. Get their <span class="keyword">INK</span> <span class="percentage">100%</span> to knock them out!`,
+        `<strong><span class="keyword">Droplets</span></strong>: <span class="keyword">Ink</span> droplets appear where you spray. They stay briefly before fading.`,
+        `<strong><span class="keyword">Stealth</span></strong>: You can't see ink cans carried by other players - watch for their droplet trails!`,
+        `<strong><span class="keyword">Bursts</span></strong>: <span class="action">Hold Click</span> to charge, <span class="action">Release</span> for an <span class="keyword">ink burst</span> of concentrated droplets.`,
+        `<strong><span class="keyword">Power-ups</span></strong>: <span class="powerup-icon powerup-icon-bigBurst">✦</span> = <span class="powerup-name">Big Burst</span> | <span class="powerup-icon powerup-icon-shortRope">✦</span> = <span class="powerup-name">Short Rope</span> | <span class="powerup-icon powerup-icon-shield">✦</span> = <span class="powerup-name">Shield</span>`,
+        `<strong><span class="keyword">Spectate</span></strong>: Press <span class="action">ESC</span> to toggle Spectate mode. <span class="action">Click</span> to rejoin the game!`
     ];
 
     instructions.forEach(text => {
         const item = document.createElement('li');
-        item.innerHTML = text;
+        item.innerHTML = text; 
         instructionList.appendChild(item);
     });
 
@@ -67,20 +65,5 @@ export function toggleInstructions(isSpectating) {
         instructionsContainer.classList.remove('hidden');
     } else {
         instructionsContainer.classList.add('hidden');
-    }
-}
-
-/**
- * Updates power-up icons when they become available
- * @param {string} powerUpType - Type identifier ('bigBurst', 'shortRope', 'shield')
- * @param {string} iconUrl - URL of the icon image
- */
-export function updatePowerUpIcon(powerUpType, iconUrl) {
-    if (!powerUpIcons[powerUpType]) {
-        powerUpIcons[powerUpType] = iconUrl;
-        const iconElements = document.querySelectorAll(`.powerup-${powerUpType}`);
-        iconElements.forEach(el => {
-            el.style.backgroundImage = `url(${iconUrl})`;
-        });
     }
 }
