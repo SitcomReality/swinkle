@@ -18,13 +18,10 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
     const updates = {};
 
     // Chance-based spawning, adjusted by deltaTime for framerate independence
-    const spawnChancePerSecond = 0.005; // Target ~0.5% chance per second
-    const spawnProbability = spawnChancePerSecond * deltaTime * 60;
-
-    if (Math.random() < spawnProbability) {
+    if (Math.random() < (0.005 * deltaTime * 60)) { // ~0.5% chance per second
         if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < config.maxAvailableCans) {
             const canId = `can-${Math.random().toString(36).substring(2, 9)}-${now}`;
-
+            
             // Get the current level's palette
             const currentPalette = getCurrentPalette();
             if (!currentPalette || !currentPalette.paint1 || !currentPalette.paint2) {
@@ -32,7 +29,7 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
                 return updates; // Don't spawn if palette is invalid
             }
 
-            // Randomly choose one of the two paint colors from the current palette
+            // Randomly choose one of the two neon paint colors from the current palette
             const paintColor = Math.random() < 0.5 ? currentPalette.paint1 : currentPalette.paint2;
 
             const margin = 100;
@@ -49,7 +46,7 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
                 y: y,
                 isMega: false // Ensure new cans aren't mega by default
             };
-            // console.log(`Spawned can ${canId} with color ${paintColor}`);
+            console.log(`Spawned can ${canId} with color ${paintColor}`);
         }
     }
 

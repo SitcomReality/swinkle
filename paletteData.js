@@ -7,101 +7,63 @@
  * - backgroundBase: Base color for background and geometry (hex) - darker, complementary/analogous
  */
 
+// Replaces old palettes with carefully curated neon/cyberpunk-focused options
 export const palettes = [
-    {
-        // Cyberpunk Neon: Magenta + Cyan paint, Dark Blue/Indigo background
-        id: 'cyberpunk_neon',
-        paint1: '#FF00FF', // Magenta
-        paint2: '#00FFFF', // Cyan
-        backgroundBase: '#0a0a1e'  // Dark Blue/Indigo
-    },
-    {
-        // Sunset Synthwave: Orange + Pink paint, Deep Purple background
-        id: 'sunset_synthwave',
-        paint1: '#FF6600', // Orange
-        paint2: '#FF00AA', // Hot Pink
-        backgroundBase: '#1a0a1a'  // Deep Purple
-    },
-    {
-        // Toxic Waste: Lime Green + Yellow paint, Dark Teal background
-        id: 'toxic_waste',
-        paint1: '#39FF14', // Neon Lime Green
-        paint2: '#FFFF00', // Yellow
-        backgroundBase: '#0a1a0e'  // Dark Green/Teal
-    },
-    {
-        // Electric Blue: Bright Blue + Yellow paint, Dark Gray background
-        id: 'electric_blue',
-        paint1: '#0088FF', // Bright Blue
-        paint2: '#FFF000', // Bright Yellow
-        backgroundBase: '#18181c'  // Dark Gray
-    },
-    {
-        // Crimson Laser: Red + Cyan paint, Dark Red/Brown background
-        id: 'crimson_laser',
-        paint1: '#FF0000', // Red
-        paint2: '#00FFFF', // Cyan
-        backgroundBase: '#1a0a0a' // Dark Red/Brown
-    },
-    {
-         // Purple Haze: Purple + Orange paint, Dark Blue background
-         id: 'purple_haze',
-         paint1: '#9D00FF', // Purple
-         paint2: '#FF8800', // Orange
-         backgroundBase: '#0a0f1e' // Dark Blue
-    },
-    {
-         // Mint Chip: Mint Green + Hot Pink paint, Dark Gray-Green background
-         id: 'mint_chip',
-         paint1: '#66FFBB', // Mint Green
-         paint2: '#FF44AA', // Hot Pink
-        backgroundBase: '#101a14' // Dark Gray-Green
-    },
-    {
-        // Golden Sun: Yellow + Orange paint, Very Dark Blue background
-        id: 'golden_sun',
-        paint1: '#FFFF00', // Yellow
-        paint2: '#FFA500', // Orange
-        backgroundBase: '#050515' // Very Dark Blue
-    },
-    {
-        // Arctic Light: Cyan + White paint, Dark Blue-Gray background
-        id: 'arctic_light',
-        paint1: '#00FFFF', // Cyan
-        paint2: '#F0F0F0', // Bright White/Gray
-        backgroundBase: '#151820' // Dark Blue-Gray
-    },
-    {
-        // Pink Flamingo: Hot Pink + Light Blue paint, Dark Purple background
-        id: 'pink_flamingo',
-        paint1: '#FF69B4', // Hot Pink
-        paint2: '#ADD8E6', // Light Blue
-        backgroundBase: '#180818' // Dark Purple
-    }
+  {
+    paint1: '#00FFF7', // Aqua Neon
+    paint2: '#FF00EA', // Hot Pink Neon
+    backgroundBase: '#050510'  // Deep navy
+  },
+  {
+    paint1: '#39FF14', // Neon Lime
+    paint2: '#FF3131', // Neon Red
+    backgroundBase: '#0A0A0A'  // Pure dark
+  },
+  {
+    paint1: '#FFFF00', // Vivid Yellow
+    paint2: '#00BFFF', // Vivid Blue
+    backgroundBase: '#0D1021'  // Bluish-black
+  },
+  {
+    paint1: '#FF66CC', // Cotton Candy
+    paint2: '#33FFCC', // Turquoise Neon
+    backgroundBase: '#140022'  // Deep purple-black
+  },
+  {
+    paint1: '#F72585', // Fuchsia
+    paint2: '#7209B7', // Purple Neon
+    backgroundBase: '#0A0015'  // Ink black
+  },
+  {
+    paint1: '#00FFFF', // Cyan
+    paint2: '#FF9900', // Neon Orange
+    backgroundBase: '#081018'  // Dark steel blue
+  },
+  {
+    paint1: '#FF4F4F', // Neon Coral
+    paint2: '#8D00FF', // Electric Purple
+    backgroundBase: '#0A0A0D'  // True dark grey
+  },
+  {
+    paint1: '#FFFB00', // Flash Yellow
+    paint2: '#00FF9F', // Mint Electric
+    backgroundBase: '#121212'  // Deep grey
+  },
+  {
+    paint1: '#FF1493', // Deep Pink
+    paint2: '#00CED1', // Dark Turquoise
+    backgroundBase: '#0C001F'  // Black violet
+  }
 ];
 
-/**
- * Gets a palette based on an index (wrapping around).
- * @param {number} index - The desired index.
- * @returns {object} The selected palette.
- */
+// Gets a palette based on index
 export function getPaletteByIndex(index) {
-    if (palettes.length === 0) {
-        // Fallback palette if none are defined
-        return { id: 'fallback', paint1: '#FF00FF', paint2: '#00FFFF', backgroundBase: '#0a0a1e' };
-    }
-    const effectiveIndex = Math.abs(index) % palettes.length; // Ensure index is valid
-    return palettes[effectiveIndex];
+  if (!palettes.length) return { paint1: '#FF00FF', paint2: '#00FFFF', backgroundBase: '#0a0a1e' };
+  return palettes[index % palettes.length];
 }
 
-/**
- * Gets a random palette.
- * @returns {object} A randomly selected palette.
- */
+// Gets a random palette
 export function getRandomPalette() {
-     if (palettes.length === 0) {
-         return getPaletteByIndex(0); // Return fallback if empty
-     }
-     const randomIndex = Math.floor(Math.random() * palettes.length);
-     return palettes[randomIndex];
+  const i = Math.floor(Math.random() * palettes.length);
+  return palettes[i];
 }
