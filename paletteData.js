@@ -9,64 +9,58 @@
 
 export const palettes = [
     {
-        // Cyberpunk Classic: Magenta + Cyan -> Purple/Blue mixes
+        // Cyberpunk Neon: Magenta + Cyan paint, Dark Blue/Indigo background
         paint1: '#FF00FF', // Magenta
         paint2: '#00FFFF', // Cyan
         backgroundBase: '#0a0a1e'  // Dark Blue/Indigo
     },
     {
-        // Synthwave Sunset: Hot Pink + Electric Yellow -> Orange/Red mixes
-        paint1: '#FF00AA', // Hot Pink
+        // Sunset Synthwave: Hot Pink + Bright Orange paint, Deep Purple background
+        paint1: '#FF1493', // Hot Pink (DeepPink)
+        paint2: '#FFA500', // Bright Orange (Orange)
+        backgroundBase: '#190019'  // Deep Purple/Indigo
+    },
+    {
+        // Toxic Waste: Lime Green + Electric Yellow paint, Dark Teal/Green background
+        paint1: '#32CD32', // Lime Green
         paint2: '#FFFF00', // Electric Yellow
-        backgroundBase: '#1a0a1a'  // Deep Purple
+        backgroundBase: '#001a0a'  // Dark Teal/Green
     },
     {
-        // Toxic Neon: Lime Green + Cyan -> Teal/Blue-Green mixes
-        paint1: '#00FF00', // Lime Green
-        paint2: '#00FFFF', // Cyan
-        backgroundBase: '#0a1a0e'  // Dark Green/Teal
+        // Electric Blue: Bright Blue + Hot Pink paint, Very Dark Gray/Blue background
+        paint1: '#007FFF', // Bright Blue (Azure)
+        paint2: '#FF69B4', // Hot Pink
+        backgroundBase: '#050510'  // Very Dark Gray/Blue
     },
     {
-        // Electric Blue: Bright Blue + Hot Pink -> Purple mixes
-        paint1: '#0088FF', // Bright Blue
-        paint2: '#FF00AA', // Hot Pink
-        backgroundBase: '#101018'  // Dark Gray-Blue
-    },
-    {
-        // Laser Grid: Bright Red + Electric Yellow -> Orange mixes (Use red carefully)
+        // Crimson Laser: Bright Red + Cyan paint, Darkest Red/Brown background
         paint1: '#FF0000', // Bright Red
-        paint2: '#FFFF00', // Electric Yellow
-        backgroundBase: '#1a0a0a' // Very Dark Red/Brown
-    },
-    {
-         // Purple Haze: Deep Purple + Lime Green -> Muted Green/Yellow mixes
-         paint1: '#9D00FF', // Deep Purple
-         paint2: '#00FF00', // Lime Green
-         backgroundBase: '#100a18' // Dark Purple/Indigo
-    },
-    {
-         // Emerald Grid: Emerald Green + Pale Yellow -> Light Green mixes
-         paint1: '#00FF7F', // Emerald Green (SpringGreen)
-         paint2: '#FFFFA0', // Pale Yellow (LightYellow)
-         backgroundBase: '#081410' // Dark Charcoal/Green
-    },
-    {
-        // Golden Glitch: Gold + Light Blue -> Greenish mixes
-        paint1: '#FFD700', // Gold
-        paint2: '#87CEEB', // Light Blue (SkyBlue)
-        backgroundBase: '#101020' // Dark Navy/Gray
-    },
-    {
-        // Violet Volt: Deep Violet + Cyan -> Blue/Purple mixes
-        paint1: '#8A2BE2', // Deep Violet (BlueViolet)
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#100814' // Dark Violet/Gray
+        backgroundBase: '#1a0505' // Darkest Red/Brown
     },
     {
-        // Coral Reef: Coral + Turquoise -> Pale Green/Blue mixes
-        paint1: '#FF7F50', // Coral
-        paint2: '#40E0D0', // Turquoise
-        backgroundBase: '#101818' // Dark Teal/Gray
+         // Purple Haze: Deep Purple + Neon Orange paint, Dark Blue/Gray background
+         paint1: '#9400D3', // Deep Purple (DarkViolet)
+         paint2: '#FF4500', // Neon Orange (OrangeRed)
+         backgroundBase: '#0f0a14' // Dark Blue/Gray
+    },
+    {
+         // Mint Chip: Mint Green + Bright Pink paint, Dark Gray-Green background
+         paint1: '#00FFAA', // Mint Green (Aquamarine variant)
+         paint2: '#FF1493', // Bright Pink (DeepPink)
+         backgroundBase: '#0a1410' // Dark Gray-Green
+    },
+    {
+        // Golden Glitch: Gold/Yellow + Electric Blue, Dark Gray background
+        paint1: '#FFD700', // Gold
+        paint2: '#00BFFF', // Electric Blue (DeepSkyBlue)
+        backgroundBase: '#121212' // Dark Gray
+    },
+    {
+        // Emerald Matrix: Emerald Green + White, Dark Green background
+        paint1: '#00FF7F', // Emerald Green (SpringGreen)
+        paint2: '#FFFFFF', // White
+        backgroundBase: '#001005' // Dark Green
     }
 ];
 
