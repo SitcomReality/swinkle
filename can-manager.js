@@ -17,11 +17,23 @@ import { getCurrentPalette } from './level-manager.js'; // Import palette getter
 export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gameAreaHeight) {
     const updates = {};
 
-    // Chance-based spawning, adjusted by deltaTime for framerate independence
-    if (Math.random() < (0.005 * deltaTime * 60)) { // ~0.5% chance per second
-        if (Object.keys(availableCans).filter(id => availableCans[id] !== null).length < config.maxAvailableCans) {
+    // Ensure availableCans is an object, even if null/undefined initially
+    const validAvailableCans = availableCans || {};
+    // Calculate current count safely
+    const currentCanCount = Object.values(validAvailableCans).filter(can => can !== null).length;
+
+    // Use config values or defaults
+    const spawnChancePerSecond = config.paintCanSpawnChancePerSecond || 0.3; // 30% chance per second
+    const maxCans = config.maxAvailableCans || 3;
+
+    // Only attempt to spawn if below the maximum limit
+    if (currentCanCount < maxCans) {
+        // Framerate independent chance calculation
+        const spawnChanceThisFrame = spawnChancePerSecond * deltaTime;
+
+        if (Math.random() < spawnChanceThisFrame) {
             const canId = `can-${Math.random().toString(36).substring(2, 9)}-${now}`;
-            
+
             // Get the current level's palette
             const currentPalette = getCurrentPalette();
             if (!currentPalette || !currentPalette.paint1 || !currentPalette.paint2) {
@@ -32,7 +44,7 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
             // Randomly choose one of the two paint colors from the current palette
             const paintColor = Math.random() < 0.5 ? currentPalette.paint1 : currentPalette.paint2;
 
-            const margin = 100;
+            const margin = 100; // Keep margin
             // Use gameAreaWidth and gameAreaHeight for spawning boundaries
             const x = margin + Math.random() * (gameAreaWidth - margin * 2);
             const y = margin + Math.random() * (gameAreaHeight - margin * 2);
@@ -46,7 +58,7 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
                 y: y,
                 isMega: false // Ensure new cans aren't mega by default
             };
-            console.log(`Spawned can ${canId} with color ${paintColor}`);
+            console.log(`Spawned can ${canId} with color ${paintColor} from palette ${currentPalette.name}. Total cans: ${currentCanCount + 1}`);
         }
     }
 

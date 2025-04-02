@@ -1,84 +1,90 @@
 /**
  * paletteData.js
- * Defines predefined color palettes for levels.
+ * Defines predefined color palettes for levels, focusing on neon/cyberpunk themes.
  * Each palette has:
- * - paint1: First neon paint color (hex)
- * - paint2: Second neon paint color (hex) - chosen to mix well with paint1
- * - backgroundBase: Base color for background and geometry (hex) - darker, complementary/analogous
+ * - paint1: First vibrant neon paint color (hex)
+ * - paint2: Second vibrant neon paint color (hex) - chosen to mix well with paint1
+ * - backgroundBase: Base color for background and geometry (hex) - very dark, complementary/analogous
  */
 
+// Overhauled palettes with more distinct neon combinations
 export const palettes = [
-    { // Cyberpunk Classic: Magenta + Cyan, Dark Blue/Indigo BG
+    // --- Classic Cyberpunk ---
+    {
+        name: "Cyberpunk Classic",
         paint1: '#FF00FF', // Magenta
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#0a0a1e'  // Dark Blue/Indigo
+        backgroundBase: '#0a0a1e'  // Very Dark Blue/Indigo
     },
-    { // Toxic Glow: Lime + Electric Blue, Dark Teal BG
-        paint1: '#39FF14', // Lime Green
+    {
+        name: "Glitch City",
+        paint1: '#00FF00', // Lime Green
+        paint2: '#0088FF', // Bright Blue
+        backgroundBase: '#101015'  // Dark Gray-Purple
+    },
+    {
+        name: "Synthwave Sunset",
+        paint1: '#FF10F0', // Hot Pink
+        paint2: '#FFD700', // Gold/Yellow
+        backgroundBase: '#1a0a1f' // Deep Indigo/Purple
+    },
+    // --- High Contrast ---
+    {
+        name: "Data Stream",
+        paint1: '#FFFFFF', // White
+        paint2: '#00FF00', // Lime Green
+        backgroundBase: '#050510' // Very Dark Blue/Almost Black
+    },
+    {
+        name: "Plasma Core",
+        paint1: '#FFA500', // Orange (Use carefully - make it vibrant)
+        paint2: '#00FFFF', // Cyan
+        backgroundBase: '#150500' // Very Dark Brown/Red
+    },
+    // --- Cooler Tones ---
+    {
+        name: "Arctic Code",
+        paint1: '#60CFFF', // Light Blue
+        paint2: '#FFFFFF', // White
+        backgroundBase: '#081018' // Dark Cool Gray-Blue
+    },
+    {
+        name: "Emerald Grid",
+        paint1: '#39FF14', // Bright Lime
         paint2: '#0FF0FF', // Electric Blue
-        backgroundBase: '#051a1a'  // Dark Teal
+        backgroundBase: '#051a0a'  // Dark Emerald Green
     },
-    { // Violet Void: Deep Purple + Hot Pink, Dark Purple/Gray BG
+    // --- Intense & Vibrant ---
+    {
+        name: "Laser Grid",
+        paint1: '#FF0000', // Bright Red (Use carefully)
+        paint2: '#00FFFF', // Cyan
+        backgroundBase: '#180505' // Very Dark Red/Brown
+    },
+    {
+        name: "Toxic Spill",
+        paint1: '#ADFF2F', // GreenYellow
+        paint2: '#FF00FF', // Magenta
+        backgroundBase: '#100510' // Dark Purple/Gray
+    },
+     {
+        name: "Violet Void",
         paint1: '#9D00FF', // Deep Purple
-        paint2: '#FF10F0', // Hot Pink
+        paint2: '#39FF14', // Lime Green
         backgroundBase: '#150a15'  // Dark Purple/Gray
     },
-    { // Glitch City: Bright Blue + White, Dark Gray BG
-        paint1: '#0088FF', // Bright Blue
+    {
+        name: "Electric Eel",
+        paint1: '#FFFF00', // Yellow
+        paint2: '#0088FF', // Bright Blue
+        backgroundBase: '#101005'  // Very Dark Yellow/Brown
+    },
+     {
+        name: "Crimson Circuit",
+        paint1: '#DC143C', // Crimson Red
         paint2: '#FFFFFF', // White
-        backgroundBase: '#18181c'  // Dark Gray
-    },
-    { // Plasma Pulse: Cyan + Lime Green, Dark Blue-Green BG
-        paint1: '#00FFFF', // Cyan
-        paint2: '#39FF14', // Lime Green
-        backgroundBase: '#0a1a14' // Dark Blue-Green
-    },
-    { // Synthwave Dream: Hot Pink + Light Blue, Deep Indigo BG
-         paint1: '#FF10F0', // Hot Pink
-         paint2: '#60CFFF', // Light Blue
-         backgroundBase: '#1a0a1f' // Deep Indigo
-    },
-    { // Data Stream: White + Cyan, Very Dark Blue BG
-         paint1: '#FFFFFF', // White
-         paint2: '#00FFFF', // Cyan
-         backgroundBase: '#050510' // Very Dark Blue
-    },
-    { // Amber Grid: Yellow + Cyan, Dark Gray-Blue BG - Keeping this one, 'Amber' can be neon-ish
-        paint1: '#FFD700', // Yellow (Gold-ish)
-        paint2: '#00BFFF', // Deep Sky Blue
-        backgroundBase: '#10151C' // Dark Gray-Blue
-    },
-    // --- NEW PALETTES ---
-    { // Crimson Laser: Red + Cyan, Very Dark Gray BG
-        paint1: '#FF0040', // Neon Red/Crimson
-        paint2: '#00FFFF', // Cyan
-        backgroundBase: '#0c0c0e'  // Very Dark Gray
-    },
-    { // Emerald Glade: Bright Green + Yellow, Dark Green BG
-        paint1: '#00FF80', // Bright Emerald Green
-        paint2: '#FFFF00', // Yellow
-        backgroundBase: '#081408' // Dark Green
-    },
-    { // Orange Soda: Neon Orange + White, Dark Blue-Gray BG
-        paint1: '#FFA500', // Neon Orange
-        paint2: '#FFFFFF', // White
-        backgroundBase: '#12101a' // Dark Blue-Gray
-    },
-    { // Purple Haze: Lavender + Lime Green, Deep Purple BG
-        paint1: '#DA70D6', // Lavender/Orchid
-        paint2: '#39FF14', // Lime Green
-        backgroundBase: '#180818' // Deep Purple
-    },
-     { // Arctic Code: Pale Blue + White, Black BG
-         paint1: '#ADD8E6', // Pale Blue
-         paint2: '#FFFFFF', // White
-         backgroundBase: '#050505' // Near Black
-     },
-     { // Golden Wire: Gold + Electric Blue, Dark Brown/Purple BG
-         paint1: '#FFD700', // Gold
-         paint2: '#0FF0FF', // Electric Blue
-         backgroundBase: '#1a100a' // Dark Brown/Purple
-     }
+        backgroundBase: '#1C0A0A' // Dark Reddish-Brown
+    }
 ];
 
 /**
@@ -87,11 +93,11 @@ export const palettes = [
  * @returns {object} The selected palette.
  */
 export function getPaletteByIndex(index) {
-    if (palettes.length === 0) {
-        // Fallback palette if none are defined
-        return { paint1: '#FF00FF', paint2: '#00FFFF', backgroundBase: '#0a0a1e' };
+    if (!palettes || palettes.length === 0) {
+        console.warn("No palettes defined in paletteData.js. Returning fallback.");
+        return { name: "Fallback", paint1: '#FF00FF', paint2: '#00FFFF', backgroundBase: '#0a0a1e' };
     }
-    const effectiveIndex = index % palettes.length;
+    const effectiveIndex = Math.abs(index) % palettes.length;
     return palettes[effectiveIndex];
 }
 
@@ -100,7 +106,7 @@ export function getPaletteByIndex(index) {
  * @returns {object} A randomly selected palette.
  */
 export function getRandomPalette() {
-     if (palettes.length === 0) {
+     if (!palettes || palettes.length === 0) {
          return getPaletteByIndex(0); // Return fallback if empty
      }
      const randomIndex = Math.floor(Math.random() * palettes.length);
