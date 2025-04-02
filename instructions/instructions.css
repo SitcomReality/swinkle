@@ -34,7 +34,6 @@
 
 .sw-letter {
     color: #00ffff;
-    font-family: Arial; 
     font-size: 4rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
@@ -45,12 +44,11 @@
 
 
 .ink-letters {
-    color: #ff00ff; 
-    font-family: Arial; 
-    font-size: 4rem; 
+    color: #ff00ff;
+    font-size: 4rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
-    animation-delay: 0.15s; 
+    animation-delay: 0.15s;
 }
 
 @keyframes titleWobble {
@@ -63,47 +61,47 @@
     list-style-type: none;
     padding: 0;
     font-size: 1.1rem;
-    line-height: 1.7; 
+    line-height: 1.7;
     text-align: left;
 }
 
 #instructions-list li {
-    margin-bottom: 18px; 
-    padding-left: 30px; 
+    margin-bottom: 18px;
+    padding-left: 30px;
     position: relative;
 }
 
 #instructions-list li:before {
-    content: "✦"; 
-    color: #ff00ff; 
-    font-size: 1.6em; 
+    content: "-";
+    color: #ff00ff;
+    font-size: 1.6em;
     position: absolute;
     left: 0;
-    top: 0px; 
-    text-shadow: 0 0 5px #ff00ff; 
+    top: 0px;
+    text-shadow: 0 0 5px #ff00ff;
 }
 
 /* Styling for highlighted keywords (Titles and general keywords) */
 .keyword {
-    color: #00ffff; 
+    color: #00ffff;
     font-weight: bold;
     text-shadow: 0 0 3px #00ffff;
 }
 
 /* Styling specifically for the keyword 'ink' */
 .keyword-ink {
-    color: #ff00ff; 
+    color: #ff00ff;
     font-weight: bold;
     text-shadow: 0 0 3px #ff00ff;
 }
 
 .action {
-    color: #ffff66; 
+    color: #ffff66;
     font-style: italic;
 }
 
 .percentage {
-    color: #ff6666; 
+    color: #ff6666;
     font-weight: bold;
 }
 
@@ -113,15 +111,15 @@
 
 .powerup-icon {
     display: inline-block;
-    width: 1em; 
+    width: 1em;
     height: 1em;
-    line-height: 1; 
+    line-height: 1;
     text-align: center;
-    font-size: 1.2em; 
+    font-size: 1.2em;
     vertical-align: middle;
     margin: 0 4px;
-    text-shadow: 0 0 4px currentColor; 
-    font-style: normal; 
+    text-shadow: 0 0 4px currentColor;
+    font-style: normal;
 }
 
 .powerup-icon-bigBurst {
@@ -142,7 +140,7 @@
     }
 
     #swinkle-title {
-        font-size: 3rem; 
+        font-size: 3rem;
         line-height: 1;
         padding-bottom: 10px;
     }
