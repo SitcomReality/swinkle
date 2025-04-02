@@ -22,15 +22,19 @@
 
 #swinkle-title {
     font-family: 'Lacquer', sans-serif;
-    font-size: 4rem;
+    font-size: 5rem;
     margin-bottom: 20px;
     letter-spacing: 3px;
     text-shadow: 0 0 10px currentColor;
     line-height: 1;
+      margin-top: 0;
+    border-bottom: 1px solid #9d00ff;
 }
 
 .sw-letter {
     color: #00ffff;
+      font-family: Arial;
+    font-size: 4rem;
 }
 
 .ink-letters {
