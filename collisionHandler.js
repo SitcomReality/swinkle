@@ -9,6 +9,7 @@ import { addEffect } from './effectsRenderer.js'; // Import addEffect
 import { broadcastNotification } from './notification-broadcaster.js'; // Add import
 import { enterSpectateMode } from './spectate-mode.js'; // Import for auto-entering spectate mode
 import { createPaintBurst } from './paint-burst.js'; // Import new paint burst creator
+import { recordPlayerCollision } from './player-collision-state.js'; // New import for expression handling
 
 /**
  * Checks for collisions between the local player and all droplets.
@@ -84,6 +85,9 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             } else {
                 // No shield - apply paint
                 // console.log(`Player ${localClientId} hit by droplet ${dropletId} (color: ${droplet.color})`);
+
+                // Record collision for expression handling (new line)
+                recordPlayerCollision(localClientId, 'paint');
 
                 // Record collision point for splat effect
                 collisionPoints.push({ x: droplet.x, y: droplet.y, color: droplet.color });

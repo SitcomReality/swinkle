@@ -282,7 +282,7 @@ function gameLoop(timestamp) {
 
     const collisionCleanupResults = handleLocalCollisionsAndCleanup(now, localClientId);
 
-    cleanupStaleCollisionStates(now);
+    cleanupStaleCollisionStates(now); 
 
     const batchedUpdates = {
         paintCanUpdates: { ...playerUpdateResults.paintCanUpdates, ...globalUpdateResults.stealCollisions.paintCanUpdates },

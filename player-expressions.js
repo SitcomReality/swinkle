@@ -67,9 +67,16 @@ export function calculateEyeExpression(presence, now, collisionState = null) {
     
     // Wincing during collision state (highest priority)
     if (collisionState && collisionState.hasCollided && now - collisionState.lastCollisionTime < 300) {
-        // Wincing/grimacing expression - tight oval
-        scaleX = 1.1;
-        scaleY = 0.3; 
+        // Check specifically for paint collision (new condition)
+        if (collisionState.collisionType === 'paint') {
+            // Shocked wide-eyed expression when hit by paint
+            scaleX = 1.2;
+            scaleY = 1.0; // Full round eyes for shock
+        } else {
+            // Original wincing/grimacing expression for other collisions
+            scaleX = 1.1;
+            scaleY = 0.3;
+        }
         return { scaleX, scaleY };
     }
     
