@@ -12,8 +12,8 @@ export default {
     playerEyeRadius: 6,   // Radius of the character's eyes
     playerEyeOffsetX: 6,  // Horizontal offset of eyes from center
     playerEyeOffsetY: -3, // Vertical offset of eyes from body center
-    playerBodyColor: '#AAAAAA', // Base color for the player body (darker gray)
-    playerBodyStrokeColor: '#888888', // Base color for the player body stroke (darker gray)
+    playerBodyColor: '#777777', // Base color for the player body (darker gray, was #AAAAAA)
+    playerBodyStrokeColor: '#555555', // Base color for the player body stroke (darker gray, was #888888)
 
     // Bungee Physics settings (Player -> Cursor)
     bungeeRestLength: 4,        // Natural length of the player's bungee cord
