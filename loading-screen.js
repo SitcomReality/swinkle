@@ -16,7 +16,7 @@ export function initializeLoadingScreen() {
     loadingText.className = 'loading-title';
     loadingText.innerHTML = `
         <span class="load-letter">L</span>
-        <span class="ink-letters">O</span>
+        <span class="load-letter">O</span>
         <span class="ink-letters">A</span>
         <span class="ink-letters">D</span>
         <span class="ink-letters">I</span>
