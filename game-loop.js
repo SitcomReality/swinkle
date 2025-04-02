@@ -20,7 +20,7 @@ import { checkPowerUpCollisions, processActivePowerUps, checkExpiredPowerUpItems
 import { handleHostTasks } from './host-logic.js';
 import { addEffect, clearEffects } from './effectsRenderer.js';
 import { updateLevelTransition } from './level-transition.js';
-import { getLastSignificantMoveTime } from './main.js';
+import { getLastSignificantMoveTime } from './local-state.js';
 import { enterSpectateMode } from './spectate-mode.js';
 
 let roomInstance = null;

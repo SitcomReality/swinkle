@@ -25,24 +25,16 @@ import { addNotification } from './notification-manager.js';
 import { broadcastNotification, handleNotificationRequest } from './notification-broadcaster.js';
 // Import instructions initializer and toggle
 import { initializeInstructions, toggleInstructions } from './instructions/instructions.js';
+// Import local state manager for idle timer
+import { updateIdleState, resetIdleTimer, getLastKnownPosition } from './local-state.js';
 
 export const room = new WebsimSocket();
-
-// --- State for Idle Timer ---
-let lastSignificantMoveTime = Date.now();
-let lastKnownPosition = { x: 0, y: 0 }; // Initialize to prevent immediate idle on load
-
-// Export a getter for the game loop to check the idle time
-export function getLastSignificantMoveTime() {
-    return lastSignificantMoveTime;
-}
-// ---------------------------
 
 // Initialize multiplayer connection and game state
 async function initGame() {
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
-    initializeInstructions(); // Initialize the instructions UI
+    initializeInstructions(room); // Initialize the instructions UI, passing the room
 
     // Ensure initial room state exists if not already present
     // Use a single updateRoomState call for efficiency
@@ -167,14 +159,8 @@ async function initGame() {
                 y: clampedY,
             });
 
-            // --- Update Idle Timer State ---
-            const dx = clampedX - lastKnownPosition.x;
-            const dy = clampedY - lastKnownPosition.y;
-            const distSq = dx*dx + dy*dy;
-            if (distSq > config.idleMoveThresholdSq) {
-                lastSignificantMoveTime = Date.now();
-                lastKnownPosition = { x: clampedX, y: clampedY };
-            }
+            // --- Update Idle Timer State using local-state manager ---
+            updateIdleState({ x: clampedX, y: clampedY });
             // ---------------------------
         }
     });
@@ -219,8 +205,7 @@ async function initGame() {
             broadcastNotification(`${username} respawned!`, 'info', 3000);
 
             // Reset idle timer state immediately upon rejoining
-            lastSignificantMoveTime = Date.now();
-            lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
+            resetIdleTimer({ x: respawnUpdates.x, y: respawnUpdates.y });
         }
     });
 
@@ -325,8 +310,7 @@ async function initGame() {
                 broadcastNotification(`${username} respawned!`, 'info', 3000); // Use broadcast
 
                 // Reset idle timer on rejoin
-                lastSignificantMoveTime = Date.now();
-                lastKnownPosition = { x: respawnUpdates.x, y: respawnUpdates.y };
+                resetIdleTimer({ x: respawnUpdates.x, y: respawnUpdates.y });
 
 
             } else {
@@ -352,9 +336,8 @@ async function initGame() {
         isSpectating: true, // Start in spectate mode
         respawnAnimEndTime: null // Initialize respawn animation timer state
     });
-    // Set initial known position for idle timer
-    lastKnownPosition = { x: initialX, y: initialY };
-    lastSignificantMoveTime = Date.now();
+    // Set initial known position for idle timer using local-state manager
+    resetIdleTimer({ x: initialX, y: initialY });
     // Show instructions initially since starting in spectate mode
     toggleInstructions(true);
 
