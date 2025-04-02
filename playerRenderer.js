@@ -11,6 +11,8 @@ import { calculatePaintOnlyBlendedColor, calculateTotalPaintPercentage, calculat
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
 // Import the new power-up effects renderer
 import { renderPlayerPowerUpEffects } from './player-effects-renderer.js';
+// Import the new player expressions module
+import { calculateEyeMovement, calculateEyeExpression, renderPlayerEyes } from './player-expressions.js';
 
 // Duration for the respawn fade-in animation (MUST match respawn-manager.js)
 const RESPAWN_ANIM_DURATION = 500; // milliseconds
@@ -241,64 +243,21 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
     const eyeOffsetY = config.playerEyeOffsetY || -3;
-    const leftEyeX = -eyeOffsetX; // Relative to rotated (0,0)
-    const rightEyeX = +eyeOffsetX;
-    const eyeY = eyeOffsetY;
-
-    ctx.fillStyle = '#FFFFFF'; // White part of the eye
-    ctx.strokeStyle = '#000000'; // Black outline
-    ctx.lineWidth = 1;
-
-    // Left Eye
-    ctx.beginPath();
-    ctx.arc(leftEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // Right Eye
-    ctx.beginPath();
-    ctx.arc(rightEyeX, eyeY, eyeRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // --- Render Pupils (Look towards anchor point for local player - needs world coordinates) ---
-    const pupilRadius = eyeRadius * 0.5;
-    const maxPupilOffset = eyeRadius - pupilRadius - 1; // Max distance pupil can move
-    let pupilOffsetX = 0;
-    let pupilOffsetY = 0;
-
-    // Only make local player's eyes look, and only if not spectating
-    if (clientId === localClientId && !isSpectating) {
-        // Calculate direction from world body center to world anchor
-        const worldDirX = anchorX - bodyX; // Use calculated anchorX, anchorY
-        const worldDirY = anchorY - bodyY;
-
-        // Rotate this world direction vector into the player's local coordinate system
-        // Rotation by -bodyAngle
-        const localDirX = worldDirX * cosAngle + worldDirY * sinAngle;
-        const localDirY = -worldDirX * sinAngle + worldDirY * cosAngle;
-
-        const localDist = Math.sqrt(localDirX * localDirX + localDirY * localDirY);
-
-        if (localDist > 1) { // Avoid division by zero or tiny values
-            const localNormX = localDirX / localDist;
-            const localNormY = localDirY / localDist;
-            pupilOffsetX = localNormX * maxPupilOffset; // Apply offset in local space
-            pupilOffsetY = localNormY * maxPupilOffset;
-        }
-    } // Other players' or spectator's pupils stay centered
-
-    ctx.fillStyle = '#000000'; // Black pupils
-
-    // Left Pupil (Offset relative to local eye position)
-    ctx.beginPath();
-    ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2); // Already in local rotated space
-    ctx.fill();
-
-    // Right Pupil (Offset relative to local eye position)
-    ctx.beginPath();
-    ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2); // Already in local rotated space
-    ctx.fill();
+    
+    // Calculate eye movement parameters
+    const eyeMovement = calculateEyeMovement(
+        { x: bodyX, y: bodyY },
+        { x: anchorX, y: anchorY },
+        bodyAngle,
+        clientId === localClientId, // Only local player's eyes follow cursor
+        isSpectating
+    );
+    
+    // Calculate eye expression based on player state
+    const eyeExpression = calculateEyeExpression(presence, now);
+    
+    // Render the eyes with calculated movement and expression
+    renderPlayerEyes(ctx, eyeOffsetX, eyeOffsetY, eyeMovement, eyeExpression);
 
     // --- Restore Context After Body/Eyes Rotation ---
     ctx.restore(); // Restore translation and rotation (alpha is still combinedAlpha)
