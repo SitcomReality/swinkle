@@ -139,7 +139,7 @@ export function checkCollisionsWithPlayer(playerBodyPos, droplets, localClientId
             if (username) {
                 console.log(`Recording loss for ${username}`);
                 // Broadcast to all players
-                broadcastNotification(`${username} was PAINTED OUT!`, 'loss', 5000);
+                broadcastNotification(`${username} was INKED OUT!`, 'loss', 5000);
                 
                 room.collection('loss_v1').create({ loserUsername: username })
                     .then(record => console.log("Loss recorded:", record))

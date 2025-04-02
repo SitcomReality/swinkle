@@ -58,7 +58,7 @@ export function updatePaintLevelIndicator(localClientId, presence, paintCans) {
         paintIndicatorFillElement.style.width = `${fillRatio * 100}%`;
         paintIndicatorFillElement.style.backgroundColor = canState.paintColor || config.dropletColor; // Match can color
         paintIndicatorTextElement.textContent = `${percentage}%`;
-        paintIndicatorLabelElement.textContent = isMega ? 'Mega Paint Can!' : 'Paint Bucket'; // Update label for mega cans
+        paintIndicatorLabelElement.textContent = isMega ? 'Mega Ink Can!' : 'Ink Can'; // Update label for mega cans
         paintIndicatorElement.style.borderColor = isMega ? config.megaCanIndicatorColor : '#0ff'; // Change border for mega cans
         paintIndicatorElement.style.boxShadow = isMega ? `0 0 10px ${config.megaCanIndicatorColor}` : '0 0 10px #0ff'; // Change shadow for mega cans
         paintIndicatorElement.style.display = 'block'; // Show the indicator

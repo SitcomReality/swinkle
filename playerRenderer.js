@@ -26,7 +26,7 @@ const RESPAWN_FADE_IN_DURATION = RESPAWN_ANIM_DURATION - RESPAWN_INITIAL_HIDE_DU
  * and their held paint can if applicable. Calls effect renderer for power-up visuals.
  * Uses the physics state's `lastAnchorPos` for accurate anchor rendering.
  * Handles fade-in effect during respawn animation.
- * If the player is lost, only renders the anchor and "PAINTED OUT!" message.
+ * If the player is lost, only renders the anchor and "INKED OUT!" message.
  *
  * @param {CanvasRenderingContext2D} ctx - The drawing context.
  * @param {string} clientId - The ID of the player being rendered.
@@ -73,7 +73,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     // --- Check if player is lost ---
     const isLost = presence.lost || false;
     if (isLost) {
-        // Player is lost, only render the "PAINTED OUT!" message and exit
+        // Player is lost, only render the "INKED OUT!" message and exit
         ctx.save();
         ctx.fillStyle = config.lossMessageColor || '#FFFFFF';
         ctx.font = config.lossMessageFont || '24px sans-serif';
@@ -82,7 +82,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         const bodyX = physicsState.position.x;
         const bodyY = physicsState.position.y;
         const bodyHeight = config.playerBodyHeight || 30;
-        ctx.fillText("PAINTED OUT!", bodyX, bodyY - bodyHeight / 2 - 15); // Position above where body would be
+        ctx.fillText("INKED OUT!", bodyX, bodyY - bodyHeight / 2 - 15); // Position above where body would be
         ctx.restore();
         return; // Exit function, skipping the rest of the rendering
     }
