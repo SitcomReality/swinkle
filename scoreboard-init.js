@@ -14,17 +14,16 @@ export async function initScoreboardWithPersistence(room) {
         console.error("Scoreboard initialization requires a valid room instance.");
         return;
     }
-
+    
     // Initialize the regular scoreboard
     initScoreboard(room);
-
+    
     // Load persistent score for the current player
     if (room.clientId && room.peers[room.clientId]) {
         const username = room.peers[room.clientId].username;
         if (username) {
-            // Pass the room instance to loadPlayerScore
-            const savedScore = await loadPlayerScore(room, username);
-
+            const savedScore = await loadPlayerScore(username);
+            
             // If player has a score in the database and doesn't have one in presence yet
             if (savedScore > 0 && (!room.presence[room.clientId] || !room.presence[room.clientId].score)) {
                 // Update presence with saved score
@@ -35,17 +34,16 @@ export async function initScoreboardWithPersistence(room) {
             }
         }
     }
-
+    
     // Subscribe to presence changes to save score updates
     room.subscribePresence((presence) => {
         const localClientId = room.clientId;
         const localPresence = presence[localClientId];
-
+        
         if (localPresence && typeof localPresence.score === 'number' && room.peers[localClientId]) {
             const username = room.peers[localClientId].username;
             if (username) {
-                // Pass the room instance to updatePlayerScore
-                updatePlayerScore(room, username, localPresence.score);
+                updatePlayerScore(username, localPresence.score);
             }
         }
     });

@@ -39,11 +39,6 @@ async function initGame() {
     // Show loading screen immediately
     initializeLoadingScreen();
     
-    // Apply WebSocket monitoring immediately to catch early connections
-    if (typeof WebSocketMonitor !== 'undefined') {
-        WebSocketMonitor.applyScrollbarFix();
-    }
-    
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
     initializeInstructions(room); // Initialize the instructions UI, passing the room

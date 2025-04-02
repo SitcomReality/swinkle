@@ -55,28 +55,6 @@
         }
     }
     </script>
-    <script>
-    // Frame-parent communication script for WebSocket error handling
-    window.addEventListener('load', function() {
-        // Let parent know we're ready to receive messages
-        if (window.parent && window.parent !== window) {
-            try {
-                window.parent.postMessage({ type: 'websim_ready' }, '*');
-            } catch (e) {
-                console.warn('Could not communicate with parent frame');
-            }
-        }
-        
-        // Listen for parent frame messages
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'websim_apply_fix') {
-                if (typeof WebSocketMonitor !== 'undefined') {
-                    WebSocketMonitor.applyScrollbarFix();
-                }
-            }
-        });
-    });
-    </script>
 </head>
 <body>
     <div id="dev-notes-container"></div>
