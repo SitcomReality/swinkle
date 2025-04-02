@@ -58,10 +58,10 @@ export function calculateEyeMovement(playerBodyPos, anchorPos, bodyAngle, should
  * @returns {object} Eye shape parameters {scaleX, scaleY}
  */
 export function calculateEyeExpression(presence, now, collisionState = null) {
+    // Default expression: slightly bored/oval eyes (changed from round)
     const baseScaleX = 1.0;
-    const baseScaleY = 1.0;
+    const baseScaleY = 0.75; // Default to 75% vertical height for slightly oval/bored look
     
-    // Default expression: normal round eyes
     let scaleX = baseScaleX;
     let scaleY = baseScaleY;
     
@@ -80,10 +80,10 @@ export function calculateEyeExpression(presence, now, collisionState = null) {
     
     // Wide eyes when player has high paint percentage (worried look)
     const totalPaint = Object.values(presence.paintedData || {}).reduce((sum, val) => sum + val, 0);
-    if (totalPaint > 70) { // Start looking worried at 70%
-        const worryFactor = Math.min(1, (totalPaint - 70) / 30); // 0 to 1 based on how close to 100%
+    if (totalPaint > 50) { // Start looking worried at 50% (changed from 70%)
+        const worryFactor = Math.min(1, (totalPaint - 50) / 50); // 0 to 1 based on 50% to 100%
         scaleX = 1 + (0.3 * worryFactor); // Wider horizontally
-        scaleY = 1 - (0.2 * worryFactor); // Slightly narrower vertically
+        scaleY = 1.0; // FULLY ROUND when very worried (changed from 0.8)
     }
     
     // Blink occasionally (random)
