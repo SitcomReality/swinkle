@@ -201,7 +201,7 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
 
     // --- Draw Base Body Color FIRST ---
     // This fills the entire capsule shape with the base color.
-    ctx.fillStyle = config.playerBodyColor || '#FFAABB'; // Use base body color
+    ctx.fillStyle = config.playerBodyColor || '#DDDDDD'; // Use base body color (gray)
     ctx.fill(); // Fill the capsule path
 
     // --- Render Paint Fill Background OVER the base color ---
