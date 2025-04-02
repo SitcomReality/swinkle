@@ -9,46 +9,64 @@
 
 export const palettes = [
     {
-        // Cyberpunk Neon: Magenta + Cyan paint, Dark Blue/Purple background
+        // Cyberpunk Classic: Magenta + Cyan -> Purple/Blue mixes
         paint1: '#FF00FF', // Magenta
         paint2: '#00FFFF', // Cyan
         backgroundBase: '#0a0a1e'  // Dark Blue/Indigo
     },
     {
-        // Sunset Synthwave: Orange + Pink paint, Deep Purple background
-        paint1: '#FF6600', // Orange
-        paint2: '#FF00AA', // Hot Pink
+        // Synthwave Sunset: Hot Pink + Electric Yellow -> Orange/Red mixes
+        paint1: '#FF00AA', // Hot Pink
+        paint2: '#FFFF00', // Electric Yellow
         backgroundBase: '#1a0a1a'  // Deep Purple
     },
     {
-        // Toxic Waste: Lime Green + Yellow paint, Dark Teal background
+        // Toxic Neon: Lime Green + Cyan -> Teal/Blue-Green mixes
         paint1: '#00FF00', // Lime Green
-        paint2: '#FFFF00', // Yellow
+        paint2: '#00FFFF', // Cyan
         backgroundBase: '#0a1a0e'  // Dark Green/Teal
     },
     {
-        // Electric Blue: Bright Blue + Yellow paint, Dark Gray background
+        // Electric Blue: Bright Blue + Hot Pink -> Purple mixes
         paint1: '#0088FF', // Bright Blue
-        paint2: '#FFFF00', // Yellow
-        backgroundBase: '#18181c'  // Dark Gray
+        paint2: '#FF00AA', // Hot Pink
+        backgroundBase: '#101018'  // Dark Gray-Blue
     },
     {
-        // Crimson Laser: Red + Cyan paint, Dark Red/Brown background
-        paint1: '#FF0000', // Red
+        // Laser Grid: Bright Red + Electric Yellow -> Orange mixes (Use red carefully)
+        paint1: '#FF0000', // Bright Red
+        paint2: '#FFFF00', // Electric Yellow
+        backgroundBase: '#1a0a0a' // Very Dark Red/Brown
+    },
+    {
+         // Purple Haze: Deep Purple + Lime Green -> Muted Green/Yellow mixes
+         paint1: '#9D00FF', // Deep Purple
+         paint2: '#00FF00', // Lime Green
+         backgroundBase: '#100a18' // Dark Purple/Indigo
+    },
+    {
+         // Emerald Grid: Emerald Green + Pale Yellow -> Light Green mixes
+         paint1: '#00FF7F', // Emerald Green (SpringGreen)
+         paint2: '#FFFFA0', // Pale Yellow (LightYellow)
+         backgroundBase: '#081410' // Dark Charcoal/Green
+    },
+    {
+        // Golden Glitch: Gold + Light Blue -> Greenish mixes
+        paint1: '#FFD700', // Gold
+        paint2: '#87CEEB', // Light Blue (SkyBlue)
+        backgroundBase: '#101020' // Dark Navy/Gray
+    },
+    {
+        // Violet Volt: Deep Violet + Cyan -> Blue/Purple mixes
+        paint1: '#8A2BE2', // Deep Violet (BlueViolet)
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#1a0a0a' // Dark Red/Brown
+        backgroundBase: '#100814' // Dark Violet/Gray
     },
     {
-         // Purple Haze: Purple + Orange paint, Dark Blue background
-         paint1: '#9D00FF', // Purple
-         paint2: '#FF8800', // Orange
-         backgroundBase: '#0a0f1e' // Dark Blue
-    },
-    {
-         // Mint Chip: Mint Green + Hot Pink paint, Dark Gray-Green background
-         paint1: '#66FFBB', // Mint Green
-         paint2: '#FF44AA', // Hot Pink
-         backgroundBase: '#101a14' // Dark Gray-Green
+        // Coral Reef: Coral + Turquoise -> Pale Green/Blue mixes
+        paint1: '#FF7F50', // Coral
+        paint2: '#40E0D0', // Turquoise
+        backgroundBase: '#101818' // Dark Teal/Gray
     }
 ];
 
