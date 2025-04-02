@@ -13,6 +13,66 @@ body {
     min-height: 100vh;
 }
 
+/* Loading Screen Styles */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0a0a1e;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    transition: opacity 0.8s ease-out;
+}
+
+#loading-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loading-title {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.loading-subtitle {
+    font-size: 1.2rem;
+    color: #aaaaff;
+    text-shadow: 0 0 8px #aaaaff;
+    animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+.load-letter {
+    color: #00ffff;
+    font-family: Arial, sans-serif;
+    display: inline-block;
+    animation: loadWobble 3s infinite ease-in-out alternate;
+}
+
+.ink-letters {
+    color: #ff00ff;
+    font-family: 'Lacquer', sans-serif;
+    display: inline-block;
+    animation: loadWobble 3s infinite ease-in-out alternate;
+    animation-delay: 0.15s;
+}
+
+@keyframes loadWobble {
+    from { transform: translateY(0) rotate(-1deg); }
+    to { transform: translateY(-5px) rotate(1deg); }
+}
+
 #dev-notes-container {
     display: none;
     position: fixed;

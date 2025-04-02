@@ -29,11 +29,16 @@ import { initializeInstructions, toggleInstructions } from './instructions/instr
 // Import local state manager for idle timer
 import { updateIdleState, resetIdleTimer, getLastKnownPosition } from './local-state.js';
 import { renderScene } from './renderer.js';
+// Import loading screen functions
+import { initializeLoadingScreen, hideLoadingScreen } from './loading-screen.js';
 
 export const room = new WebsimSocket();
 
 // Initialize multiplayer connection and game state
 async function initGame() {
+    // Show loading screen immediately
+    initializeLoadingScreen();
+    
     await room.initialize();
     initializeLevelManager(room); // Load the level data and pass room instance
     initializeInstructions(room); // Initialize the instructions UI, passing the room
@@ -380,6 +385,9 @@ async function initGame() {
 
     // Expose debug utilities to the console
     exposeDebugUtils();
+    
+    // Hide the loading screen once everything is initialized
+    hideLoadingScreen();
 }
 
 // Initialize the app
