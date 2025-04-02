@@ -18,7 +18,6 @@ let allLoadedLevels = [...initialLevels];
 
 /**
  * Selects a random palette that is different from the current one, if possible.
- * Tries to avoid repeating same or very similar paint color pairs.
  * @param {object | null} current - The currently active palette object.
  * @returns {object} The selected palette object.
  */
@@ -29,19 +28,26 @@ function selectNextRandomPalette(current) {
     }
     if (palettes.length === 1) return palettes[0];
 
-    const maxAttempts = 15;
-    let chosen = null;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const candidate = getRandomPalette();
-        // Avoid repeating same paint combo even if swapped
-        if (!current ||
-            (candidate.paint1 !== current.paint1 && candidate.paint2 !== current.paint2) &&
-            (candidate.paint1 !== current.paint2 && candidate.paint2 !== current.paint1)) {
-            chosen = candidate;
-            break;
-        }
+    let potentialNext;
+    let attempts = 0;
+    const maxAttempts = palettes.length * 2;
+
+    do {
+        potentialNext = getRandomPalette();
+        attempts++;
+    } while (
+        current &&
+        potentialNext.paint1 === current.paint1 &&
+        potentialNext.paint2 === current.paint2 &&
+        potentialNext.backgroundBase === current.backgroundBase &&
+        attempts < maxAttempts
+    );
+
+    if (attempts >= maxAttempts) {
+        console.warn("Could not find a different random palette. Repeating palette.");
     }
-    return chosen || getRandomPalette(); // Fallback in rare case
+
+    return potentialNext;
 }
 
 /**

@@ -29,7 +29,7 @@ export function spawnPaintCans(deltaTime, now, availableCans, gameAreaWidth, gam
                 return updates; // Don't spawn if palette is invalid
             }
 
-            // Randomly choose one of the two neon paint colors from the current palette
+            // Randomly choose one of the two paint colors from the current palette
             const paintColor = Math.random() < 0.5 ? currentPalette.paint1 : currentPalette.paint2;
 
             const margin = 100;
