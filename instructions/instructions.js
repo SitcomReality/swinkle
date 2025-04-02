@@ -22,7 +22,7 @@ export function initializeInstructions() {
     titleElement = document.createElement('h1');
     titleElement.id = 'swinkle-title';
     
-    // Create SWINKLE title with colored letters
+    // Create SWINKLE title with colored letters, INK separated
     titleElement.innerHTML = `
         <span class="sw-letter">S</span>
         <span class="sw-letter">W</span>

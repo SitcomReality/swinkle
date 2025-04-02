@@ -21,11 +21,12 @@
 }
 
 #swinkle-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rubik Spray Paint', sans-serif;
     font-size: 4rem;
     margin-bottom: 20px;
     letter-spacing: 3px;
     text-shadow: 0 0 10px currentColor;
+    line-height: 1;
 }
 
 .sw-letter {
@@ -91,6 +92,7 @@
     
     #swinkle-title {
         font-size: 2.5rem;
+        line-height: 1;
     }
     
     #instructions-list {
