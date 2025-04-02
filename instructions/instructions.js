@@ -26,7 +26,9 @@ export function initializeInstructions() {
     titleElement.innerHTML = `
         <span class="sw-letter">S</span>
         <span class="sw-letter">W</span>
-        <span class="ink-letters">INK</span>
+        <span class="ink-letters">I</span>
+        <span class="ink-letters">N</span>
+        <span class="ink-letters">K</span>
         <span class="sw-letter">L</span>
         <span class="sw-letter">E</span>
     `;
