@@ -70,6 +70,32 @@ body {
     text-shadow: 0 0 5px #f0f;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: none; 
+}
+
+#scoreboard .swinkle-title {
+    margin: 0 0 10px 0;
+    text-align: center;
+    border-bottom: 1px solid #f0f;
+    padding-bottom: 5px;
+    line-height: 1;
+}
+
+#scoreboard .sw-letter {
+    color: #00ffff;
+    font-family: Arial, sans-serif;
+    font-size: 1.5rem; 
+    display: inline-block;
+    animation: titleWobble 3s infinite ease-in-out alternate;
+}
+
+#scoreboard .ink-letters {
+    color: #ff00ff;
+    font-family: 'Lacquer', sans-serif;
+    font-size: 1.7rem; 
+    display: inline-block;
+    animation: titleWobble 3s infinite ease-in-out alternate;
+    animation-delay: 0.15s;
 }
 
 #scoreboard-table {

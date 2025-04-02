@@ -8,7 +8,8 @@ import { startGameLoop } from './game-loop.js';
 import config from 'config';
 // Import player state function directly if needed
 import { removePlayerPhysicsState } from './playerState.js';
-import { initScoreboard } from './scoreboard.js'; // Import scoreboard initializer
+// Import scoreboard initializer with persistence instead of regular initializer
+import { initScoreboardWithPersistence } from './scoreboard-init.js'; 
 // Import level manager initializer + helper + level data + palette getter
 import { initializeLevelManager, getLowestClientId, allLevels, getCurrentPalette } from './level-manager.js';
 // Import burst handler for manual burst
@@ -373,7 +374,8 @@ async function initGame() {
     startGameLoop(room);
 
     // Initialize the scoreboard AFTER the room is ready and loop is starting
-    initScoreboard(room);
+    // Using the persistence version instead of the regular initScoreboard
+    initScoreboardWithPersistence(room);
 
     // Expose debug utilities to the console
     exposeDebugUtils();
