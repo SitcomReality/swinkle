@@ -12,8 +12,8 @@ export default {
     playerEyeRadius: 6,   // Radius of the character's eyes
     playerEyeOffsetX: 6,  // Horizontal offset of eyes from center
     playerEyeOffsetY: -3, // Vertical offset of eyes from body center
-    playerBodyColor: '#DDDDDD', // Base color for the player body (neutral gray)
-    playerBodyStrokeColor: '#AAAAAA', // Base color for the player body stroke (darker gray)
+    playerBodyColor: '#AAAAAA', // Base color for the player body (darker gray)
+    playerBodyStrokeColor: '#888888', // Base color for the player body stroke (darker gray)
 
     // Bungee Physics settings (Player -> Cursor)
     bungeeRestLength: 4,        // Natural length of the player's bungee cord
@@ -29,7 +29,7 @@ export default {
     numberOfLimbs: 2,            // How many limbs the character has
     limbLength: 20,             // Natural resting length of a limb segment
     limbWidth: 3,               // Thickness of the limb line
-    limbColor: 'rgba(255, 170, 187, 0.8)', // Slightly transparent body color
+    limbColor: 'rgba(204, 204, 204, 0.8)', // Light gray, slightly transparent for limbs
     limbSpringConstant: 10,      // Stiffness of the limb's connection
     limbDampingFactor: 0.85,     // How quickly limb oscillations fade
     limbMass: 0.1,               // Mass of the limb (affects gravity/spring)
