@@ -31,7 +31,7 @@ export const palettes = [
     // --- High Contrast ---
     {
         name: "Data Stream",
-        paint1: '#FFFFFF', // White
+        paint1: '#00FF99', // Neon Turquoise (replacing white)
         paint2: '#00FF00', // Lime Green
         backgroundBase: '#050510' // Very Dark Blue/Almost Black
     },
@@ -39,51 +39,51 @@ export const palettes = [
         name: "Plasma Core",
         paint1: '#FFA500', // Orange (Use carefully - make it vibrant)
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#150500' // Very Dark Brown/Red
+        backgroundBase: '#150550' // Deep Blue/Indigo (replaces dark brown)
     },
     // --- Cooler Tones ---
     {
         name: "Arctic Code",
         paint1: '#60CFFF', // Light Blue
-        paint2: '#FFFFFF', // White
+        paint2: '#FF00FF', // Magenta (replacing white)
         backgroundBase: '#081018' // Dark Cool Gray-Blue
     },
     {
         name: "Emerald Grid",
         paint1: '#39FF14', // Bright Lime
         paint2: '#0FF0FF', // Electric Blue
-        backgroundBase: '#051a0a'  // Dark Emerald Green
+        backgroundBase: '#051a3a'  // Dark Blue (replaced dark emerald)
     },
     // --- Intense & Vibrant ---
     {
         name: "Laser Grid",
         paint1: '#FF0000', // Bright Red (Use carefully)
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#180505' // Very Dark Red/Brown
+        backgroundBase: '#08051a' // Dark Purple (replaced dark red/brown)
     },
     {
         name: "Toxic Spill",
         paint1: '#ADFF2F', // GreenYellow
         paint2: '#FF00FF', // Magenta
-        backgroundBase: '#100510' // Dark Purple/Gray
+        backgroundBase: '#100550' // Dark Purple/Blue (replaced purple/gray)
     },
      {
         name: "Violet Void",
         paint1: '#9D00FF', // Deep Purple
         paint2: '#39FF14', // Lime Green
-        backgroundBase: '#150a15'  // Dark Purple/Gray
+        backgroundBase: '#150a25'  // Deep Purple (enhanced)
     },
     {
         name: "Electric Eel",
-        paint1: '#FFFF00', // Yellow
+        paint1: '#00EEFF', // Electric Cyan (replaced yellow)
         paint2: '#0088FF', // Bright Blue
-        backgroundBase: '#101005'  // Very Dark Yellow/Brown
+        backgroundBase: '#05051f'  // Deep Blue (replaced dark yellow/brown)
     },
      {
         name: "Crimson Circuit",
         paint1: '#DC143C', // Crimson Red
-        paint2: '#FFFFFF', // White
-        backgroundBase: '#1C0A0A' // Dark Reddish-Brown
+        paint2: '#00FFFF', // Cyan (replaced white)
+        backgroundBase: '#15051a' // Dark Purple (replaced reddish-brown)
     }
 ];
 
