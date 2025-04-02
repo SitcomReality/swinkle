@@ -4,13 +4,13 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(20, 20, 50, 0.92); 
+    background-color: rgba(20, 20, 50, 0.92);
     border: 3px solid #9d00ff;
     border-radius: 15px;
-    padding: 30px 40px; 
-    max-width: 650px; 
+    padding: 30px 40px;
+    max-width: 650px;
     z-index: 1100;
-    box-shadow: 0 0 25px rgba(157, 0, 255, 0.8); 
+    box-shadow: 0 0 25px rgba(157, 0, 255, 0.8);
     font-family: 'Lucida Console', Monaco, monospace;
     color: #e0e0ff;
     text-align: center;
@@ -22,21 +22,21 @@
 
 #swinkle-title {
     font-family: 'Lacquer', sans-serif;
-    font-size: 5rem; 
-    margin-bottom: 25px; 
+    font-size: 5rem;
+    margin-bottom: 25px;
     letter-spacing: 3px;
     text-shadow: 0 0 10px currentColor;
     line-height: 1;
-    margin-top: 0; 
-    border-bottom: 1px solid #9d00ff; 
-    padding-bottom: 15px; 
+    margin-top: 0;
+    border-bottom: 1px solid #9d00ff;
+    padding-bottom: 15px;
 }
 
 .sw-letter {
-    color: #00ffff; 
+    color: #00ffff;
     font-family: Arial; 
-    font-size: 4rem; 
-    display: inline-block; 
+    font-size: 4rem;
+    display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
 }
 .sw-letter:nth-child(2) { animation-delay: 0.1s; }
@@ -45,12 +45,13 @@
 
 
 .ink-letters {
-    color: #ff00ff;
-    display: inline-block; 
+    color: #ff00ff; 
+    font-family: Arial; 
+    font-size: 4rem; 
+    display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
+    animation-delay: 0.15s; 
 }
-.ink-letters:nth-child(4) { animation-delay: 0.15s; }
-.ink-letters:nth-child(5) { animation-delay: 0.25s; }
 
 @keyframes titleWobble {
     from { transform: translateY(0) rotate(-1deg); }
@@ -82,11 +83,18 @@
     text-shadow: 0 0 5px #ff00ff; 
 }
 
-/* Styling for highlighted keywords */
+/* Styling for highlighted keywords (Titles and general keywords) */
 .keyword {
     color: #00ffff; 
     font-weight: bold;
     text-shadow: 0 0 3px #00ffff;
+}
+
+/* Styling specifically for the keyword 'ink' */
+.keyword-ink {
+    color: #ff00ff; 
+    font-weight: bold;
+    text-shadow: 0 0 3px #ff00ff;
 }
 
 .action {
@@ -100,32 +108,29 @@
 }
 
 .powerup-name {
-    color: #ff88ff; 
     font-weight: bold;
 }
 
 .powerup-icon {
     display: inline-block;
-    width: 20px; 
-    height: 20px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+    width: 1em; 
+    height: 1em;
+    line-height: 1; 
+    text-align: center;
+    font-size: 1.2em; 
     vertical-align: middle;
     margin: 0 4px;
-    filter: drop-shadow(0 0 3px currentColor); 
+    text-shadow: 0 0 4px currentColor; 
+    font-style: normal; 
 }
 
 .powerup-icon-bigBurst {
-    color: #FF4500; 
 }
 
 .powerup-icon-shortRope {
-     color: #FFA500;
 }
 
 .powerup-icon-shield {
-     color: #88FFFF;
 }
 
 
@@ -141,7 +146,7 @@
         line-height: 1;
         padding-bottom: 10px;
     }
-    .sw-letter { font-size: 2.5rem; } 
+    .sw-letter, .ink-letters { font-size: 2.5rem; }
 
     #instructions-list {
         font-size: 1rem;

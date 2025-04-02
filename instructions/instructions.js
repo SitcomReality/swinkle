@@ -6,12 +6,26 @@ import config from '../config.js';
 import { triggerManualRespawn } from '../respawn-manager.js';
 import { broadcastNotification } from '../notification-broadcaster.js';
 import { resetIdleTimer } from '../local-state.js';
+// Import power-up data to list all power-ups
+import { powerUpDefinitions } from '../power-ups/power-up-data.js';
 
 // Store references to DOM elements
 let instructionsContainer;
 let titleElement;
 let instructionList;
 let instructionRoom = null; // Store room instance
+
+/**
+ * Generates the HTML string for a power-up icon.
+ * @param {string} powerUpId - The ID of the power-up (e.g., 'shield').
+ * @returns {string} - The HTML span element for the icon.
+ */
+function getPowerUpIconHtml(powerUpId) {
+    const definition = powerUpDefinitions[powerUpId];
+    if (!definition) return '';
+    // Use the power-up ID as the class name suffix for styling
+    return `<span class="powerup-icon powerup-icon-${powerUpId}" style="color:${definition.color || '#FFFFFF'};">✦</span>`;
+}
 
 /**
  * Initializes the instructions system by creating DOM elements and adding listeners.
@@ -47,19 +61,29 @@ export function initializeInstructions(room) {
     instructionList = document.createElement('ul');
     instructionList.id = 'instructions-list';
 
+    // Generate power-up list string
+    let powerUpListString = '';
+    Object.values(powerUpDefinitions).forEach((def, index) => {
+        powerUpListString += `${getPowerUpIconHtml(def.id)} = <span class="powerup-name" style="color:${def.glowColor || def.color};">${def.name}</span>`;
+        if (index < Object.values(powerUpDefinitions).length - 1) {
+            powerUpListString += ' | '; // Separator
+        }
+    });
+
     // Add instruction items with keywords wrapped in spans
+    // Use <span class="keyword-ink"> for pink 'ink' keyword
     const instructions = [
-        `<strong><span class="keyword">INK</span> Basics</strong>: Collect <span class="keyword">ink cans</span> to spray opponents. Get their <span class="keyword">INK</span> <span class="percentage">100%</span> to knock them out!`,
-        `<strong><span class="keyword">Droplets</span></strong>: <span class="keyword">Ink</span> droplets appear where you spray. They stay briefly before fading.`,
-        `<strong><span class="keyword">Stealth</span></strong>: You can't see ink cans carried by other players - watch for their droplet trails!`,
-        `<strong><span class="keyword">Bursts</span></strong>: <span class="action">Hold Click</span> to charge, <span class="action">Release</span> for an <span class="keyword">ink burst</span> of concentrated droplets.`,
-        `<strong><span class="keyword">Power-ups</span></strong>: <span class="powerup-icon powerup-icon-bigBurst">✦</span> = <span class="powerup-name">Big Burst</span> | <span class="powerup-icon powerup-icon-shortRope">✦</span> = <span class="powerup-name">Short Rope</span> | <span class="powerup-icon powerup-icon-shield">✦</span> = <span class="powerup-name">Shield</span>`,
-        `<strong><span class="keyword">Spectate</span></strong>: Press <span class="action">ESC</span> or <span class="action">Click These Instructions</span> to rejoin the game!` 
+        `<strong><span class="keyword">Basics</span></strong>: Collect <span class="keyword-ink">ink</span> cans. Held cans automatically leave a trail of <span class="keyword-ink">ink</span> droplets. Hit opponents with droplets to raise their <span class="keyword-ink">INK</span> percentage. <span class="percentage">100%</span> <span class="keyword-ink">INK</span> = Knockout!`,
+        `<strong><span class="keyword">Droplets</span></strong>: <span class="keyword-ink">Ink</span> droplets appear behind carried cans and from <span class="keyword-ink">ink</span> bursts. They stay briefly before fading.`,
+        `<strong><span class="keyword">Stealth</span></strong>: You can't see <span class="keyword-ink">ink</span> cans carried by other players - watch their droplet trails!`,
+        `<strong><span class="keyword">Bursts</span></strong>: <span class="action">Hold Click</span> to charge your held can, <span class="action">Release</span> for an <span class="keyword-ink">ink burst</span> of concentrated droplets. Charging temporarily stops the droplet trail.`,
+        `<strong><span class="keyword">Power-ups</span></strong>: ${powerUpListString}`,
+        `<strong><span class="keyword">Spectate</span></strong>: Press <span class="action">ESC</span> or <span class="action">Click These Instructions</span> to rejoin the game!`
     ];
 
     instructions.forEach(text => {
         const item = document.createElement('li');
-        item.innerHTML = text;
+        item.innerHTML = text; // Use innerHTML to render spans
         instructionList.appendChild(item);
     });
 

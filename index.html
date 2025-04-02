@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
     <title>SWINKLE! Swing! Ink! Sprinkle!</title>
@@ -49,44 +48,21 @@
             "./paint-burst.js": "./paint-burst.js",
             "./burst-handler.js": "./burst-handler.js",
             "./instructions/instructions.js": "./instructions/instructions.js",
-            "./local-state.js": "./local-state.js",
-            "./websocket-chunker.js": "./websocket-chunker.js",
-            "./loading-screen.js": "./loading-screen.js"
+            "./local-state.js": "./local-state.js"
         }
     }
     </script>
 </head>
 <body>
     <div id="dev-notes-container"></div>
-    <div id="loading-screen">
-        <h1 class="loading-title">
-            <span class="load-letter">L</span>
-            <span class="load-letter">O</span>
-            <span class="ink-letters">A</span>
-            <span class="ink-letters">D</span>
-            <span class="ink-letters">I</span>
-            <span class="load-letter">N</span>
-            <span class="load-letter">G</span>
-        </h1>
-        <p class="loading-subtitle">Preparing ink buckets...</p>
-    </div>
     <div id="scoreboard">
         <h2>Scoreboard</h2>
-        <div class="swinkle-title">
-            <span class="sw-letter">S</span>
-            <span class="sw-letter">W</span>
-            <span class="ink-letters">I</span>
-            <span class="ink-letters">N</span>
-            <span class="ink-letters">K</span>
-            <span class="sw-letter">L</span>
-            <span class="sw-letter">E</span>
-        </div>
         <table id="scoreboard-table">
             <thead>
                 <tr>
                     <th>Player</th>
                     <th>Score</th>
-                    <th>% Inked</th>
+                    <th>% Painted</th>
                     <th>Losses</th>
                 </tr>
             </thead>
