@@ -5,28 +5,41 @@
  * advanced expression handling.
  */
 import config from 'config';
+import { updateEyeTarget } from './player-eye-targeting.js';
 
 /**
  * Calculates eye movement parameters for a player looking at their anchor point.
  * @param {object} playerBodyPos - Position of player body {x, y}
  * @param {object} anchorPos - Position of anchor point {x, y}
  * @param {number} bodyAngle - Current rotation angle of the player body
- * @param {boolean} shouldLook - Whether the eyes should look (true for local player)
+ * @param {boolean} isLocalPlayer - Whether this is the local player
  * @param {boolean} isSpectating - Whether the player is spectating
+ * @param {string} clientId - The player's client ID
+ * @param {object} roomInstance - The WebsimSocket room instance
+ * @param {object} gameState - Additional game state information
  * @returns {object} Eye movement parameters {pupilOffsetX, pupilOffsetY}
  */
-export function calculateEyeMovement(playerBodyPos, anchorPos, bodyAngle, shouldLook, isSpectating) {
+export function calculateEyeMovement(playerBodyPos, anchorPos, bodyAngle, isLocalPlayer, isSpectating, clientId, roomInstance, gameState) {
     const eyeRadius = config.playerEyeRadius || 4;
     const pupilRadius = eyeRadius * 0.5;
     const maxPupilOffset = eyeRadius - pupilRadius - 1; // Max distance pupil can move
     let pupilOffsetX = 0;
     let pupilOffsetY = 0;
 
-    // Only make local player's eyes look, and only if not spectating
-    if (shouldLook && !isSpectating) {
-        // Calculate direction from world body center to world anchor
-        const worldDirX = anchorPos.x - playerBodyPos.x;
-        const worldDirY = anchorPos.y - playerBodyPos.y;
+    // Skip eye targeting when spectating
+    if (isSpectating) {
+        return { pupilOffsetX, pupilOffsetY };
+    }
+    
+    // Get updated eye target
+    const targetInfo = updateEyeTarget(clientId, isLocalPlayer, roomInstance, playerBodyPos, gameState);
+    const targetPos = targetInfo.position;
+    
+    // If we have a valid target position
+    if (targetPos && typeof targetPos.x === 'number' && typeof targetPos.y === 'number') {
+        // Calculate direction from world body center to world target
+        const worldDirX = targetPos.x - playerBodyPos.x;
+        const worldDirY = targetPos.y - playerBodyPos.y;
 
         // Rotation angles for transforming to local coordinates
         const cosAngle = Math.cos(bodyAngle);
@@ -45,7 +58,7 @@ export function calculateEyeMovement(playerBodyPos, anchorPos, bodyAngle, should
             pupilOffsetX = localNormX * maxPupilOffset; // Apply offset in local space
             pupilOffsetY = localNormY * maxPupilOffset;
         }
-    } // Other players' or spectator's pupils stay centered
+    }
 
     return { pupilOffsetX, pupilOffsetY };
 }

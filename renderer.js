@@ -61,7 +61,7 @@ export function renderScene(ctx, roomInstance, localClientId, now, deltaTime) {
         const presence = roomInstance.presence[clientId];
         if (presence) { // Ensure presence exists before rendering
             // Pass the synchronized roomState owned cans for rendering
-            renderPlayer(ctx, clientId, localClientId, presence, peer, ownedCansToRender);
+            renderPlayer(ctx, clientId, localClientId, presence, peer, ownedCansToRender, roomInstance);
         }
     });
 

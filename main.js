@@ -28,6 +28,7 @@ import { broadcastNotification, handleNotificationRequest } from './notification
 import { initializeInstructions, toggleInstructions } from './instructions/instructions.js';
 // Import local state manager for idle timer
 import { updateIdleState, resetIdleTimer, getLastKnownPosition } from './local-state.js';
+import { renderScene } from './renderer.js';
 
 export const room = new WebsimSocket();
 

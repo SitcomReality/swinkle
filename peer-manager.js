@@ -4,6 +4,7 @@
  */
 import { removePlayerPhysicsState } from './playerState.js';
 import { removeSpectatorState } from './spectate-mode.js'; // Import spectator state cleanup
+import { removePlayerEyeTargeting } from './player-eye-targeting.js'; // Add this import
 
 /**
  * Track disconnected/joined peers, clean up physics state, and trigger notifications.
@@ -23,6 +24,7 @@ export function cleanupAndNotifyPeers(previousPeerData, currentPeers, addNotific
             const username = previousPeerData[clientId]?.username || 'Player'; // Get username from previous data
             removePlayerPhysicsState(clientId); // Clean up physics state
             removeSpectatorState(clientId); // Clean up spectator state
+            removePlayerEyeTargeting(clientId); // Clean up eye targeting state
             console.log(`Peer ${username} (${clientId}) disconnected, player physics & spectator state removed.`);
             if (addNotification) {
                 addNotification(`${username} left the game.`, 'leave', 3000);

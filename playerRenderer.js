@@ -34,8 +34,9 @@ const RESPAWN_FADE_IN_DURATION = RESPAWN_ANIM_DURATION - RESPAWN_INITIAL_HIDE_DU
  * @param {object} presence - The player's presence data (color, paintedData, currentCanId, power-up flags, activePowerUps, isSpectating, lost, respawnAnimEndTime).
  * @param {object} peer - The player's peer data (username, avatarUrl).
  * @param {object} allPaintCansState - The current state of all paint cans from roomState.paintCans.
+ * @param {object} roomInstance - The WebsimSocket room instance.
  */
-export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPaintCansState) {
+export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPaintCansState, roomInstance) {
     // --- Get Player Physics State ---
     const physicsState = getPlayerPhysicsState(clientId);
     if (!physicsState) {
@@ -248,13 +249,21 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     const eyeOffsetX = config.playerEyeOffsetX || 6;
     const eyeOffsetY = config.playerEyeOffsetY || -3;
     
-    // Calculate eye movement parameters
+    // Create game state object for eye targeting with required functions
+    const gameState = {
+        getPlayerPhysicsState: getPlayerPhysicsState
+    };
+    
+    // Calculate eye movement parameters - UPDATED with new parameters
     const eyeMovement = calculateEyeMovement(
         { x: bodyX, y: bodyY },
         { x: anchorX, y: anchorY },
         bodyAngle,
-        clientId === localClientId, // Only local player's eyes follow cursor
-        isSpectating
+        clientId === localClientId, // Whether this is the local player
+        isSpectating,
+        clientId,                   // Pass client ID for targeting state
+        roomInstance,               // Pass room instance for game state access
+        gameState                   // Pass game state object with required functions
     );
     
     // Calculate eye expression based on player state and collisions
