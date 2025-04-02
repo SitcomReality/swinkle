@@ -7,13 +7,19 @@
     background-color: rgba(20, 20, 50, 0.92);
     border: 3px solid #9d00ff;
     border-radius: 15px;
-    padding: 30px 40px;
-    max-width: 650px;
+    padding: 20px 25px;
+    max-width: 550px;
     z-index: 1100;
     box-shadow: 0 0 25px rgba(157, 0, 255, 0.8);
     font-family: 'Lucida Console', Monaco, monospace;
     color: #e0e0ff;
     text-align: center;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+#instructions-container:hover {
+    opacity: 1;
 }
 
 #instructions-container.hidden {
@@ -22,20 +28,20 @@
 
 #swinkle-title {
     font-family: 'Lacquer', sans-serif;
-    font-size: 5rem;
-    margin-bottom: 25px;
-    letter-spacing: 3px;
+    font-size: 4rem;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
     text-shadow: 0 0 10px currentColor;
     line-height: 1;
     margin-top: 0;
     border-bottom: 1px solid #9d00ff;
-    padding-bottom: 15px;
+    padding-bottom: 10px;
 }
 
 .sw-letter {
     color: #00ffff;
     font-family: Arial, sans-serif;
-    font-size: 4rem;
+    font-size: 3.5rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
 }
@@ -46,7 +52,7 @@
 .ink-letters {
     color: #ff00ff;
     font-family: 'Lacquer', sans-serif;
-    font-size: 5rem;
+    font-size: 4.5rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
     animation-delay: 0.15s;
@@ -60,14 +66,14 @@
 #instructions-list {
     list-style-type: none;
     padding: 0;
-    font-size: 1.1rem;
-    line-height: 1.7;
+    font-size: 1rem;
+    line-height: 1.6;
     text-align: left;
 }
 
 #instructions-list li {
-    margin-bottom: 18px;
-    padding-left: 30px;
+    margin-bottom: 14px;
+    padding-left: 25px;
     position: relative;
 }
 
