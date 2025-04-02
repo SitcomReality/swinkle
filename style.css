@@ -290,3 +290,33 @@ body {
     top: 80px;
     z-index: 1000;
 }
+
+.hide-parent-notifications {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes fixParentScroll {
+    to { visibility: visible; }
+}
+
+.fix-parent-scroll {
+    position: fixed;
+    width: 0;
+    height: 0;
+    animation: fixParentScroll 0.001s;
+    animation-fill-mode: forwards;
+}
+
+html, body {
+    overflow: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
