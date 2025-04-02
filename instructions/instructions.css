@@ -34,6 +34,7 @@
 
 .sw-letter {
     color: #00ffff;
+    font-family: Arial, sans-serif;
     font-size: 4rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
@@ -42,10 +43,10 @@
 .sw-letter:nth-child(6) { animation-delay: 0.2s; }
 .sw-letter:nth-child(7) { animation-delay: 0.3s; }
 
-
 .ink-letters {
     color: #ff00ff;
-    font-size: 4rem;
+    font-family: 'Lacquer', sans-serif;
+    font-size: 5rem;
     display: inline-block;
     animation: titleWobble 3s infinite ease-in-out alternate;
     animation-delay: 0.15s;
@@ -55,7 +56,6 @@
     from { transform: translateY(0) rotate(-1deg); }
     to { transform: translateY(-2px) rotate(1deg); }
 }
-
 
 #instructions-list {
     list-style-type: none;
@@ -130,7 +130,6 @@
 
 .powerup-icon-shield {
 }
-
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
