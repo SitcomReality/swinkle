@@ -7,32 +7,34 @@
  * Initializes the loading screen
  */
 export function initializeLoadingScreen() {
-    // Create loading screen element
-    const loadingScreen = document.createElement('div');
-    loadingScreen.id = 'loading-screen';
-    
-    // Create stylized loading text
-    const loadingText = document.createElement('h1');
-    loadingText.className = 'loading-title';
-    loadingText.innerHTML = `
-        <span class="load-letter">L</span>
-        <span class="load-letter">O</span>
-        <span class="ink-letters">A</span>
-        <span class="ink-letters">D</span>
-        <span class="ink-letters">I</span>
-        <span class="load-letter">N</span>
-        <span class="load-letter">G</span>
-    `;
-    
-    // Add a subtitle
-    const subtitle = document.createElement('p');
-    subtitle.className = 'loading-subtitle';
-    subtitle.textContent = 'Preparing paint buckets...';
-    
-    // Append elements
-    loadingScreen.appendChild(loadingText);
-    loadingScreen.appendChild(subtitle);
-    document.body.appendChild(loadingScreen);
+    // Create loading screen element if it doesn't exist
+    if (!document.getElementById('loading-screen')) {
+        const loadingScreen = document.createElement('div');
+        loadingScreen.id = 'loading-screen';
+        
+        // Create stylized loading text
+        const loadingText = document.createElement('h1');
+        loadingText.className = 'loading-title';
+        loadingText.innerHTML = `
+            <span class="load-letter">L</span>
+            <span class="load-letter">O</span>
+            <span class="ink-letters">A</span>
+            <span class="ink-letters">D</span>
+            <span class="ink-letters">I</span>
+            <span class="load-letter">N</span>
+            <span class="load-letter">G</span>
+        `;
+        
+        // Add a subtitle
+        const subtitle = document.createElement('p');
+        subtitle.className = 'loading-subtitle';
+        subtitle.textContent = 'Preparing ink buckets...';
+        
+        // Append elements
+        loadingScreen.appendChild(loadingText);
+        loadingScreen.appendChild(subtitle);
+        document.body.appendChild(loadingScreen);
+    }
 }
 
 /**

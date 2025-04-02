@@ -56,6 +56,7 @@ body {
 .load-letter {
     color: #00ffff;
     font-family: Arial, sans-serif;
+    font-size: 4rem; 
     display: inline-block;
     animation: loadWobble 3s infinite ease-in-out alternate;
 }
@@ -63,6 +64,7 @@ body {
 .ink-letters {
     color: #ff00ff;
     font-family: 'Lacquer', sans-serif;
+    font-size: 5rem; 
     display: inline-block;
     animation: loadWobble 3s infinite ease-in-out alternate;
     animation-delay: 0.15s;
