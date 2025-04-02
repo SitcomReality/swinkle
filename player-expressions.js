@@ -54,15 +54,24 @@ export function calculateEyeMovement(playerBodyPos, anchorPos, bodyAngle, should
  * Calculates eye squint/compression effect based on game states.
  * @param {object} presence - Player's presence data
  * @param {number} now - Current timestamp for animations
+ * @param {object} collisionState - Information about recent collisions
  * @returns {object} Eye shape parameters {scaleX, scaleY}
  */
-export function calculateEyeExpression(presence, now) {
+export function calculateEyeExpression(presence, now, collisionState = null) {
     const baseScaleX = 1.0;
     const baseScaleY = 1.0;
     
     // Default expression: normal round eyes
     let scaleX = baseScaleX;
     let scaleY = baseScaleY;
+    
+    // Wincing during collision state (highest priority)
+    if (collisionState && collisionState.hasCollided && now - collisionState.lastCollisionTime < 300) {
+        // Wincing/grimacing expression - tight oval
+        scaleX = 1.1;
+        scaleY = 0.3; 
+        return { scaleX, scaleY };
+    }
     
     // Squint when charging paint (concentrated look)
     if (presence.currentCanId && presence.isCharging) {
@@ -90,6 +99,30 @@ export function calculateEyeExpression(presence, now) {
 }
 
 /**
+ * Adjusts pupil size based on eye shape to prevent pupils from extending beyond eye boundaries.
+ * @param {object} eyeMovement - Eye movement parameters
+ * @param {object} eyeExpression - Eye expression parameters
+ * @returns {object} Adjusted pupil parameters
+ */
+export function adjustPupilForEyeShape(eyeMovement, eyeExpression) {
+    const { pupilOffsetX, pupilOffsetY } = eyeMovement;
+    const { scaleX, scaleY } = eyeExpression;
+    
+    // Calculate how much to compress the pupil in each dimension
+    // Only compress when eyes are significantly compressed (below 50%)
+    const pupilScaleY = scaleY < 0.5 ? Math.max(0.5, scaleY * 1.5) : 1.0;
+    
+    // Adjust pupil offset to stay within compressed eye boundaries
+    const adjustedOffsetY = pupilOffsetY * (pupilScaleY);
+    
+    return {
+        pupilOffsetX,
+        pupilOffsetY: adjustedOffsetY,
+        pupilScaleY
+    };
+}
+
+/**
  * Renders player eyes with appropriate expressions and pupil movement.
  * @param {CanvasRenderingContext2D} ctx - Drawing context
  * @param {number} eyeOffsetX - X offset from body center for eye positioning
@@ -104,8 +137,11 @@ export function renderPlayerEyes(ctx, eyeOffsetX, eyeOffsetY, eyeMovement, eyeEx
     const rightEyeX = +eyeOffsetX;
     const eyeY = eyeOffsetY;
     
-    const { pupilOffsetX, pupilOffsetY } = eyeMovement;
     const { scaleX, scaleY } = eyeExpression;
+    
+    // Adjust pupils for compressed eyes
+    const pupilAdjustment = adjustPupilForEyeShape(eyeMovement, eyeExpression);
+    const { pupilOffsetX, pupilOffsetY, pupilScaleY } = pupilAdjustment;
 
     // White part of the eyes
     ctx.fillStyle = '#FFFFFF';
@@ -132,16 +168,24 @@ export function renderPlayerEyes(ctx, eyeOffsetX, eyeOffsetY, eyeMovement, eyeEx
     ctx.fill();
     ctx.stroke();
 
-    // Draw pupils (affected by eye movement but not scaling)
+    // Draw pupils (affected by eye movement and compression)
     ctx.fillStyle = '#000000'; // Black pupils
 
-    // Left Pupil (Offset relative to local eye position)
+    // Left Pupil (with scaling)
+    ctx.save();
+    ctx.translate(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY);
+    ctx.scale(1.0, pupilScaleY); // Scale pupil to match eye compression
     ctx.beginPath();
-    ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(0, 0, pupilRadius, 0, Math.PI * 2);
+    ctx.restore();
     ctx.fill();
 
-    // Right Pupil (Offset relative to local eye position)
+    // Right Pupil (with scaling)
+    ctx.save();
+    ctx.translate(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY);
+    ctx.scale(1.0, pupilScaleY); // Scale pupil to match eye compression
     ctx.beginPath();
-    ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, pupilRadius, 0, Math.PI * 2);
+    ctx.arc(0, 0, pupilRadius, 0, Math.PI * 2);
+    ctx.restore();
     ctx.fill();
 }

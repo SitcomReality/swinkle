@@ -22,6 +22,7 @@ import { addEffect, clearEffects } from './effectsRenderer.js';
 import { updateLevelTransition } from './level-transition.js';
 import { getLastSignificantMoveTime } from './local-state.js';
 import { enterSpectateMode } from './spectate-mode.js';
+import { cleanupStaleCollisionStates } from './player-collision-state.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; 
@@ -280,6 +281,8 @@ function gameLoop(timestamp) {
     const globalUpdateResults = handleGlobalUpdates(deltaTime, now, localClientId);
 
     const collisionCleanupResults = handleLocalCollisionsAndCleanup(now, localClientId);
+
+    cleanupStaleCollisionStates(now);
 
     const batchedUpdates = {
         paintCanUpdates: { ...playerUpdateResults.paintCanUpdates, ...globalUpdateResults.stealCollisions.paintCanUpdates },

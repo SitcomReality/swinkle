@@ -211,7 +211,7 @@ export function updatePlayerPhysics(clientId, presence, deltaTime) {
     state.angle += state.angularVelocity * deltaTime;
 
     // --- Level Collision Check and Response (Body) ---
-    handlePlayerLevelCollision(state, presence);
+    handlePlayerLevelCollision(state, presence, clientId);
 
     // --- World Boundary Collision Check and Response ---
     const playerRadius = bodyWidth / 2; // Use radius for horizontal checks

@@ -5,6 +5,7 @@
  */
 import config from 'config';
 import { getCurrentLevel } from './level-manager.js';
+import { recordPlayerCollision } from './player-collision-state.js';
 
 /**
  * Checks for collision between a circular representation of an object
@@ -138,8 +139,9 @@ function resolveCollision(objectState, obstacle, collisionInfo) {
  * Skips checks if player is spectating.
  * @param {object} playerState - The player's full physics state object.
  * @param {object} presence - The player's presence data (needed to check isSpectating).
+ * @param {string} clientId - The player's client ID (for collision state tracking)
  */
-export function handlePlayerLevelCollision(playerState, presence) {
+export function handlePlayerLevelCollision(playerState, presence, clientId) {
     const levelData = getCurrentLevel();
     // Skip if no level, no state, or if the player is spectating
     if (!levelData || !levelData.obstacles || !playerState || presence?.isSpectating) {
@@ -148,18 +150,46 @@ export function handlePlayerLevelCollision(playerState, presence) {
 
     // Using half-width as a rough radius for collision detection/response
     const playerRadius = config.playerBodyWidth / 2;
+    let hasCollided = false;
 
     levelData.obstacles.forEach(obstacle => {
         if (obstacle.type === 'rectangle') {
             const collisionInfo = checkCircleRotatedRectCollision(playerState, obstacle, playerRadius);
             if (collisionInfo) {
                 resolveCollision(playerState, obstacle, collisionInfo);
+                hasCollided = true; // Track that a collision occurred
             }
         }
         // Add checks for other obstacle types later
     });
 
-    // Note: Limbs are ignored for now
+    // Check boundary collisions
+    const boundaryCollision = checkBoundaryCollision(playerState);
+    if (boundaryCollision) {
+        hasCollided = true;
+    }
+
+    // Record collision state if a collision occurred
+    if (hasCollided && clientId) {
+        recordPlayerCollision(clientId, 'level');
+    }
+}
+
+/**
+ * Checks if player collided with game area boundaries
+ * @param {object} playerState - The player's physics state
+ * @returns {boolean} True if a boundary collision occurred
+ */
+function checkBoundaryCollision(playerState) {
+    const playerRadius = config.playerBodyWidth / 2;
+    const playerHalfHeight = config.playerBodyHeight / 2;
+    
+    return (
+        playerState.position.x - playerRadius <= 0 || 
+        playerState.position.x + playerRadius >= config.gameAreaWidth ||
+        playerState.position.y - playerHalfHeight <= 0 ||
+        playerState.position.y + playerHalfHeight >= config.gameAreaHeight
+    );
 }
 
 /**

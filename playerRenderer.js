@@ -6,6 +6,7 @@
  */
 import config from '../config.js';
 import { getPlayerPhysicsState } from './playerState.js';
+import { getPlayerCollisionState } from './player-collision-state.js';
 // Import the specific color utils needed
 import { calculatePaintOnlyBlendedColor, calculateTotalPaintPercentage, calculateBlendedColor } from './colorUtils.js';
 import { renderPaintCan } from './paintCan.js'; // Import renderPaintCan
@@ -239,6 +240,9 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
     ctx.lineWidth = 2;
     ctx.stroke(); // Draw blended stroke using the same path
 
+    // Get collision state for expressions
+    const collisionState = getPlayerCollisionState(clientId);
+
     // --- Render Eyes (Relative to Rotated Body Center) ---
     const eyeRadius = config.playerEyeRadius || 4;
     const eyeOffsetX = config.playerEyeOffsetX || 6;
@@ -253,8 +257,8 @@ export function renderPlayer(ctx, clientId, localClientId, presence, peer, allPa
         isSpectating
     );
     
-    // Calculate eye expression based on player state
-    const eyeExpression = calculateEyeExpression(presence, now);
+    // Calculate eye expression based on player state and collisions
+    const eyeExpression = calculateEyeExpression(presence, now, collisionState);
     
     // Render the eyes with calculated movement and expression
     renderPlayerEyes(ctx, eyeOffsetX, eyeOffsetY, eyeMovement, eyeExpression);
