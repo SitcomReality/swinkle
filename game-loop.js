@@ -23,6 +23,7 @@ import { updateLevelTransition } from './level-transition.js';
 import { getLastSignificantMoveTime } from './local-state.js';
 import { enterSpectateMode } from './spectate-mode.js';
 import { cleanupStaleCollisionStates } from './player-collision-state.js';
+import { safelySendUpdate } from './websocket-chunker.js';
 
 let roomInstance = null;
 let lastTimestamp = 0; 
@@ -249,10 +250,10 @@ function sendBatchedUpdates(updates) {
     }
 
     if (Object.keys(roomStateUpdates).length > 0) {
-        roomInstance.updateRoomState(roomStateUpdates);
+        safelySendUpdate(roomInstance, roomStateUpdates, 'roomState');
     }
     if (Object.keys(localPresenceUpdates).length > 0) {
-        roomInstance.updatePresence(localPresenceUpdates);
+        safelySendUpdate(roomInstance, localPresenceUpdates, 'presence');
     }
     presenceRequests.forEach(req => {
         roomInstance.requestPresenceUpdate(req.targetId, req.update);
