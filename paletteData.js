@@ -9,58 +9,46 @@
 
 export const palettes = [
     {
-        // Cyberpunk Neon: Magenta + Cyan paint, Dark Blue/Indigo background
+        // Cyberpunk Neon: Magenta + Cyan paint, Dark Blue/Purple background
         paint1: '#FF00FF', // Magenta
         paint2: '#00FFFF', // Cyan
         backgroundBase: '#0a0a1e'  // Dark Blue/Indigo
     },
     {
-        // Sunset Synthwave: Hot Pink + Bright Orange paint, Deep Purple background
-        paint1: '#FF1493', // Hot Pink (DeepPink)
-        paint2: '#FFA500', // Bright Orange (Orange)
-        backgroundBase: '#190019'  // Deep Purple/Indigo
+        // Sunset Synthwave: Orange + Pink paint, Deep Purple background
+        paint1: '#FF6600', // Orange
+        paint2: '#FF00AA', // Hot Pink
+        backgroundBase: '#1a0a1a'  // Deep Purple
     },
     {
-        // Toxic Waste: Lime Green + Electric Yellow paint, Dark Teal/Green background
-        paint1: '#32CD32', // Lime Green
-        paint2: '#FFFF00', // Electric Yellow
-        backgroundBase: '#001a0a'  // Dark Teal/Green
+        // Toxic Waste: Lime Green + Yellow paint, Dark Teal background
+        paint1: '#00FF00', // Lime Green
+        paint2: '#FFFF00', // Yellow
+        backgroundBase: '#0a1a0e'  // Dark Green/Teal
     },
     {
-        // Electric Blue: Bright Blue + Hot Pink paint, Very Dark Gray/Blue background
-        paint1: '#007FFF', // Bright Blue (Azure)
-        paint2: '#FF69B4', // Hot Pink
-        backgroundBase: '#050510'  // Very Dark Gray/Blue
+        // Electric Blue: Bright Blue + Yellow paint, Dark Gray background
+        paint1: '#0088FF', // Bright Blue
+        paint2: '#FFFF00', // Yellow
+        backgroundBase: '#18181c'  // Dark Gray
     },
     {
-        // Crimson Laser: Bright Red + Cyan paint, Darkest Red/Brown background
-        paint1: '#FF0000', // Bright Red
+        // Crimson Laser: Red + Cyan paint, Dark Red/Brown background
+        paint1: '#FF0000', // Red
         paint2: '#00FFFF', // Cyan
-        backgroundBase: '#1a0505' // Darkest Red/Brown
+        backgroundBase: '#1a0a0a' // Dark Red/Brown
     },
     {
-         // Purple Haze: Deep Purple + Neon Orange paint, Dark Blue/Gray background
-         paint1: '#9400D3', // Deep Purple (DarkViolet)
-         paint2: '#FF4500', // Neon Orange (OrangeRed)
-         backgroundBase: '#0f0a14' // Dark Blue/Gray
+         // Purple Haze: Purple + Orange paint, Dark Blue background
+         paint1: '#9D00FF', // Purple
+         paint2: '#FF8800', // Orange
+         backgroundBase: '#0a0f1e' // Dark Blue
     },
     {
-         // Mint Chip: Mint Green + Bright Pink paint, Dark Gray-Green background
-         paint1: '#00FFAA', // Mint Green (Aquamarine variant)
-         paint2: '#FF1493', // Bright Pink (DeepPink)
-         backgroundBase: '#0a1410' // Dark Gray-Green
-    },
-    {
-        // Golden Glitch: Gold/Yellow + Electric Blue, Dark Gray background
-        paint1: '#FFD700', // Gold
-        paint2: '#00BFFF', // Electric Blue (DeepSkyBlue)
-        backgroundBase: '#121212' // Dark Gray
-    },
-    {
-        // Emerald Matrix: Emerald Green + White, Dark Green background
-        paint1: '#00FF7F', // Emerald Green (SpringGreen)
-        paint2: '#FFFFFF', // White
-        backgroundBase: '#001005' // Dark Green
+         // Mint Chip: Mint Green + Hot Pink paint, Dark Gray-Green background
+         paint1: '#66FFBB', // Mint Green
+         paint2: '#FF44AA', // Hot Pink
+         backgroundBase: '#101a14' // Dark Gray-Green
     }
 ];
 
