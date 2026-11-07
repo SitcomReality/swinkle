@@ -2,9 +2,9 @@
  * level-manager.js
  * Handles loading and providing access to level data, synchronizing with room state.
  */
-import { levelGenerate } from '../level-generator.js';
+import { levelGenerate } from './level-generator.js';
 import { allLevels as initialLevels, defaultLevel } from './levels/level-data.js';
-import { generateLevelName } from '../level-namer.js';
+import { generateLevelName } from './level-namer.js';
 import { startLevelTransition, isTransitionActive } from './level-transition.js';
 // Import specific palette functions
 import { palettes, getRandomPalette, getPaletteByIndex } from './paletteData.js'; // Updated import

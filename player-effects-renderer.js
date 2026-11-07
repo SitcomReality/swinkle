@@ -3,7 +3,7 @@
  * Handles rendering active power-up visual effects directly onto the player character.
  * Called by playerRenderer.js.
  */
-import config from '../config.js';
+import config from './config.js';
 import { powerUpDefinitions } from './power-ups/power-up-data.js'; // May need definitions for colors/icons
 
 // Helper function to draw a star (copied from playerRenderer)

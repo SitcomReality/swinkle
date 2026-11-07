@@ -4,7 +4,7 @@
  * and their associated held paint can and bungee.
  * Calls a separate module for rendering active power-up effects on the player.
  */
-import config from '../config.js';
+import config from './config.js';
 import { getPlayerPhysicsState } from './playerState.js';
 import { getPlayerCollisionState } from './player-collision-state.js';
 // Import the specific color utils needed
